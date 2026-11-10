@@ -1,0 +1,32 @@
+{
+  "name": "food-go",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "overrides": {
+    "glob": "14.0.4",
+    "minimatch": "11.0.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @food-go/web",
+    "dev:mobile": "npm run start --workspace @food-go/mobile",
+    "build:web": "npm run build --workspace @food-go/web",
+    "check": "npm run typecheck --workspaces --if-present && npm run test",
+    "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts",
+    "test:security": "node --test scripts/security.test.mjs",
+    "check:web": "node scripts/verify-web.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}
