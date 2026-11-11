@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "backgroundColor": "#f7f8f2",
+    "backgroundColor": "#faf8f2",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,

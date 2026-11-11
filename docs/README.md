@@ -4,6 +4,11 @@ This documentation explains what exists, what has been checked, and what will be
 
 ## Start here
 
+- [Milestone 02: redesign and identity](progress/02-redesign-and-identity.md): revised interface, account foundation, screenshots and latest checks.
+- [Illustrated Word report](deliverables/Food-Go-Development-Report.docx): simple English walkthrough, subscriptions and client actions.
+- [Identity setup and release requirements](security/identity.md): account configuration, security boundaries and work required before public registration.
+- [Identity verification](progress/02-identity-verification.md): actual source and test evidence.
+- [Revised mobile verification](progress/02-mobile-verification.md): Android, iOS and Expo web export results and remaining device checks.
 - [Milestone 01: foundation](progress/01-foundation.md): work delivered, screenshots, checks, and limitations.
 - [Mobile toolchain verification](progress/01-mobile-verification.md): Android and iOS JavaScript export evidence and the native checks still required.
 - [Architecture](architecture.md): how the mobile apps, website, portals, and shared data fit together.
@@ -38,4 +43,4 @@ Screenshots are evidence of a particular state. They do not establish that authe
 
 ## Evidence status
 
-The first milestone is a development foundation. Its progress page is the source of truth for current verification. Future capabilities described in the roadmap are not claims that those capabilities are available today.
+Milestone 02 is the latest verification record. Earlier milestone pages preserve the checks at that delivery. Future capabilities described in the roadmap are not claims that those capabilities are available today.

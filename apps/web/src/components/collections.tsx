@@ -31,16 +31,16 @@ export function FoodDex() {
     <>
       <div className="page-intro">
         <div>
-          <div className="eyebrow">A LITTLE TASTE OF EVERYTHING</div>
-          <h1>Every flavour has a story.</h1>
+          <div className="eyebrow">Your food collection</div>
+          <h1>What would you like to try?</h1>
           <p>
-            Keep a few good ideas for your next meal. Your food story starts
-            here.
+            Save a dish idea for your next meal. Verified discoveries will
+            appear here when dish confirmation is connected.
           </p>
         </div>
         <Link className="secondary-button" href="/">
           <Compass size={17} />
-          Find a new flavour
+          Explore dishes
           <ArrowUpRight size={16} />
         </Link>
       </div>
@@ -72,8 +72,8 @@ export function FoodDex() {
       <section aria-labelledby="food-collection-title">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">FOLLOW YOUR CURIOSITY</div>
-            <h2 id="food-collection-title">Your next good bite</h2>
+            <div className="eyebrow">Dishes to try</div>
+            <h2 id="food-collection-title">Your food list</h2>
           </div>
           <div className="view-toggle" aria-label="Food collection view">
             <button
@@ -102,7 +102,7 @@ export function FoodDex() {
         {view === "verified" ? (
           <div className="empty-state">
             <CheckCircle2 size={34} />
-            <h3>Good things are still ahead.</h3>
+            <h3>No verified dishes yet</h3>
             <p>
               Your verified dishes will live here when food verification is
               available. For now, discover a few examples and make a little
@@ -119,7 +119,7 @@ export function FoodDex() {
         ) : visibleDishes.length === 0 ? (
           <div className="empty-state">
             <Bookmark size={34} />
-            <h3>A little room for your next favourite.</h3>
+            <h3>Your food list is empty</h3>
             <p>
               Save an example dish to keep it in your planning list on this
               browser.
@@ -200,11 +200,11 @@ export function VenueDex() {
     <>
       <div className="page-intro">
         <div>
-          <div className="eyebrow">GOOD PLACES, WORTH REMEMBERING</div>
-          <h1>A few places for your story.</h1>
+          <div className="eyebrow">Your venue collection</div>
+          <h1>Places you want to go</h1>
           <p>
-            Keep your next stops close. Build a collection of the places you
-            experience.
+            Keep a list of places to visit. Verified visits will be recorded
+            separately.
           </p>
         </div>
         <Link className="secondary-button" href="/">
@@ -241,7 +241,7 @@ export function VenueDex() {
       <section aria-labelledby="venue-collection-title">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">A LITTLE LIST TO LOOK FORWARD TO</div>
+            <div className="eyebrow">Saved for another day</div>
             <h2 id="venue-collection-title">Your places</h2>
           </div>
           <div className="view-toggle" aria-label="Venue collection view">
@@ -264,7 +264,7 @@ export function VenueDex() {
         {view === "visited" ? (
           <div className="empty-state">
             <Store size={34} />
-            <h3>Your first stop is still to come.</h3>
+            <h3>No verified visits yet</h3>
             <p>
               Verified visits will appear here when secure check-ins are
               connected. Saving or viewing an example venue does not record a
@@ -289,7 +289,7 @@ export function VenueDex() {
         ) : (
           <div className="empty-state">
             <Bookmark size={34} />
-            <h3>Leave a little room for discovery.</h3>
+            <h3>Save your first place</h3>
             <p>
               Tap the bookmark on a place that catches your eye. We will keep
               the example in your planning list on this browser.
@@ -305,8 +305,8 @@ export function VenueDex() {
         <section aria-labelledby="venue-suggestions-title">
           <div className="section-heading">
             <div>
-              <div className="eyebrow">SOMETHING TO GET YOU STARTED</div>
-              <h2 id="venue-suggestions-title">A few example places</h2>
+              <div className="eyebrow">Browse the examples</div>
+              <h2 id="venue-suggestions-title">Three places to start with</h2>
             </div>
           </div>
           <div className="venue-grid">

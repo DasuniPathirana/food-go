@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { refreshAuthSession } from "@/lib/auth/proxy";
 
 // This proxy supplies browser defence headers. It is not an authentication gate.
 // Every future privileged route must validate its session and permissions itself.
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const isDevelopment = process.env.NODE_ENV === "development";
   const isApi =
     request.nextUrl.pathname === "/api" ||
@@ -46,7 +47,10 @@ export function proxy(request: NextRequest) {
   // Next reads this request CSP and applies the nonce to its framework scripts.
   // Forwarding only x-nonce would leave those scripts blocked by the response CSP.
   requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
+  const refreshedCookies = await refreshAuthSession(request, requestHeaders);
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  for (const { name, value, options } of refreshedCookies)
+    response.cookies.set(name, value, options);
   response.headers.set("Content-Security-Policy", contentSecurityPolicy);
 
   // Do not teach browsers HSTS from the local HTTP preview. Subdomains and preload

@@ -4,9 +4,11 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
-Milestone 01 is a runnable product foundation with fictional example data. The web experience includes discovery search and filters, an illustrative map, venue detail pages, saved places, FoodDex planning, quest planning, a guest passport and a three-step restaurant onboarding draft. The mobile app has five interactive tabs with original vector artwork.
+Milestone 02 revises the website and React Native interface with a warm paper palette, bold typography, numbered maps and local food photography. Discovery search, venue details, saved places, FoodDex planning, quest planning, a guest passport and a three-step restaurant draft are working previews. The mobile app has five interactive tabs.
 
-The venue draft stays in page memory. Only non-sensitive example bookmarks use browser local storage. Nothing is published or verified. Real authentication, restaurant ownership verification, payments, geographic map services, uploads, rewards and admin workflows are not connected.
+The website now includes sign-in, registration and recovery screens with server-side Supabase account integration. Account services remain disabled until a client-owned test project and email sender are configured. Public release also requires the remaining account safeguards and connected tests described in [the identity guide](docs/security/identity.md).
+
+The venue draft stays in page memory. Website example bookmarks use browser local storage. Mobile example saves last for the current app session. Nothing is published or verified, and saves do not sync between apps. Restaurant ownership verification, payments, live maps, uploads, rewards and administration workflows are not connected.
 
 ## Run locally
 
@@ -55,7 +57,8 @@ npm audit --omit=dev --audit-level=moderate
 - The database migration enables row-level security on all application tables, restricts editable columns, keeps venue contacts private and reserves verification/reward decisions for future server workflows.
 - The web app has a per-request nonce Content Security Policy and restrictive browser headers. Local photos and vector maps make no third-party image/map request.
 - Environment files, signing materials and dependency caches are ignored by Git. Use `apps/web/.env.example` as the template; never put server credentials in public variables.
-- No software is guaranteed unhackable. Live policy tests, authentication, rate limiting, abuse controls, monitoring and independent security review are launch requirements.
+- Account routes validate inputs, require an exact trusted origin for browser writes and use server-verified identities and HttpOnly cookies. Production account services require an explicit release gate.
+- No software is guaranteed unhackable. Connected account and database tests, CAPTCHA integration, durable single-use recovery handling, account deletion, abuse limits, monitoring and independent security review are launch requirements.
 
 ## Design rules
 
@@ -63,6 +66,6 @@ Calm forest, sage and cream colours. Accessible labels and focus states. Respons
 
 ## Documentation
 
-Start at [the documentation index](docs/README.md) and [Milestone 01](docs/progress/01-foundation.md). Each milestone records what works, screenshots, checks, limitations and the next stage. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
+Start at [the documentation index](docs/README.md) and [Milestone 02](docs/progress/02-redesign-and-identity.md). The [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explains the developed features, subscriptions and client actions in simple English. [Milestone 01](docs/progress/01-foundation.md) preserves the first delivery record. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
 
-The next milestone is real authentication and trusted self-service onboarding against a client-owned Supabase project, with tested tenant isolation and a genuine ownership-verification workflow.
+The next milestone connects a separate Supabase test project, completes the account release safeguards and verifies account, email and tenant isolation behaviour before saving real venue information.

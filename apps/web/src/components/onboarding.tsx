@@ -185,12 +185,12 @@ export function Onboarding() {
   return (
     <div className="onboarding-layout">
       <aside className="onboarding-sidebar" aria-label="Draft progress">
-        <span className="eyebrow">MADE FOR INDEPENDENT VENUES</span>
+        <span className="eyebrow">Restaurant onboarding</span>
         <h1>
-          Your next chapter
-          <br /> starts here.
+          Add your venue
+          <br /> to Food Go.
         </h1>
-        <p>A little about your place. A little about what makes it special.</p>
+        <p>Enter your business details, then review the listing.</p>
         <ol className="step-list">
           {stepLabels.map((label, index) => (
             <li
@@ -226,7 +226,7 @@ export function Onboarding() {
             <span className="success-icon">
               <CheckCircle2 size={34} strokeWidth={1.5} aria-hidden="true" />
             </span>
-            <span className="eyebrow">A GOOD FIRST STEP</span>
+            <span className="eyebrow">Venue draft preview</span>
             <h2 id="draft-ready-heading" tabIndex={-1}>
               Draft preview ready
             </h2>
@@ -275,10 +275,10 @@ export function Onboarding() {
               <span className="eyebrow">STEP {step + 1} OF 3</span>
               <h2 id="onboarding-step-heading" tabIndex={-1}>
                 {step === 0
-                  ? "Let’s start with the basics."
+                  ? "Start with your business details"
                   : step === 1
-                    ? "Tell us about your place."
-                    : "Looking good. Make it yours."}
+                    ? "Where is your venue?"
+                    : "Review your venue details"}
               </h2>
               <p>
                 {step === 0

@@ -1,5 +1,5 @@
 "use client";
-import { MapPin, Coffee, UtensilsCrossed, LocateFixed } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { Venue } from "@/lib/fixtures";
 
 export function IllustratedMap({
@@ -31,16 +31,24 @@ export function IllustratedMap({
             patternTransform="rotate(-14)"
             patternUnits="userSpaceOnUse"
           >
-            <rect width="100" height="90" fill="#edf0e8" />
-            <rect x="9" y="9" width="79" height="67" rx="7" fill="#e4e9de" />
-            <path d="M0 84H100M94 0V90" stroke="#fffefa" strokeWidth="10" />
+            <rect width="100" height="90" fill="#f0eee4" />
+            <rect
+              x="9"
+              y="9"
+              width="79"
+              height="67"
+              rx="3"
+              fill="#e9e7dc"
+              stroke="#e0dfd2"
+            />
+            <path d="M0 84H100M94 0V90" stroke="#fffdf7" strokeWidth="10" />
           </pattern>
         </defs>
         <rect width="800" height="540" fill="url(#blocks)" />
         <path
           d="M-20 470C140 350 185 520 335 412S460 330 600 390 770 330 850 180"
           fill="none"
-          stroke="#c0d8d6"
+          stroke="#c3d8d6"
           strokeWidth="54"
         />
         <path
@@ -55,9 +63,9 @@ export function IllustratedMap({
         />
         <path
           d="M470 50l120-35 55 97-147 38zM76 257l97-28 36 111-106 23zM577 430l117-37 43 108-143 27z"
-          fill="#ceddbb"
+          fill="#d4dfc7"
         />
-        <g fill="#818d7e" fontSize="11" fontFamily="Arial" letterSpacing="2">
+        <g fill="#68705e" fontSize="13" fontFamily="Arial" letterSpacing="2">
           <text x="330" y="117">
             CARLTON
           </text>
@@ -83,7 +91,7 @@ export function IllustratedMap({
         <span />
         Melbourne neighbourhoods
       </span>
-      {venues.map((venue) => (
+      {venues.map((venue, index) => (
         <button
           key={venue.id}
           className={`map-marker marker-${venue.accent} ${selected === venue.id ? "selected" : ""}`}
@@ -91,21 +99,13 @@ export function IllustratedMap({
           aria-label={`View ${venue.name}`}
           aria-pressed={selected === venue.id}
         >
-          {venue.type === "cafe" ? (
-            <Coffee size={22} />
-          ) : (
-            <UtensilsCrossed size={22} />
-          )}
+          <strong>{String(index + 1).padStart(2, "0")}</strong>
           <span>{venue.name}</span>
         </button>
       ))}
-      <span className="map-you">
-        <LocateFixed size={18} />
-        <span>Example area</span>
-      </span>
       <div className="map-disclaimer">
         <MapPin size={13} />
-        Illustrative map. Live location is not connected.
+        Map illustration. Live location is not connected.
       </div>
     </div>
   );

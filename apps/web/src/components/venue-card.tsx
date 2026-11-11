@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowUpRight, Bookmark, MapPin, Sparkles } from "lucide-react";
+import { ArrowUpRight, Bookmark, MapPin, Utensils } from "lucide-react";
 import type { Venue } from "@/lib/fixtures";
 
 export function VenueCard({
@@ -52,8 +52,8 @@ export function VenueCard({
         </p>
         <div className="venue-dish">
           <span>
-            <Sparkles size={14} />
-            Discover a signature dish
+            <Utensils size={14} />
+            {venue.dish}
           </span>
           <ArrowUpRight size={15} />
         </div>

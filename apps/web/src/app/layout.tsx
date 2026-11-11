@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Shell } from "@/components/shell";
+import { SiteShell } from "@/components/site-shell";
+import { getAuthState } from "@/lib/auth/server";
 import "./globals.css";
-import "./refinements.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: {
-    default: "Food Go | A little discovery. A lot to love.",
+    default: "Food Go | Your neighbourhood food guide",
     template: "%s | Food Go",
   },
   description:
@@ -18,13 +18,19 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: "#244b3e",
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const account = await getAuthState();
   return (
     <html lang="en-AU">
       <body>
-        <Shell>{children}</Shell>
+        <SiteShell
+          signedIn={Boolean(account.user)}
+          displayName={account.user?.displayName}
+        >
+          {children}
+        </SiteShell>
       </body>
     </html>
   );

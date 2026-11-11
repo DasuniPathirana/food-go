@@ -25,9 +25,9 @@ export const venues: Venue[] = [
     tags: ["Brunch", "Vegetarian"],
     image: "/images/brunch.jpg",
     imageAlt: "Avocado toast with fresh greens on a ceramic plate",
-    dish: "The good morning toast",
+    dish: "Avocado toast",
     description:
-      "Slow mornings, seasonal plates and a little neighbourhood warmth. Discover a fresh take on the classic Australian brunch.",
+      "A neighbourhood cafe serving breakfast, seasonal bowls and coffee. Start with the avocado toast.",
     accent: "brunch",
   },
   {
@@ -40,9 +40,9 @@ export const venues: Venue[] = [
     tags: ["Pizza", "Vegetarian"],
     image: "/images/pizza.jpg",
     imageAlt: "Freshly baked pizza topped with tomatoes, cheese and basil",
-    dish: "A very good margherita",
+    dish: "Margherita pizza",
     description:
-      "A welcoming local table for wood-fired favourites, good company and the simple joy of sharing a pizza.",
+      "An Italian restaurant example with wood-fired pizza and a seasonal menu. The margherita is the signature dish.",
     accent: "pizza",
   },
   {
@@ -55,9 +55,9 @@ export const venues: Venue[] = [
     tags: ["Coffee", "Bakery"],
     image: "/images/coffee.jpg",
     imageAlt: "A golden croissant and a cup of coffee on a cafe table",
-    dish: "The coffee & croissant ritual",
+    dish: "Coffee and croissant",
     description:
-      "Your pause in the city. Find small-batch coffee, flaky pastries and a quiet corner to enjoy them.",
+      "A city cafe example for coffee, pastries and a quick breakfast. Add it to a morning food trail.",
     accent: "coffee",
   },
 ];
@@ -65,10 +65,10 @@ export const venues: Venue[] = [
 export const quests = [
   {
     id: "morning-person",
-    title: "Become a morning person",
-    category: "THE BRUNCH TRAIL",
+    title: "The Fitzroy brunch round",
+    category: "Brunch trail",
     description:
-      "Three local cafes. Three delicious reasons to get up a little earlier.",
+      "Plan a morning around Fitzroy's cafes. Choose a few stops and leave room for breakfast.",
     venues: 3,
     points: 150,
     image: "/images/brunch.jpg",
@@ -76,10 +76,10 @@ export const quests = [
   },
   {
     id: "little-italy",
-    title: "A little taste of Italy",
-    category: "CUISINE ADVENTURE",
+    title: "Lunch around Carlton",
+    category: "Italian food trail",
     description:
-      "Find the neighbourhood tables bringing a little Italian warmth to Melbourne.",
+      "Plan a few Italian food stops around Carlton, with time for a pizza.",
     venues: 3,
     points: 200,
     image: "/images/pizza.jpg",
@@ -87,10 +87,9 @@ export const quests = [
   },
   {
     id: "small-rituals",
-    title: "The small rituals",
-    category: "COFFEE & BAKERY",
-    description:
-      "A great coffee, a fresh pastry and a new favourite corner of the city.",
+    title: "Coffee and a bakery stop",
+    category: "Cafe trail",
+    description: "Find a coffee stop and a bakery to try on the same morning.",
     venues: 2,
     points: 100,
     image: "/images/coffee.jpg",

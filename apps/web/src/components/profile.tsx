@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { venues } from "@/lib/fixtures";
 import { useSavedVenues } from "@/lib/preferences";
+import { SignOutButton } from "./auth-form";
 
 const achievements = [
   {
@@ -36,7 +37,11 @@ const achievements = [
   },
 ];
 
-export function ExplorerProfile() {
+export function ExplorerProfile({
+  account,
+}: {
+  account?: { displayName: string; email: string | null } | null;
+}) {
   const { saved, toggle } = useSavedVenues();
   const [message, setMessage] = useState("");
   const savedCount = venues.filter((venue) => saved.includes(venue.id)).length;
@@ -52,16 +57,13 @@ export function ExplorerProfile() {
     <>
       <div className="page-intro">
         <div>
-          <div className="eyebrow">EVERY EXPLORER STARTS SOMEWHERE</div>
-          <h1>Your passport to good food.</h1>
-          <p>
-            A place for the flavours, little adventures and neighbourhoods you
-            discover.
-          </p>
+          <div className="eyebrow">Your Food Go account</div>
+          <h1>Your food passport</h1>
+          <p>Your saved places, verified visits and completed food trails.</p>
         </div>
         <Link className="secondary-button" href="/">
           <Compass size={17} />
-          Find your next discovery
+          Find a place
           <ArrowRight size={16} />
         </Link>
       </div>
@@ -70,16 +72,28 @@ export function ExplorerProfile() {
           <span className="avatar">
             <UserRound size={28} />
           </span>
-          <div className="eyebrow">A LITTLE LOOK AROUND</div>
-          <h2 id="guest-profile-title">Guest explorer</h2>
+          <div className="eyebrow">
+            {account ? "Signed in" : "Browsing without an account"}
+          </div>
+          <h2 id="guest-profile-title">
+            {account?.displayName || "Guest explorer"}
+          </h2>
           <p>
-            You are browsing the Food Go preview. Account sign-in and personal
-            passports are still being built.
+            {account
+              ? "Your identity is confirmed by the account service. Example bookmarks are still stored on this browser while collection sync is being built."
+              : "You can explore and save examples on this browser. Connect the account service to enable sign-in."}
           </p>
           <Link className="text-button" href="/help">
             How this preview works
             <ArrowRight size={16} />
           </Link>
+          {account ? (
+            <SignOutButton />
+          ) : (
+            <Link href="/auth/sign-in" className="primary-button">
+              Sign in <ArrowRight size={16} />
+            </Link>
+          )}
         </section>
         <section
           className="content-panel"
@@ -87,8 +101,8 @@ export function ExplorerProfile() {
         >
           <div className="section-heading">
             <div>
-              <div className="eyebrow">YOUR STORY SO FAR</div>
-              <h2 id="passport-summary-title">A little room to grow</h2>
+              <div className="eyebrow">Collection summary</div>
+              <h2 id="passport-summary-title">Your activity</h2>
             </div>
             <BookOpen size={24} />
           </div>
@@ -118,10 +132,8 @@ export function ExplorerProfile() {
       <section aria-labelledby="achievements-title">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">GOOD THINGS TO WORK TOWARDS</div>
-            <h2 id="achievements-title">
-              Little milestones, meaningful memories
-            </h2>
+            <div className="eyebrow">Achievements</div>
+            <h2 id="achievements-title">Badges to work towards</h2>
           </div>
         </div>
         <div className="badge-grid">
@@ -151,7 +163,7 @@ export function ExplorerProfile() {
       >
         <div className="section-heading">
           <div>
-            <div className="eyebrow">YOUR BROWSER, YOUR CHOICE</div>
+            <div className="eyebrow">Browser preferences</div>
             <h2 id="browser-preferences-title">Manage saved examples</h2>
           </div>
           <button

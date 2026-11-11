@@ -25,6 +25,10 @@ for (const path of [
   "/partner/onboarding",
   "/help",
   "/venues/finch-and-field",
+  "/auth/sign-in",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/reset-password",
 ]) {
   const response = await request(path);
   const html = await response.text();
@@ -125,6 +129,16 @@ for (const image of ["brunch", "pizza", "coffee"]) {
     `${image} photo is served locally`,
   );
 }
+for (const action of ["sign-in", "register", "sign-out", "forgot-password", "reset-password"]) {
+  check((await request(`/api/auth/${action}`, { method: "POST" })).status === 403, `${action} rejects an originless request`);
+  const response = await request(`/api/auth/${action}`, { method: "POST", headers: { origin: url.origin, "Content-Type": "application/json" }, body: "{}" });
+  check(response.status === 503, `${action} stays disabled without a connected account service`);
+  check(response.headers.get("cache-control") === "no-store", `${action} does not cache account responses`);
+}
+const session = await request("/api/auth/session");
+const sessionData = await session.json();
+check(session.status === 503 && sessionData.configured === false && sessionData.user === null, "Unconfigured session reveals no account data");
+check((await request("/auth/callback?next=https://attacker.example")).status === 503, "Disabled callback does not redirect to an untrusted destination");
 console.log(
   `Passed ${assertions} local HTTP assertions. Browser layout and native runtime are separate checks.`,
 );

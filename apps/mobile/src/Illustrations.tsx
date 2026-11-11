@@ -1,116 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Svg, { Circle, Ellipse, G, Line, Path, Rect } from "react-native-svg";
-import { Coffee, Utensils } from "lucide-react-native";
+import Svg, { G, Path, Rect, Text as SvgText } from "react-native-svg";
 import type { Venue } from "./data";
-
-export function DishArtwork({
-  variant,
-  background,
-}: {
-  variant: Venue["plate"];
-  background: string;
-}) {
-  return (
-    <Svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 200 160"
-      accessibilityLabel="Illustration of a sample dish"
-    >
-      <Rect width="200" height="160" fill={background} />
-      <Ellipse cx="103" cy="90" rx="66" ry="54" fill="#263c3020" />
-      <Circle cx="100" cy="78" r="59" fill="#fffdf7" />
-      <Circle cx="100" cy="78" r="48" fill="#f1ede2" />
-      {variant === "pasta" ? (
-        <G>
-          <Path
-            d="M69 55q50 30 12 47M82 47q48 40 13 63M99 46q37 38 8 61M115 51q20 30 10 43M65 70q28-15 69 10M63 83q40-10 67 11"
-            stroke="#d8ab59"
-            strokeWidth="9"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <Ellipse
-            cx="80"
-            cy="58"
-            rx="11"
-            ry="6"
-            fill="#54754a"
-            rotation="-25"
-            origin="80,58"
-          />
-          <Ellipse
-            cx="121"
-            cy="88"
-            rx="13"
-            ry="6"
-            fill="#54754a"
-            rotation="25"
-            origin="121,88"
-          />
-          <Circle cx="114" cy="58" r="6" fill="#b96043" />
-          <Circle cx="78" cy="95" r="5" fill="#b96043" />
-        </G>
-      ) : (
-        <G>
-          <Ellipse
-            cx="83"
-            cy="62"
-            rx="22"
-            ry="16"
-            fill="#5e7b4a"
-            rotation="-20"
-            origin="83,62"
-          />
-          <Ellipse
-            cx="117"
-            cy="70"
-            rx="22"
-            ry="17"
-            fill="#7b934f"
-            rotation="35"
-            origin="117,70"
-          />
-          <Ellipse
-            cx="87"
-            cy="97"
-            rx="24"
-            ry="13"
-            fill="#a9ad68"
-            rotation="20"
-            origin="87,97"
-          />
-          <Circle
-            cx="117"
-            cy="96"
-            r="16"
-            fill={variant === "brunch" ? "#f9f4d9" : "#c67d4d"}
-          />
-          <Circle
-            cx="117"
-            cy="96"
-            r="8"
-            fill={variant === "brunch" ? "#dbac43" : "#db9a66"}
-          />
-          <Circle cx="69" cy="80" r="8" fill="#b75f42" />
-          <Circle cx="128" cy="53" r="7" fill="#b75f42" />
-          <Path
-            d="M71 54l20 8m15-4l17 12m-49 29l18-4"
-            stroke="#c9d08b"
-            strokeWidth="3"
-          />
-        </G>
-      )}
-      <Path
-        d="M21 47v64m-5-64v22m10-22v22m-10 0h10M174 47v64m0-64q-11 12-4 29h4"
-        fill="none"
-        stroke="#75806a"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
 
 export function NeighbourhoodMap({
   venues,
@@ -122,63 +12,76 @@ export function NeighbourhoodMap({
   onSelect: (id: string) => void;
 }) {
   return (
-    <View style={mapStyles.frame}>
+    <View style={styles.frame}>
       <Svg
         width="100%"
-        height="246"
-        viewBox="0 0 340 246"
+        height="306"
+        viewBox="0 0 340 306"
         preserveAspectRatio="xMidYMid slice"
         accessible={false}
       >
-        <Rect width="340" height="246" fill="#e9eddf" />
-        <Rect x="15" y="19" width="73" height="61" rx="13" fill="#d9e3cb" />
-        <Rect x="241" y="22" width="83" height="88" rx="16" fill="#d5dfc4" />
-        <Rect x="138" y="156" width="94" height="74" rx="18" fill="#d7e1c7" />
+        <Rect width="340" height="306" fill="#eaece2" />
+        <G fill="#dce1d2">
+          <Rect x="14" y="14" width="65" height="67" rx="4" />
+          <Rect x="88" y="17" width="55" height="62" rx="4" />
+          <Rect x="161" y="20" width="73" height="60" rx="4" />
+          <Rect x="252" y="23" width="75" height="62" rx="4" />
+          <Rect x="15" y="99" width="61" height="74" rx="4" />
+          <Rect x="94" y="100" width="51" height="67" rx="4" />
+          <Rect x="165" y="103" width="68" height="65" rx="4" />
+          <Rect x="253" y="107" width="72" height="62" rx="4" />
+        </G>
         <Path
-          d="M-10 196C82 153 51 223 159 200S273 216 354 177"
-          stroke="#b9d6d2"
-          strokeWidth="25"
+          d="M3 200C75 160 111 220 174 206S263 191 345 224"
+          stroke="#bad0cd"
+          strokeWidth="28"
           fill="none"
         />
-        <G stroke="#fffdf6" strokeWidth="13" fill="none">
-          <Path d="M-10 97L352 125" />
-          <Path d="M98-15L73 260" />
-          <Path d="M234-15L209 260" />
-          <Path d="M-10 44L355 67" />
-        </G>
-        <G stroke="#d6dccc" strokeWidth="1" fill="none">
-          <Path d="M-10 97L352 125" />
-          <Path d="M98-15L73 260" />
-          <Path d="M234-15L209 260" />
-        </G>
-        <Line
-          x1="18"
-          y1="157"
-          x2="322"
-          y2="175"
-          stroke="#fdfbf5"
-          strokeWidth="7"
+        <Path
+          d="M-10 90L348 98M84-10L77 312M151-10L155 312M243-10L246 312M-10 181L348 177M-10 270L350 282"
+          stroke="#fffdf6"
+          strokeWidth="12"
+          fill="none"
         />
-        <Line
-          x1="161"
-          y1="0"
-          x2="144"
-          y2="246"
-          stroke="#fdfbf5"
-          strokeWidth="7"
+        <Path
+          d="M-10 90L348 98M151-10L155 312"
+          stroke="#cfb88d"
+          strokeWidth="2"
+          fill="none"
         />
-        <Circle cx="157" cy="120" r="20" fill="#436f5c15" />
-        <Circle cx="157" cy="120" r="11" fill="#ffffff" />
-        <Circle cx="157" cy="120" r="7" fill="#547b69" />
+        <Path
+          d="M168 228l59 4v38l-59-5zM15 215l51 10-1 39-51-3z"
+          fill="#c9d5b8"
+        />
+        <Path
+          d="M110 82Q182 48 258 112L172 245"
+          fill="none"
+          stroke="#a0aa96"
+          strokeWidth="2"
+          strokeDasharray="3 6"
+        />
+        <G fill="#56614d" fontSize="10" fontWeight="600" letterSpacing="1.2">
+          <SvgText x="96" y="33">
+            CARLTON
+          </SvgText>
+          <SvgText x="253" y="33">
+            FITZROY
+          </SvgText>
+          <SvgText x="171" y="301">
+            CITY CENTRE
+          </SvgText>
+        </G>
+        <G fill="#56614d" fontSize="10">
+          <SvgText x="18" y="160">
+            Carlton Gardens
+          </SvgText>
+          <SvgText x="178" y="260">
+            City gardens
+          </SvgText>
+        </G>
       </Svg>
-      <Text style={[mapStyles.place, { left: "10%", top: 26 }]}>CARLTON</Text>
-      <Text style={[mapStyles.place, { left: "66%", top: 28 }]}>FITZROY</Text>
-      <Text style={[mapStyles.place, { left: "71%", top: 213 }]}>
-        COLLINGWOOD
-      </Text>
-      {venues.map((venue) => {
+      {venues.map((venue, index) => {
         const selected = selectedId === venue.id;
-        const Icon = venue.category === "Cafe" ? Coffee : Utensils;
         return (
           <Pressable
             key={venue.id}
@@ -187,64 +90,59 @@ export function NeighbourhoodMap({
             accessibilityState={{ selected }}
             onPress={() => onSelect(venue.id)}
             style={[
-              mapStyles.marker,
+              styles.marker,
               { left: `${venue.mapX / 3.4}%`, top: venue.mapY - 22 },
-              selected && mapStyles.selected,
+              selected && styles.markerSelected,
             ]}
           >
-            <Icon
-              size={19}
-              strokeWidth={1.8}
-              color={selected ? "#ffffff" : "#2b5341"}
-            />
+            <Text style={[styles.number, selected && styles.numberSelected]}>
+              {String(index + 1).padStart(2, "0")}
+            </Text>
           </Pressable>
         );
       })}
-      <View style={mapStyles.caption}>
-        <Text style={mapStyles.captionText}>
-          Illustrative map. No live location.
+      <View style={styles.caption}>
+        <Text style={styles.captionText}>
+          Illustrative map · No live location
         </Text>
       </View>
     </View>
   );
 }
 
-const mapStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   frame: {
-    height: 246,
-    borderRadius: 22,
+    height: 306,
+    borderRadius: 9,
     overflow: "hidden",
-    backgroundColor: "#e9eddf",
     position: "relative",
-  },
-  place: {
-    position: "absolute",
-    fontSize: 9,
-    color: "#697563",
-    fontWeight: "600",
-    letterSpacing: 1.4,
+    backgroundColor: "#eaece2",
+    borderWidth: 1,
+    borderColor: "#d6dacc",
   },
   marker: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "#fffef9",
-    borderColor: "#d6dece",
-    borderWidth: 1,
     position: "absolute",
-    alignItems: "center",
+    marginLeft: -22,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#fffefa",
+    borderColor: "#183d32",
+    borderWidth: 1.5,
     justifyContent: "center",
-    marginLeft: -23,
+    alignItems: "center",
   },
-  selected: { backgroundColor: "#2b5341", borderColor: "#2b5341" },
+  markerSelected: { backgroundColor: "#b64a36", borderColor: "#b64a36" },
+  number: { color: "#183d32", fontSize: 14, fontWeight: "700" },
+  numberSelected: { color: "#fffefa" },
   caption: {
     position: "absolute",
+    left: 9,
     bottom: 9,
-    left: 10,
-    backgroundColor: "#fffef9ed",
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5,
+    backgroundColor: "#fffefaed",
   },
-  captionText: { fontSize: 10, color: "#52614e" },
+  captionText: { color: "#4d584b", fontSize: 11 },
 });

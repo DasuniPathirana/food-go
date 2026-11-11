@@ -1,4 +1,4 @@
-import { Explore } from "@/components/explore";
+import { Discovery } from "@/components/discovery";
 export default function Page() {
-  return <Explore />;
+  return <Discovery />;
 }

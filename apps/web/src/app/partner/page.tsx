@@ -15,20 +15,18 @@ export default function PartnerPage() {
     <div className="partner-page">
       <section className="partner-hero">
         <div className="partner-hero-copy">
-          <span className="eyebrow">
-            FOR THE PLACES THAT MAKE A NEIGHBOURHOOD
-          </span>
+          <span className="eyebrow">For restaurant and cafe owners</span>
           <h1>
-            A good place
+            Put your place
             <br />
-            deserves to be found.
+            on the map.
           </h1>
           <p>
             Bring your food, your story and your little corner of Australia to
             curious explorers. Start with a simple venue draft.
           </p>
           <Link href="/partner/onboarding" className="primary-button">
-            Build your venue draft
+            Try the venue form
             <ArrowRight size={17} />
           </Link>
           <span className="partner-preview-caption">
@@ -42,11 +40,11 @@ export default function PartnerPage() {
             <Leaf size={70} strokeWidth={1} />
           </span>
           <div className="partner-example-card">
-            <span className="eyebrow">YOUR PLACE. YOUR STORY.</span>
+            <span className="eyebrow">Venue profile preview</span>
             <h2>
-              Something good
+              Your venue,
               <br />
-              is growing here.
+              ready to explore.
             </h2>
             <span>
               <Compass size={16} />
@@ -63,7 +61,7 @@ export default function PartnerPage() {
           <span className="benefit-icon">
             <ClipboardList size={23} strokeWidth={1.6} />
           </span>
-          <h2>One place for your story</h2>
+          <h2>Manage your own listing</h2>
           <p>
             Bring your venue details together in one clear draft, ready for a
             future shared marketplace.
@@ -73,7 +71,7 @@ export default function PartnerPage() {
           <span className="benefit-icon">
             <Compass size={23} strokeWidth={1.6} />
           </span>
-          <h2>Choose how you take part</h2>
+          <h2>Join food trails</h2>
           <p>
             Explore how your venue could join neighbourhood food discoveries and
             future adventures.
@@ -83,7 +81,7 @@ export default function PartnerPage() {
           <span className="benefit-icon">
             <ShieldCheck size={23} strokeWidth={1.6} />
           </span>
-          <h2>A thoughtful first step</h2>
+          <h2>Verify your business</h2>
           <p>
             Try the experience with fictional details. Account creation and
             ownership verification are still to come.

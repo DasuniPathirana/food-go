@@ -1,6 +1,12 @@
 # Food Go mobile foundation
 
-This is the React Native and Expo Android/iOS foundation for milestone 1. The five primary screens are Map, FoodDex, Quests, VenueDex and Profile.
+This is the React Native and Expo Android/iOS foundation. The five primary screens are Map, FoodDex, VenueDex, Quests and Profile.
+
+## Interface update
+
+The second design pass uses a practical neighbourhood food guide layout. It replaces repeated slogans, large serif headings and decorative green panels with clear food information, bold system typography and a warm paper background. Forest green supports the main navigation, with a small rust accent for the selected map marker and key details.
+
+The larger illustrative map has numbered markers that match the venue rows. Food photographs are bundled locally from the same licensed files used by the web app. Venue names now match the website examples. Main body copy is 14 to 15 points, and interactive controls have at least a 44-point touch area. The app still uses one main vertical scroll and fixed bottom navigation.
 
 ## Run
 
@@ -25,7 +31,9 @@ npm run typecheck --workspace @food-go/mobile
 - Join and leave sample quests without inventing verified progress.
 - An explicitly labelled guest profile with a preview-only privacy preference.
 - One vertical scroll container per screen, fixed bottom navigation, safe-area insets and labelled interactive controls.
-- Original vector food and neighbourhood illustrations, with no third-party map or image requests.
+- An original vector neighbourhood illustration and bundled food photographs, with no third-party map or image requests. See [asset credits](../../docs/assets.md).
+- Clear all saved examples and trail plans from the guest profile.
+- Expand and close an explanation of the preview without leaving the screen.
 
 ## Explicit limits
 

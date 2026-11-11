@@ -34,16 +34,13 @@ export function QuestCollection() {
     <>
       <div className="page-intro">
         <div>
-          <div className="eyebrow">LET A LITTLE CURIOSITY LEAD</div>
-          <h1>Make a meal of the journey.</h1>
-          <p>
-            A new neighbourhood. A few good tables. An adventure that is your
-            kind of thing.
-          </p>
+          <div className="eyebrow">Food trails</div>
+          <h1>A reason to try somewhere new</h1>
+          <p>Pick a route, save the stops and plan a day around the food.</p>
         </div>
         <Link className="secondary-button" href="/">
           <MapPin size={17} />
-          Explore the neighbourhood
+          Browse places
           <ArrowRight size={16} />
         </Link>
       </div>
@@ -75,8 +72,8 @@ export function QuestCollection() {
       <section aria-labelledby="quests-title">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">SMALL ADVENTURES, GOOD MEMORIES</div>
-            <h2 id="quests-title">Find your kind of trail</h2>
+            <div className="eyebrow">Choose a route</div>
+            <h2 id="quests-title">Food trails to try</h2>
           </div>
           <div className="view-toggle" aria-label="Adventure view">
             <button
@@ -98,7 +95,7 @@ export function QuestCollection() {
         {visibleQuests.length === 0 ? (
           <div className="empty-state">
             <Route size={34} />
-            <h3>A good adventure starts with a little plan.</h3>
+            <h3>Choose your first trail</h3>
             <p>
               Choose an example trail and add it to this session's plan. You can
               remove it whenever you like.

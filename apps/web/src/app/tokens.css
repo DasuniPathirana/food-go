@@ -1,10 +1,11 @@
 :root {
-  --forest: #244b3e;
-  --ink: #344333;
-  --muted: #7a8573;
-  --canvas: #f6f7f2;
-  --paper: #fdfefa;
-  --line: #e1e7d9;
-  --sage-light: #e8efdf;
-  --sage: #cddcbb;
+  --forest: #183d32;
+  --ink: #29352b;
+  --muted: #5b6655;
+  --canvas: #faf8f2;
+  --paper: #fffdf7;
+  --line: #d8decd;
+  --sage-light: #ecf0e4;
+  --sage: #cfddbb;
+  --tomato: #b64a36;
 }
