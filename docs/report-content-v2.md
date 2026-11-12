@@ -1,10 +1,10 @@
 # Food Go development report
 
-Prepared for the Food Go project owner. Updated 11 November 2026.
+Prepared for the Food Go project owner. Updated 12 November 2026.
 
-This report explains the work completed so far, shows the current screens and lists the services needed for the next stage. Food Go has a working website preview and a React Native mobile foundation. The example venues can be searched, saved and explored. The account code is ready to connect to a client-owned Supabase test project, but is disabled in this preview. A public restaurant service, real check-ins and payments are still later work.
+This report explains the work completed so far, shows the current screens and lists the services needed for the next stage. Food Go has a working website preview and a React Native mobile foundation. The Supabase SDK connection now passes a read-only check. The example venues can be searched, saved and explored. Application account routes remain disabled while database setup, provider configuration and release safeguards are completed. A public restaurant service, real check-ins and payments are still later work.
 
-The screenshots in the final Word document must come from the revised application. A mobile-width website screenshot must be labelled as a website view. A successful Android or iOS JavaScript export must not be described as testing the app on a phone.
+The screenshots were captured from the revised application on 11 November 2026. The SDK setup does not change the interface or map. A mobile-width website screenshot is a website view. Android and iOS JavaScript exports are build checks, not evidence of testing on phones.
 
 ## Current position
 
@@ -16,8 +16,8 @@ The project keeps the public website, restaurant tools and mobile application in
 | ------------------------------- | ------------------------------------------------------------------------------- |
 | Website and restaurant draft    | Working preview with example content                                            |
 | Android and iOS                 | Expo application source and production JavaScript exports                       |
-| Account screens                 | Sign-in, registration, recovery and sign-out code implemented; connection disabled |
-| Venue database                  | Tables and access rules written; live database checks still required            |
+| Account screens                 | Code implemented; local SDK connection passes; application account routes disabled |
+| Venue database                  | Migration and access rules written; venues unavailable through the Data API; migration and live tests pending |
 | Check-ins and dish verification | Not connected                                                                   |
 | Payments and bookings           | Not connected                                                                   |
 
@@ -95,7 +95,7 @@ Screenshot planned: `docs/screenshots/02-auth.jpg`.
 
 The identity code covers sign-in, registration, email confirmation, password recovery and sign-out. It checks the account with Supabase before treating a visitor as signed in. It also includes a shared session-refresh path so connected sessions can be refreshed while the website is used.
 
-The connection is intentionally disabled until a Supabase project and its email service are configured. The public preview must not claim that an account was created or a recovery email was sent when no account service is connected.
+The project connection is configured locally and its read-only SDK check passes. Application account routes remain disabled until database setup, provider configuration and release safeguards are completed. The public preview must not claim that an account was created or a recovery email was sent without testing those flows.
 
 Password recovery requires a short-lived permission linked to the verified user. Being signed in by itself is not enough to use the recovery endpoint. The server also checks return links and rejects destinations outside the approved application pages.
 
@@ -143,7 +143,21 @@ The remaining work includes real venue ownership verification, saved server draf
 
 Payments, restaurant subscriptions, payouts and social features should follow the agreed business model. Public user photos and reviews need reporting and moderation before they are enabled. These features should not be described as complete because a placeholder screen or database table exists.
 
-The next practical step is to connect a disposable Supabase test project, exercise account and email flows, then test tenant access rules before saving real venue information.
+The next practical step is secure management access to a confirmed test project. Review the database preflight, apply the migration and run the 23 policy assertions only on a disposable database. Then test account, email and tenant access flows before saving real venue information.
+
+## Supabase connection update
+
+On 12 November, the app connection details were saved in an ignored local environment file. They include the project URL, the publishable key and a new cookie signing secret generated from 32 random bytes. Neither application accounts nor the production account release flag was enabled. The service-role and secret keys were not used.
+
+The live read-only check reached Supabase successfully using the publishable key. The public account settings report that email and password sign-in is enabled, email confirmation is required and direct provider registration is enabled. Closing the Food Go account routes does not disable Supabase's own registration API.
+
+The SDK also made a zero-row request to the venues catalogue. It reported that the venues relation is unavailable through the Data API schema cache. This is not a complete database inventory and does not prove that the database is empty. The project region, email sender and callback configuration have not been verified.
+
+The SDK is the library used by the application to call Supabase. It can sign users in and access data allowed by the project's policies. Changing database structure, email settings and callback URLs requires separate management access, such as an authorised CLI session, Management API token or database connection. That access is not available in the current setup.
+
+The database migration now stops if it would collide with existing application tables, the private schema, a storage bucket or an incompatible PostGIS installation. A separate read-only preflight helps the developer review the target before applying the migration. No database migration or policy test has run against the hosted project.
+
+No account was created, no email was sent and no application data or dashboard setting was changed by the connection check. The next step is to rotate the exposed privileged keys, arrange management access securely, review the preflight and complete the test database setup. Never post replacement secrets or management tokens in chat or the report.
 
 ## Subscriptions to buy
 
@@ -189,10 +203,10 @@ Official pricing and setup sources:
 
 ## What you need to do
 
-1. Keep the GitHub repository and service accounts under the client's business. Invite developers with the access they need instead of sharing the account password. Turn on multi-factor authentication for the owner accounts.
+1. Rotate the privileged keys exposed in chat and screenshots through Supabase. Keep replacements in an approved secret store. Keep business accounts under the client, enable multi-factor authentication and invite developers instead of sharing passwords.
 2. Confirm the business name, logo, public support email and website domain. The domain should be owned by the client. Do not buy an expensive domain or an annual hosting bundle without agreeing the name and hosting plan.
-3. Create a separate Supabase test project in the specific Sydney region. Arrange development access and put the project settings in the approved environment configuration. Do not paste passwords, private keys or recovery links into chat or the Word document.
-4. Set up a sender address on your domain. Your developer can add the SPF, DKIM and DMARC records that help email providers recognise your messages. Test confirmation, recovery and failed-email behavior before public registration.
+3. Confirm a separate Sydney test project. Arrange CLI or Management API access securely, without posting tokens in chat. Review the read-only database checks, apply the migration there and run the 23 database policy tests only on a disposable test database.
+4. Configure the exact app callback URLs and a domain sender. Your developer can set SPF, DKIM and DMARC records. Test confirmation, recovery, failed delivery and session expiry before public registration.
 5. Decide how owners will prove authority to manage a venue. Choose the evidence, who reviews exceptions and what happens when two people claim the same business. Knowing an ABN or business name is not enough on its own.
 6. Provide a small set of real pilot venues with permission to use their information and photographs. Supply addresses, opening hours, menus and signature dishes. Agree who will maintain this information after launch.
 7. Decide what counts as a verified venue visit and a verified dish experience. Agree whether staff confirmation, a QR code, a redemption or transaction evidence is required. A visit and a dish experience need separate rules.

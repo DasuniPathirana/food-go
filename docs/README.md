@@ -4,6 +4,7 @@ This documentation explains what exists, what has been checked, and what will be
 
 ## Start here
 
+- [Milestone 03: Supabase connection](progress/03-supabase-connection.md): actual SDK checks, local configuration and remaining management access.
 - [Milestone 02: redesign and identity](progress/02-redesign-and-identity.md): revised interface, account foundation, screenshots and latest checks.
 - [Illustrated Word report](deliverables/Food-Go-Development-Report.docx): simple English walkthrough, subscriptions and client actions.
 - [Identity setup and release requirements](security/identity.md): account configuration, security boundaries and work required before public registration.
@@ -43,4 +44,4 @@ Screenshots are evidence of a particular state. They do not establish that authe
 
 ## Evidence status
 
-Milestone 02 is the latest verification record. Earlier milestone pages preserve the checks at that delivery. Future capabilities described in the roadmap are not claims that those capabilities are available today.
+Milestone 03 is the latest connection record. Milestone 02 preserves the last interface and device export review. Earlier milestone pages preserve the checks at that delivery. Future capabilities described in the roadmap are not claims that those capabilities are available today.

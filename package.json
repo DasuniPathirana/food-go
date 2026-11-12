@@ -16,16 +16,18 @@
     "react-dom": "19.3.0"
   },
   "scripts": {
-    "dev": "npm run dev --workspace @food-go/web",
-    "dev:mobile": "npm run start --workspace @food-go/mobile",
-    "build:web": "npm run build --workspace @food-go/web",
+    "dev": "node init && npm run dev --workspace @food-go/web",
+    "dev:mobile": "node init && npm run start --workspace @food-go/mobile",
+    "build:web": "node init && npm run build --workspace @food-go/web",
     "check": "npm run typecheck --workspaces --if-present && npm run test",
-    "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts",
+    "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts scripts/check-supabase.test.mjs",
     "test:security": "node --test scripts/security.test.mjs",
-    "check:web": "node scripts/verify-web.mjs"
+    "check:web": "node scripts/verify-web.mjs",
+    "check:supabase": "tsx scripts/check-supabase.mjs"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
+    "node-fetch": "^3.3.2",
     "tsx": "4.23.15",
     "typescript": "7.0.2"
   }
