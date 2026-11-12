@@ -4,7 +4,9 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
-Milestone 02 revises the website and React Native interface with a warm paper palette, bold typography, numbered maps and local food photography. Discovery search, venue details, saved places, FoodDex planning, quest planning, a guest passport and a three-step restaurant draft are working previews. The mobile app has five interactive tabs.
+Milestone 03 adds a configured local Supabase connection and a repeatable read-only SDK check. The live check accepts the publishable key and confirms email sign-in with email confirmation. The Food Go venue relation is not yet available through the Data API. Application account routes remain disabled while the database, email sender and provider settings are completed and tested.
+
+Milestone 02 revised the website and React Native interface with a warm paper palette, bold typography, numbered maps and local food photography. Discovery search, venue details, saved places, FoodDex planning, quest planning, a guest passport and a three-step restaurant draft are working previews. The mobile app has five interactive tabs.
 
 The website now includes sign-in, registration and recovery screens with server-side Supabase account integration. Account services remain disabled until a client-owned test project and email sender are configured. Public release also requires the remaining account safeguards and connected tests described in [the identity guide](docs/security/identity.md).
 
@@ -51,6 +53,8 @@ npm audit --omit=dev --audit-level=moderate
 
 `check` runs workspace TypeScript checks and input/search/origin tests. `test:security` runs static convention checks, not a penetration test. The database integration assertions require Supabase and Docker. Read [the Supabase setup notes](supabase/README.md) before using them.
 
+For a configured local Supabase project, run `npm run check:supabase`. This loads the ignored local environment file and makes only read requests. It checks public account settings and makes a zero-row venue query through the SDK. It prints no keys, account records or raw provider errors. A non-zero exit code means the connection or venue catalogue is not ready. This command does not apply SQL, change dashboard settings, create an account or send email.
+
 ## Security boundaries
 
 - The demo has no working privileged write endpoint. `POST /api/partner/venues` rejects untrusted origins and otherwise remains unavailable.
@@ -66,6 +70,6 @@ Calm forest, sage and cream colours. Accessible labels and focus states. Respons
 
 ## Documentation
 
-Start at [the documentation index](docs/README.md) and [Milestone 02](docs/progress/02-redesign-and-identity.md). The [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explains the developed features, subscriptions and client actions in simple English. [Milestone 01](docs/progress/01-foundation.md) preserves the first delivery record. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
+Start at [the documentation index](docs/README.md) and [Milestone 03](docs/progress/03-supabase-connection.md). The [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explains the developed features, subscriptions and client actions in simple English. [Milestone 02](docs/progress/02-redesign-and-identity.md) and [Milestone 01](docs/progress/01-foundation.md) preserve earlier delivery records. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
 
-The next milestone connects a separate Supabase test project, completes the account release safeguards and verifies account, email and tenant isolation behaviour before saving real venue information.
+The next step is authenticated management or database access to the intended test project. Review the read-only SQL preflight before applying the migration, then run the live access policy tests in a confirmed disposable environment. Complete the account release safeguards and verify account and email behaviour before saving real venue information. The publishable SDK key is sufficient for application access but does not grant these management permissions.

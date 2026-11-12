@@ -12,6 +12,20 @@ This directory contains a proposed PostgreSQL schema and tenant-isolation integr
 6. Review and configure authentication, redirect allowlists, external SMTP and account deletion before connecting a real environment.
 7. Apply reviewed migrations to a separate staging project before any production database.
 
+## First installation checks
+
+Before applying the foundation to a hosted project, independently confirm its project name and reference in the Supabase dashboard. The default branch label may say production even for a new project; that label does not prove it is safe to use test fixtures.
+
+Run [the read-only preflight](preflight.sql) with the intended database administrator. It reports the required Supabase roles and objects, relation-name collisions, an existing private schema, PostGIS location, the proposed bucket collision and a public relation inventory. It does not read application records or modify the database. Review every result before applying anything.
+
+The first-install migration stops if the application relation names, private schema or media bucket already exist, or if PostGIS is installed outside the expected `extensions` schema. It does not drop or relocate extensions, overwrite tables or change an existing storage bucket. Existing objects require a separately reviewed migration for that actual environment.
+
+The migration runs in one transaction. A failed statement must cause rollback; do not run the remaining statements separately to work around a failure. Do not reset, clean, drop or recreate a hosted database as a shortcut.
+
+Run tenant test fixtures only against a confirmed disposable local or staging target. Their transaction rolls back ordinary database changes, but they temporarily insert test auth users and may interact with triggers or external hooks. Do not run them against a live customer environment.
+
+PostGIS schema behaviour is described in the [Supabase PostGIS guide](https://supabase.com/docs/guides/database/extensions/postgis) and [PostgreSQL CREATE EXTENSION documentation](https://www.postgresql.org/docs/17/sql-createextension.html). `IF NOT EXISTS` does not relocate an already installed extension.
+
 The local SQL tests require Supabase's `auth` and `storage` schemas. They are not portable to an empty plain PostgreSQL database. Do not run test fixtures against production. Confirm the target project before any CLI linking or database command.
 
 ## Security model

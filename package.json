@@ -20,9 +20,10 @@
     "dev:mobile": "npm run start --workspace @food-go/mobile",
     "build:web": "npm run build --workspace @food-go/web",
     "check": "npm run typecheck --workspaces --if-present && npm run test",
-    "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts",
+    "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts scripts/check-supabase.test.mjs",
     "test:security": "node --test scripts/security.test.mjs",
-    "check:web": "node scripts/verify-web.mjs"
+    "check:web": "node scripts/verify-web.mjs",
+    "check:supabase": "tsx scripts/check-supabase.mjs"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

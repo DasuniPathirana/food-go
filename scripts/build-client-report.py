@@ -221,8 +221,8 @@ def main():
 
     paragraph(doc, "Food Go development report", style="Title")
     paragraph(doc, "Website and mobile progress", style="Subtitle")
-    paragraph(doc, "Prepared for the Food Go project owner\n11 November 2026", size=10, color=GRAY)
-    paragraph(doc, "Food Go now has a working discovery preview and a React Native mobile foundation. You can search example venues, save places, plan trails and try the restaurant draft. This report shows what works, what still needs a live connection, and the decisions needed before launch.")
+    paragraph(doc, "Prepared for the Food Go project owner\n12 November 2026", size=10, color=GRAY)
+    paragraph(doc, "Food Go has a working discovery preview and a React Native mobile foundation. The Supabase SDK connection now passes a read-only check. You can search example venues, save places, plan trails and try the restaurant draft. Application accounts, live venue data and production services still need the setup explained in this report.")
     paragraph(doc, "The website and mobile code are kept in the same repository and are designed to use one shared venue database. An owner should enter a venue once, with approved information then appearing in both the marketplace and the game.")
     heading(doc, "What you can review now", 2)
     table(doc, ["Area", "Current position"], [
@@ -232,7 +232,7 @@ def main():
         ("Android and iOS", evidence["mobile_status"]),
         ("Live restaurant service", "Ownership checks, published listings, check-ins, bookings and payments still need implementation or connection."),
     ], [1.65, 5.15])
-    paragraph(doc, "The screenshots show the revised interface. Example bookmarks are plans, not proof of a visit. No venue is published and no reward is earned by completing a local preview.")
+    paragraph(doc, "The screenshots were captured on 11 November and show the existing interface. The SDK setup does not change the map or screens. Example bookmarks are plans, not proof of a visit. No venue is published and no reward is earned by completing a local preview.")
     heading(doc, "Reading this report", 2)
     paragraph(doc, "The following pages explain the important screens, the technical and security work, and the remaining launch work. The final two sections list the subscriptions to buy and the actions required from your side.")
     p = doc.add_paragraph()
@@ -292,8 +292,12 @@ def main():
     page(doc, "Accounts and recovery")
     screenshot(doc, "02-auth.jpg", "The account screen states whether its connection is ready.", max_height=4.0)
     paragraph(doc, evidence["identity_details"])
-    paragraph(doc, "The account connection remains disabled until the client-owned Supabase project and its email sender are configured. No live account or email delivery has been tested in this local preview.")
+    paragraph(doc, "The project connection is configured locally and the read-only SDK check passes. Application account routes remain disabled while database setup, callback URLs, email delivery and release safeguards are completed. No live account or email delivery has been tested.")
     paragraph(doc, "Account deletion and CAPTCHA integration are not implemented yet. Before public registration opens, we need to complete that work, agree reliable one-use handling for recovery links and test confirmation, sign-out, expiry and recovery against the real account service.")
+
+    page(doc, "Supabase connection update")
+    for text in content_paragraphs(sections, "Supabase connection update"):
+        paragraph(doc, text)
 
     page(doc, "Security and remaining work")
     for text in content_paragraphs(sections, "Security and technical work"):
@@ -303,7 +307,7 @@ def main():
         bullet(doc, text)
     heading(doc, "What remains", 2)
     paragraph(doc, "Live database access tests and native phone testing are still required. We also need real venue ownership checks, saved server drafts, secure uploads, publication, live maps, verified visits and dishes, rewards, offers, bookings and administration tools. Payments and community features follow the agreed business model.")
-    paragraph(doc, "The next practical step is a disposable Supabase test project, followed by account and email testing and checks that two venue organisations cannot access each other's private records.")
+    paragraph(doc, "The next step is secure management access to a confirmed test project. Review the database preflight, apply the migration and run the 23 policy assertions only on a disposable database. Then test account, email and tenant access flows before saving real venue information.")
 
     page(doc, "Subscriptions to buy")
     paragraph(doc, "You do not need to buy a subscription to review the local preview. Set up the client-owned accounts first. Use free test allowances where they are suitable, then upgrade before production or when the next feature needs them.")

@@ -2,9 +2,44 @@
 -- This migration is source code, not evidence of a provisioned or tested database.
 begin;
 
+-- This is a first-install migration. Never adapt an existing application's
+-- private schema, storage bucket or PostGIS installation by overwriting it.
+-- Run supabase/preflight.sql and review its results before applying this file.
+do $food_go_preflight$
+declare
+  postgis_schema text;
+begin
+  if to_regclass('auth.users') is null or to_regclass('storage.buckets') is null
+    or to_regprocedure('auth.uid()') is null or to_regprocedure('auth.role()') is null then
+    raise exception 'Food Go requires a Supabase database with auth and storage installed';
+  end if;
+  if exists (select 1 from pg_namespace where nspname = 'private') then
+    raise exception 'The private schema already exists. Stop and review the target before installing Food Go';
+  end if;
+  if exists (
+    select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = any (array[
+      'profiles', 'organizations', 'organization_members', 'venues', 'venue_contacts',
+      'canonical_foods', 'venue_dishes', 'check_ins', 'food_discoveries', 'reward_events'
+    ])
+  ) then
+    raise exception 'A Food Go relation name already exists. Stop and review the target before installing';
+  end if;
+  select n.nspname into postgis_schema
+    from pg_extension e join pg_namespace n on n.oid = e.extnamespace
+    where e.extname = 'postgis';
+  if postgis_schema is not null and postgis_schema <> 'extensions' then
+    raise exception 'PostGIS is installed outside extensions. Review a compatible migration without moving or dropping it';
+  end if;
+  if exists (select 1 from storage.buckets where id = 'food-go-venue-media') then
+    raise exception 'The Food Go storage bucket already exists. Stop and review it before installing';
+  end if;
+end;
+$food_go_preflight$;
+
 create schema if not exists extensions;
 create extension if not exists postgis with schema extensions;
-create schema if not exists private;
+create schema private;
 revoke all on schema private from public, anon;
 grant usage on schema private to authenticated, service_role;
 
@@ -321,8 +356,6 @@ grant all on table public.profiles, public.organizations, public.organization_me
 -- Keep uploads closed until a scoped upload/signing workflow is implemented.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('food-go-venue-media', 'food-go-venue-media', false, 5242880,
-  array['image/jpeg', 'image/png', 'image/webp'])
-on conflict (id) do update set public = false, file_size_limit = 5242880,
-  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+  array['image/jpeg', 'image/png', 'image/webp']);
 
 commit;
