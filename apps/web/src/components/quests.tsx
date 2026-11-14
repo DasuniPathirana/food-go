@@ -13,6 +13,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { quests } from "@/lib/fixtures";
+import market from "./market-collections.module.css";
 
 export function QuestCollection() {
   const [planned, setPlanned] = useState<string[]>([]);
@@ -31,11 +32,10 @@ export function QuestCollection() {
   }
 
   return (
-    <>
+    <div className={market.connected}>
       <div className="page-intro">
         <div>
-          <div className="eyebrow">Food trails</div>
-          <h1>A reason to try somewhere new</h1>
+          <h1>Food trails</h1>
           <p>Pick a route, save the stops and plan a day around the food.</p>
         </div>
         <Link className="secondary-button" href="/">
@@ -72,8 +72,7 @@ export function QuestCollection() {
       <section aria-labelledby="quests-title">
         <div className="section-heading">
           <div>
-            <div className="eyebrow">Choose a route</div>
-            <h2 id="quests-title">Food trails to try</h2>
+            <h2 id="quests-title">Choose a route</h2>
           </div>
           <div className="view-toggle" aria-label="Adventure view">
             <button
@@ -179,6 +178,6 @@ export function QuestCollection() {
             : `${planned.length} example ${planned.length === 1 ? "trail is" : "trails are"} in your plan for this session.`}
         </p>
       </section>
-    </>
+    </div>
   );
 }

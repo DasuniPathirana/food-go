@@ -2,24 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BookOpen,
-  Compass,
-  MessagesSquare,
-  Store,
-  UserRound,
-  ArrowUpRight,
-} from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Brand } from "./brand";
+import { FoodNavigation } from "./food-navigation";
 import type { CatalogueMode } from "@/lib/catalogue-contracts";
-
-const navigation = [
-  { href: "/feed", label: "Feed", icon: MessagesSquare },
-  { href: "/food-dex", label: "FoodDex", icon: BookOpen },
-  { href: "/", label: "Explore", icon: Compass },
-  { href: "/venue-dex", label: "VenueDex", icon: Store },
-  { href: "/profile", label: "Passport", icon: UserRound },
-];
 
 export function SiteShell({
   children,
@@ -37,7 +23,6 @@ export function SiteShell({
   const exampleNeighbourhood = pathname === "/explore-preview";
   const examplePage = exampleNeighbourhood || pathname.startsWith("/explore-preview/");
   const socialPreview = pathname === "/feed-preview";
-  const navigationIsActive = (href: string) => pathname === href || (href === "/" && examplePage) || (href === "/feed" && socialPreview);
   return (
     <div className="site-shell">
       <a className="skip-link" href="#main-content">
@@ -48,18 +33,7 @@ export function SiteShell({
           <Link href="/" aria-label="Food Go home" className="brand-link">
             <Brand />
           </Link>
-          <nav className="site-navigation" aria-label="Main navigation">
-            {navigation.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={navigationIsActive(href) ? "page" : undefined}
-                className={navigationIsActive(href) ? "active" : ""}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
+          <FoodNavigation pathname={pathname} />
           <div className="header-actions">
             <Link href="/partner" className="venue-entry">
               For venues <ArrowUpRight size={14} />
@@ -104,19 +78,7 @@ export function SiteShell({
           </a>
         </nav>
       </footer>
-      <nav className="mobile-navigation" aria-label="Mobile navigation">
-        {navigation.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={navigationIsActive(href) ? "active" : ""}
-            aria-current={navigationIsActive(href) ? "page" : undefined}
-          >
-            <Icon size={22} strokeWidth={1.65} />
-            <span>{label}</span>
-          </Link>
-        ))}
-      </nav>
+      <FoodNavigation pathname={pathname} mobile />
     </div>
   );
 }

@@ -1,34 +1,177 @@
-.page .title { align-items: center; margin-bottom: 18px; gap: 16px; }
-.page .title h1 { margin: 0; font-size: 30px; letter-spacing: -.025em; }
-.page .cover { padding: 22px 26px; gap: 24px; margin-bottom: 14px; }
-.page .cover h2 { font-size: 34px; }
-.page .cover p { font-size: 14px; }
-.page .portrait { width: 64px; height: 78px; }
-.details { margin: 0 0 20px; border-bottom: 1px solid var(--line); }
-.details > summary { display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 8px 0; cursor: pointer; font-size: 14px; font-weight: 700; list-style: none; color: var(--ink); }
+.page {
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+}
+
+.page .title {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px;
+}
+
+.page .title h1 {
+  margin: 0;
+  font: 800 clamp(36px, 4.2vw, 58px)/.95 var(--font-display);
+  letter-spacing: -.025em;
+}
+
+.cover {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(236px, 1fr);
+  border: 1px solid var(--ink);
+  border-radius: 16px;
+  background: #00615d;
+  overflow: hidden;
+}
+
+.identity {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: clamp(14px, 2.5vw, 30px);
+  padding: clamp(18px, 3vw, 36px);
+  overflow: hidden;
+  color: #fff9ee;
+}
+
+/* The linework follows the passport's rounded binding, clear of the name. */
+.identity::before,
+.connectedCover::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 auto;
+  width: 37%;
+  background: repeating-radial-gradient(ellipse at 125% 100%, transparent 0 12px, #97dfbc40 13px 14px, transparent 15px 20px);
+  pointer-events: none;
+}
+
+.portrait {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: clamp(72px, 9vw, 98px);
+  aspect-ratio: .89;
+  border: 4px solid #fff9ee;
+  background: #ffe0a6;
+  border-radius: 45% 45% 8px 8px;
+  box-shadow: 0 3px 7px #00363455;
+}
+
+.identityCopy { min-width: 0; }
+.page .identityCopy h2 {
+  font: 800 clamp(38px, 4.6vw, 64px)/.98 var(--font-display);
+  margin: 0;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+  color: #fff9ee;
+}
+
+.page .identityCopy p,
+.level,
+.progressHeading > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.page .identityCopy p { display: flex; margin: 5px 0 10px; color: #e4f9eb; font-size: 15px; }
+.level { border: 1px solid #a8d9c6; padding: 3px 9px; border-radius: 99px; color: #fff9ee; font-size: 13px; font-weight: 700; }
+
+.coverProgress {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  padding: clamp(18px, 2.8vw, 30px);
+  background: #ffd445;
+  border-left: 2px dashed #816e3d;
+  color: var(--ink);
+}
+
+.coverProgress::before,
+.coverProgress::after {
+  content: "";
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  left: -9px;
+  background: var(--canvas);
+}
+
+.coverProgress::before { top: -9px; }
+.coverProgress::after { bottom: -9px; }
+.progressHeading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 12px; justify-content: space-between; margin-bottom: 9px; }
+.progressHeading > span { font-size: 14px; font-weight: 750; }
+.progressHeading strong { font: 800 clamp(30px, 4vw, 48px)/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.progressHeading small { font-size: .44em; color: #584518; }
+.cover .coverProgress [role="progressbar"] { height: 8px; background: #ad8839; border-radius: 4px; }
+.cover .coverProgress [role="progressbar"] > span { background: var(--ink); border-radius: inherit; }
+.page .coverProgress p { color: #443218; font-size: 14px; font-weight: 600; margin: 8px 0 0; }
+
+.details { margin: 8px 0 18px; border-bottom: 1px solid var(--line); }
+.details > summary {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 8px 2px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  color: var(--ink);
+}
 .details > summary::-webkit-details-marker { display: none; }
+.details > summary > svg:first-child { color: #006d68; }
 .details > summary > svg:last-child { margin-left: auto; transition: transform .18s ease; }
 .details[open] > summary > svg:last-child { transform: rotate(180deg); }
 .details > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .detailsBody { padding: 12px 0 22px; }
 .detailsBody > :first-child { margin-top: 0; }
-.detailsBody > a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 8px; font-size: 14px; font-weight: 700; }
+.detailsBody > a { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-top: 8px; font-size: 15px; font-weight: 700; }
+
 .connectedWall { margin-top: 22px; }
+.connectedCover:global(.profile-card) {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  background: #00615d;
+  color: #fff9ee;
+  border-color: #174b46;
+}
+.connectedCover:global(.profile-card) h2,
+.connectedCover:global(.profile-card) p,
+.connectedCover:global(.profile-card) :global(.text-button) { color: #fff9ee; }
+.connectedCover:global(.profile-card) :global(.avatar) { background: #ffe0a6; border: 2px solid #fff9ee; color: var(--ink); }
 .guestWall { padding: 22px 0; border-block: 1px solid var(--line); }
-.guestWall h2 { margin: 0 0 9px; font-size: 24px; }
+.guestWall h2 { display: flex; gap: 8px; align-items: center; margin: 0 0 9px; font-size: 28px; }
+.guestWall h2 svg { color: #006d68; }
 .guestWall p { max-width: 58ch; margin: 0 0 12px; color: var(--muted); }
 .guestWall > div { display: flex; flex-wrap: wrap; gap: 10px; }
-@media(max-width:760px) {
-  .page .title { flex-direction: row; align-items: center; gap: 10px; margin-bottom: 14px; }
-  .page .title h1 { font-size: 28px; }
-  .page .title > button { min-height: 44px; padding: 8px 10px; font-size: 13px; }
-  .page .cover { grid-template-columns: 1fr; padding: 17px 19px; gap: 13px; margin-bottom: 7px; }
-  .page .cover h2 { font-size: 30px; }
-  .page .cover p { font-size: 13px; }
-  .page .cover .portrait { width: 52px; height: 64px; }
-  .page .coverProgress p { display: none; }
-  .page .coverProgress strong { font-size: 23px; }
-  .page .coverProgress > div { margin-bottom: 5px; }
-  .details { margin-bottom: 16px; }
+
+@media (max-width: 650px) {
+  .page .title { margin-bottom: 14px; }
+  .page .title > button { min-height: 44px; padding: 8px 12px; }
+  .cover { grid-template-columns: 1fr; }
+  .identity { padding: 16px 20px; }
+  .portrait { width: 60px; border-width: 3px; }
+  .page .identityCopy h2 { font-size: 36px; }
+  .page .identityCopy p { font-size: 14px; margin: 3px 0 5px; }
+  .coverProgress { padding: 11px 20px; border-left: none; border-top: 2px dashed #816e3d; }
+  .progressHeading { margin-bottom: 5px; }
+  .progressHeading strong { font-size: 28px; }
+  .page .coverProgress p { margin-top: 5px; font-size: 13px; }
+  .coverProgress::before, .coverProgress::after { top: -9px; bottom: auto; }
+  .coverProgress::after { right: -9px; left: auto; }
+  .details { margin-bottom: 12px; }
 }
-@media(prefers-reduced-motion:reduce) { .details > summary > svg:last-child { transition: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .details > summary > svg:last-child { transition: none; }
+}

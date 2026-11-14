@@ -9,7 +9,7 @@ export default async function DemoPage({ params, searchParams }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const segments = (await params).screen || ["explore"];
-  const allowed = ["explore", "food-dex", "venue-dex", "quests", "passport", "rewards", "feed", "venue"];
+  const allowed = ["explore", "food-dex", "venue-dex", "deals", "quests", "passport", "rewards", "feed", "venue"];
   if (!allowed.includes(segments[0]) || segments.length > (segments[0] === "venue" ? 2 : 1) || (segments[0] === "venue" && !segments[1])) notFound();
   const catalogue = await loadCatalogue({ mode: "demo" });
   if (segments[0] === "venue" && !catalogue.venues.some((venue) => venue.id === segments[1])) notFound();

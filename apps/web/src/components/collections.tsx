@@ -9,6 +9,7 @@ import { useSavedDishes, useSavedVenues } from "@/lib/preferences";
 import { useSavedCatalogue } from "@/lib/saved-catalogue";
 import { CatalogueStatus } from "./catalogue-status";
 import { VenueCard } from "./venue-card";
+import market from "./market-collections.module.css";
 
 export function FoodDex({ catalogue }: { catalogue: CatalogueState }) {
   const { saved, toggle } = useSavedDishes(catalogue.mode);
@@ -18,9 +19,9 @@ export function FoodDex({ catalogue }: { catalogue: CatalogueState }) {
   const dishes = catalogue.venues.flatMap((venue) => venue.dishes.map((dish) => ({ venue, dish })));
   const savedDishes = savedCatalogue.venues.flatMap((venue) => venue.dishes.map((dish) => ({ venue, dish }))).filter(({ dish }) => saved.includes(dish.id));
   const visible = view === "saved" ? savedDishes : dishes;
-  return <>
-    <div className="page-intro"><div><div className="eyebrow">Your food collection</div>
-      <h1>What would you like to try?</h1><p>Save a dish for your next meal. Verified discoveries will appear when dish confirmation is connected.</p></div>
+  return <div className={market.connected}>
+    <div className="page-intro"><div>
+      <h1>FoodDex</h1><p>Save a dish for your next meal. Verified discoveries will appear when dish confirmation is connected.</p></div>
       <Link className="secondary-button" href="/"><Compass size={17} /> Explore places <ArrowUpRight size={16} /></Link>
     </div>
     <CatalogueStatus catalogue={activeCatalogue} />
@@ -64,7 +65,7 @@ export function FoodDex({ catalogue }: { catalogue: CatalogueState }) {
       </section>
       {view === "discover" && catalogue.hasMore && <p className="inline-notice">Discovery shows dishes from the first 50 venues. Your saved list loads available dishes independently.</p>}
     </>}
-  </>;
+  </div>;
 }
 
 export function VenueDex({ catalogue }: { catalogue: CatalogueState }) {
@@ -73,8 +74,8 @@ export function VenueDex({ catalogue }: { catalogue: CatalogueState }) {
   const { catalogue: savedCatalogue, loading } = useSavedCatalogue(catalogue, saved, "venue");
   const activeCatalogue = view === "saved" ? savedCatalogue : catalogue;
   const savedVenues = savedCatalogue.venues;
-  return <>
-    <div className="page-intro"><div><div className="eyebrow">Your venue collection</div><h1>Places you want to go</h1>
+  return <div className={market.connected}>
+    <div className="page-intro"><div><h1>VenueDex</h1>
       <p>Keep a list of places to visit. Verified visits will be recorded separately.</p></div>
       <Link className="secondary-button" href="/"><Compass size={17} />Explore places<ArrowUpRight size={16} /></Link>
     </div>
@@ -107,5 +108,5 @@ export function VenueDex({ catalogue }: { catalogue: CatalogueState }) {
           <VenueCard key={venue.id} venue={venue} saved={saved.includes(venue.id)} onSave={() => toggle(venue.id)} />,
         )}</div></section>}
     </>}
-  </>;
+  </div>;
 }
