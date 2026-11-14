@@ -1,0 +1,51 @@
+.presentation, .trigger { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.trigger { padding: 0; border: 0; border-radius: 16px; background: transparent; appearance: none; cursor: pointer; touch-action: manipulation; }
+.trigger:hover { filter: drop-shadow(0 4px 5px #20344d20); }
+.trigger:focus-visible { outline: 3px solid var(--focus, #1b61db); outline-offset: 4px; }
+.avatar { position: relative; isolation: isolate; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.map { width: 100%; height: 100%; }
+.preview { width: 100%; height: 100%; }
+.portrait { width: 100%; height: 100%; }
+.canvas, .artwork, .illustration, .original { display: block; width: 100%; height: 100%; }
+.canvas { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.canvasReady { opacity: 1; }
+.artwork { position: absolute; inset: 0; transform-origin: 50% 90%; }
+.artworkHidden { visibility: hidden; animation: none !important; }
+.artworkHidden * { animation: none !important; }
+.illustration { object-fit: contain; }
+.illustration img { display: block; object-fit: contain; width: 100%; height: 100%; }
+.original { overflow: visible; }
+.originalHead { transform-origin: 32px 30px; }
+.leftArm { transform-origin: 23px 32px; }
+.rightArm { transform-origin: 39px 32px; }
+.leftLeg { transform-origin: 27px 53px; }
+.rightLeg { transform-origin: 37px 53px; }
+.illustrationHead { transform-origin: 50px 60px; }
+.illustrationLeftArm { transform-origin: 37px 65px; }
+.illustrationRightArm { transform-origin: 64px 65px; }
+.illustrationLeftLeg { transform-origin: 43px 91px; }
+.illustrationRightLeg { transform-origin: 60px 91px; }
+.moving .artwork { animation: breathe 4.2s ease-in-out infinite; }
+.moving .originalHead { animation: idleLook 8s ease-in-out infinite; }
+.moving[data-action="wave"] .rightArm { animation: wave 2.4s ease-in-out 1; }
+.moving[data-action="cheer"] .rightArm { animation: cheerRight 2.4s ease-in-out 1; }
+.moving[data-action="cheer"] .leftArm { animation: cheerLeft 2.4s ease-in-out 1; }
+.moving[data-action="cheer"] .artwork { animation: cheerBounce 2.4s ease-in-out 1; }
+.moving[data-action="look"] .originalHead { animation: lookAround 2.4s ease-in-out 1; }
+.moving.walking .leftLeg { animation: stepLeft .7s ease-in-out infinite; }
+.moving.walking .rightLeg { animation: stepRight .7s ease-in-out infinite; }
+.reduced[data-action="wave"] .rightArm { transform: rotate(-100deg); }
+.reduced[data-action="cheer"] .rightArm { transform: rotate(-100deg); }
+.reduced[data-action="cheer"] .leftArm { transform: rotate(100deg); }
+.reduced[data-action="look"] .originalHead { transform: rotate(6deg); }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes breathe { 0%,100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-1px) scaleY(1.012); } }
+@keyframes idleLook { 0%,35%,65%,100% { transform: rotate(0); } 47%,54% { transform: rotate(3deg); } }
+@keyframes wave { 0%,100% { transform: rotate(0); } 25%,75% { transform: rotate(-115deg); } 35%,55% { transform: rotate(-135deg); } 45%,65% { transform: rotate(-102deg); } }
+@keyframes cheerRight { 0%,100% { transform: rotate(0); } 25%,75% { transform: rotate(-140deg); } 40%,60% { transform: rotate(-125deg); } }
+@keyframes cheerLeft { 0%,100% { transform: rotate(0); } 25%,75% { transform: rotate(140deg); } 40%,60% { transform: rotate(125deg); } }
+@keyframes cheerBounce { 0%,100% { transform: translateY(0); } 25%,55% { transform: translateY(-5px); } 40%,70% { transform: translateY(0); } }
+@keyframes lookAround { 0%,100% { transform: rotate(0); } 30% { transform: rotate(-8deg); } 65% { transform: rotate(8deg); } }
+@keyframes stepLeft { 0%,100% { transform: rotate(-9deg); } 50% { transform: rotate(9deg); } }
+@keyframes stepRight { 0%,100% { transform: rotate(9deg); } 50% { transform: rotate(-9deg); } }
+@media(prefers-reduced-motion:reduce) { .avatar *, .trigger { animation: none !important; transition: none !important; } }

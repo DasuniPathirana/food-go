@@ -1,0 +1,161 @@
+.page, .connected {
+  --ticket-ink: var(--ink, #241b29);
+  --ticket-paper: #fffdf6;
+  --ticket-teal: #006d68;
+  --ticket-seam: #c6bcae;
+  color: var(--ticket-ink);
+}
+
+.page { width: min(1180px, 100%); margin-inline: auto; padding: clamp(22px, 3vw, 38px) clamp(16px, 4vw, 48px) 38px; }
+.heading, .connected :global(.page-intro) { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.page .heading h1, .connected :global(.page-intro) h1 {
+  margin: 0; color: var(--ticket-ink); font: 800 clamp(3.25rem, 7vw, 5.75rem)/.94 var(--font-display);
+  letter-spacing: -.025em;
+}
+.page .heading p, .connected :global(.page-intro) p { max-width: 55ch; color: var(--muted); font-size: 1.05rem; line-height: 1.4; margin: 9px 0 0; }
+.page .mapLink { flex: none; color: var(--ticket-teal); display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding-inline: 4px; font-size: .94rem; font-weight: 700; }
+.mapLink:hover, .remove:hover { text-decoration: underline; text-underline-offset: 3px; }
+.summary, .connected :global(.stat-grid) {
+  display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: center; padding: 10px 0;
+  border-block: 1px solid var(--ticket-ink); margin: 0;
+}
+.summary > span, .connected :global(.stat-card) { display: inline-flex; align-items: baseline; gap: 5px; color: var(--ticket-ink); font-size: .9rem; line-height: 1.5; }
+.summary svg, .connected :global(.stat-card) svg { align-self: center; color: var(--ticket-teal); width: 16px; height: 16px; }
+.summary strong, .connected :global(.stat-card) strong { font-family: var(--font-display); color: var(--ticket-ink); font-weight: 800; font-variant-numeric: tabular-nums; font-size: 1.3rem; line-height: 1; }
+.tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-block: 18px; }
+.page .tabs button, .connected :global(.view-toggle) button {
+  min-height: 44px; padding: 8px 15px; border: 1px solid var(--ticket-seam); border-radius: 5px; background: var(--ticket-paper);
+  font: 700 .94rem/1.2 var(--font-body); color: var(--ticket-ink);
+}
+.page .tabs button[aria-pressed="true"], .connected :global(.view-toggle) button[aria-pressed="true"] { background: var(--ticket-ink); border-color: var(--ticket-ink); color: white; }
+.page .tabs button:hover, .connected :global(.view-toggle) button:hover { border-color: var(--ticket-ink); }
+.collection { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; }
+.foodCard {
+  display: grid; grid-template-rows: auto 1fr auto; min-width: 0; border: 1px solid var(--ticket-ink); border-radius: 8px; background: var(--ticket-paper);
+}
+.foodPhoto { position: relative; min-width: 0; }
+.foodPhoto a { display: block; overflow: hidden; border-radius: 7px 7px 0 0; height: 100%; }
+.foodPhoto img { display: block; width: 100%; height: clamp(160px, 16vw, 207px); object-fit: cover; }
+.foodCard .bookmark {
+  display: grid; place-items: center; position: absolute; inset: 6px 6px auto auto; width: 44px; height: 44px; border: 0; background: transparent; color: var(--ticket-ink); padding: 0; isolation: isolate;
+}
+.bookmark::before { content: ""; position: absolute; z-index: -1; width: 33px; height: 33px; border: 1px solid var(--ticket-ink); border-radius: 50%; background: var(--ticket-paper); }
+.bookmark[aria-pressed="true"]::before, .bookmark:hover::before { background: #ffd445; }
+.foodInfo { padding: 16px 16px 13px; min-width: 0; }
+.foodInfo h2 { overflow-wrap: anywhere; }
+.page .foodInfo h2 { margin: 0; font: 800 clamp(1.55rem,2.6vw,2.35rem)/1 var(--font-display); letter-spacing: -.02em; }
+.foodInfo h2 a { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.foodInfo h2 a svg { align-self: center; color: var(--ticket-teal); }
+.foodInfo h2 a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.page .foodInfo p { margin: 7px 0 0; color: var(--ticket-ink); font-size: 1rem; line-height: 1.25; }
+.foodInfo small { display: block; color: var(--muted); margin-top: 3px; font-size: .875rem; }
+.stub {
+  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 15px;
+  border-top: 1px dashed var(--ticket-seam); background: #fff0cb; border-radius: 0 0 7px 7px; font-size: .8rem; line-height: 1.25;
+}
+.stub > * { display: inline-flex; align-items: center; gap: 4px; }
+.stub strong { white-space: nowrap; color: var(--ticket-ink); }
+.stub .collected { color: #00534e; font-weight: 700; }
+.empty { display: grid; justify-items: start; gap: 8px; margin-top: 20px; padding: clamp(18px, 3vw, 34px); border-block: 1px dashed var(--ticket-seam); }
+.empty > svg { color: var(--ticket-teal); }
+.page .empty h2 { font-size: 2rem; margin: 4px 0 0; }
+.page .empty p { margin: 0 0 8px; }
+.page .action {
+  display: inline-flex; justify-content: center; align-items: center; gap: 9px; min-height: 44px; padding: 10px 16px; border: 1px solid var(--ticket-ink);
+  border-radius: 6px; font: 700 1rem/1.2 var(--font-body); background: #ff733f; color: var(--ticket-ink);
+}
+.page .action:hover:not(:disabled) { background: #ff9362; }
+.page .action:active:not(:disabled) { background: #ffa57e; }
+.page .action:disabled { background: #f1e8d5; color: #5b524b; opacity: 1; border-color: #b6a58d; }
+.trails { display: grid; gap: 20px; }
+.route { display: grid; grid-template-columns: minmax(220px, .7fr) minmax(0, 1fr); gap: 0; border: 1px solid var(--ticket-ink); background: var(--ticket-paper); border-radius: 9px; }
+.routePhoto { position: relative; }
+.routePhoto img { display: block; width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; border-radius: 8px 0 0 8px; }
+.routeReward { position: absolute; bottom: 16px; left: 14px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--ticket-ink); padding: 5px 11px; border-radius: 4px; color: var(--ticket-ink); background: #ffd445; font: 800 1.35rem/1.2 var(--font-display); }
+.routeInfo { min-width: 0; padding: clamp(16px, 2vw, 26px); }
+.page .routeInfo h2 { margin: 0; font: 800 clamp(1.85rem, 3.5vw, 3.1rem)/1 var(--font-display); letter-spacing: -.025em; }
+.page .routeInfo p { margin-top: 8px; color: var(--muted); font-size: 1rem; line-height: 1.4; }
+.stops { display: grid; gap: 0; padding: 0; margin: 12px 0; list-style: none; }
+.stops li { position: relative; }
+.stops li + li::before { position: absolute; content: ""; height: 24px; width: 2px; bottom: 50%; left: 13px; background: var(--ticket-teal); pointer-events: none; }
+.stops li a { display: inline-flex; position: relative; align-items: center; gap: 9px; min-height: 44px; font: 650 1rem/1.18 var(--font-body); }
+.stops li a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.stops li a > span { display: grid; place-items: center; border: 2px solid var(--ticket-teal); width: 28px; height: 28px; border-radius: 50%; color: var(--ticket-teal); background: var(--ticket-paper); font: 800 .9rem/1 var(--font-body); }
+.stops li[data-visited="true"] a > span { background: var(--ticket-teal); color: white; }
+.stops li a > svg { color: var(--ticket-teal); }
+.routeFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding-top: 12px; border-top: 1px dashed var(--ticket-seam); }
+.progress { flex: 1 1 160px; display: flex; flex-wrap: wrap; gap: 2px 9px; align-items: baseline; justify-content: space-between; color: var(--muted); font-size: .83rem; }
+.progress strong { color: var(--ticket-teal); }
+.progress progress { appearance: none; width: 100%; height: 5px; border: 0; border-radius: 2px; background: #dfd7c9; color: var(--ticket-teal); accent-color: var(--ticket-teal); }
+.progress progress::-webkit-progress-bar { background: #dfd7c9; border-radius: 2px; }
+.progress progress::-webkit-progress-value { background: var(--ticket-teal); border-radius: 2px; }
+.progress progress::-moz-progress-bar { background: var(--ticket-teal); border-radius: 2px; }
+.claimed { display: inline-flex; gap: 6px; align-items: center; color: var(--ticket-teal); font-weight: 700; }
+.page .remove { min-height: 44px; padding: 0; border: 0; color: var(--ticket-teal); background: none; font-size: .9rem; }
+.boost { display: grid; grid-template-columns: clamp(115px, 20vw, 235px) 1fr; align-items: stretch; background: #ffd445; color: var(--ticket-ink); border: 1px solid var(--ticket-ink); border-radius: 8px; }
+.boostValue { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 1px dashed var(--ticket-ink); background: #ffbc3d; border-radius: 7px 0 0 7px; }
+.boostValue strong { font: 800 clamp(3.4rem,7vw,6rem)/.95 var(--font-display); font-variant-numeric: tabular-nums; }
+.boostValue span { font-weight: 800; text-transform: uppercase; font-size: .8rem; letter-spacing: .06em; }
+.boostBody { padding: clamp(15px, 3vw, 30px); }
+.page .boostBody h2 { font: 800 clamp(1.9rem,4vw,3.3rem)/1 var(--font-display); margin: 0; }
+.page .boostBody p { margin: 5px 0 14px; color: var(--ticket-ink); line-height: 1.3; }
+.boostBody .action { background: var(--ticket-ink); color: white; }
+.boostBody .action:hover:not(:disabled) { background: #483448; }
+.boostBody .action:active:not(:disabled) { background: #362737; }
+.page .listTitle { margin: 24px 0 14px; font: 800 clamp(1.7rem,3vw,2.4rem)/1.1 var(--font-display); }
+.rules { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); column-gap: 26px; margin: 0; }
+.rules > div { padding: 16px 0; border-top: 1px solid var(--ticket-seam); }
+.rules dt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 9px; color: var(--ticket-ink); font-weight: 700; }
+.rules dt > svg { color: var(--ticket-teal); align-self: center; }
+.rules dt strong { margin-left: auto; color: var(--ticket-teal); font-size: .9rem; }
+.rules dd { margin: 6px 0 0; font-size: .94rem; line-height: 1.45; color: var(--muted); }
+.page .note { margin: 20px 0 0; font-size: .875rem; color: var(--muted); }
+
+.connected :global(.stat-card) { padding: 0; border: 0; background: transparent; }
+.connected :global(.stat-card) > * { margin: 0; }
+.connected :global(.stat-card) span { flex: none; font-size: .9rem; color: var(--ticket-ink); }
+.connected :global(.view-toggle) { flex-wrap: wrap; gap: 4px; border: 0; padding: 0; background: transparent; }
+.connected :global(.empty-state) { border: 1px dashed var(--ticket-seam); background: var(--ticket-paper); border-radius: 5px; }
+.connected :global(.empty-state) > svg { color: var(--ticket-teal); }
+.connected :global(.venue-card), .connected :global(.quest-card) { border: 1px solid var(--ticket-ink); border-radius: 8px; overflow: hidden; background: var(--ticket-paper); }
+.connected :global(.venue-type) { font-size: .84rem; color: var(--ticket-teal); font-weight: 700; }
+.connected :global(.venue-body) h3, .connected :global(.quest-body) h3 { margin: 6px 0; font: 800 clamp(1.75rem,3vw,2.45rem)/1.04 var(--font-display); }
+.connected :global(.quest-meta) { border-block: 1px dashed var(--ticket-seam); padding-block: 10px; }
+.connected :global(.venue-dish) { border-top: 1px dashed var(--ticket-seam); background: #fff0cb; }
+.connected :global(.collection-card) :global(.venue-body) { padding-bottom: 16px; }
+.connected :global(.photo-label) { background: #ffd445; color: var(--ticket-ink); }
+.connected :global(.section-heading) { gap: 12px; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .collection { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 680px) {
+  .heading, .connected :global(.page-intro) { align-items: flex-start; flex-wrap: wrap; gap: 2px 12px; margin-bottom: 10px; }
+  .page .heading h1, .connected :global(.page-intro) h1 { font-size: clamp(2.9rem,14vw,4.3rem); max-width: none; }
+  .page .heading p, .connected :global(.page-intro) p { font-size: .95rem; margin-top: 6px; }
+  .page .mapLink { font-size: .88rem; padding-inline: 0; }
+  .summary, .connected :global(.stat-grid) { gap: 4px 12px; }
+  .tabs { margin-block: 13px; gap: 5px; }
+  .page .tabs button { padding-inline: 11px; }
+  .route { grid-template-columns: 1fr; }
+  .routePhoto { height: clamp(145px, 38vw, 220px); }
+  .routePhoto img { border-radius: 8px 8px 0 0; }
+  .routeFooter { gap: 12px; }
+  .routeReward { left: 12px; bottom: 10px; font-size: 1.1rem; }
+  .rules { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .collection { grid-template-columns: 1fr; gap: 12px; }
+  .foodCard { grid-template-columns: clamp(92px, 25vw, 133px) minmax(0,1fr); grid-template-rows: 1fr auto; }
+  .foodPhoto { grid-row: span 2; }
+  .foodPhoto a { border-radius: 7px 0 0 7px; }
+  .foodPhoto img { position: absolute; inset: 0; height: 100%; border-radius: inherit; }
+  .foodCard .bookmark { inset: auto auto 2px 2px; }
+  .foodInfo { padding: 12px 12px 8px; }
+  .page .foodInfo h2 { font-size: 1.55rem; }
+  .page .foodInfo p { font-size: .92rem; margin-top: 5px; }
+  .foodInfo small { font-size: .8rem; }
+  .stub { flex-wrap: wrap; gap: 3px 8px; padding: 7px 10px; border-radius: 0 0 7px 0; font-size: .78rem; }
+  .boost { grid-template-columns: minmax(75px, .4fr) minmax(0, 1fr); }
+  .boostBody .action { padding-inline: 9px; font-size: .9rem; }
+}

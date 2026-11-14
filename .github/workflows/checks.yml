@@ -1,0 +1,131 @@
+name: Project checks
+
+on:
+  push:
+    branches: [main, develop, 'codex/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Type checks, tests, build, and dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      CI: "true"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check workspace types and behavior
+        run: npm run check
+
+      - name: Check repository security conventions
+        run: npm run test:security
+
+      - name: Build the production website
+        run: npm run build:web
+
+      - name: Check the production server over loopback
+        shell: bash
+        env:
+          APP_ORIGIN: http://127.0.0.1:3000
+          FOOD_GO_CATALOGUE_MODE: demo
+          FOOD_GO_AUTH_ENABLED: "false"
+          FOOD_GO_AUTH_PRODUCTION_READY: "false"
+          FOOD_GO_COMMUNITY_ENABLED: "false"
+          FOOD_GO_PARTNER_ENABLED: "false"
+          FOOD_GO_PHONE_AUTH_ENABLED: "false"
+          FOOD_GO_SMS_ENABLED: "false"
+        run: |
+          set -euo pipefail
+          npm run start:web:local >"$RUNNER_TEMP/food-go-web.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            echo "The production server did not become healthy within 30 seconds."
+            exit 1
+          fi
+          npm run check:web
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+
+  database-policies:
+    name: Isolated database access policies
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      # This job has no hosted project access. Supabase generates local keys.
+      SUPABASE_ACCESS_TOKEN: ""
+      SUPABASE_DB_PASSWORD: ""
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      - name: Install the pinned Supabase CLI
+        run: npx --yes supabase@3.1.0 --version
+
+      - name: Start the disposable local Supabase stack
+        timeout-minutes: 20
+        shell: bash
+        run: |
+          set -euo pipefail
+          startup_log="$(mktemp)"
+          trap 'rm -f "$startup_log"' EXIT
+          # Retain Auth and Storage, whose schemas the migration requires.
+          # The CLI applies repository migrations during this fresh local start.
+          if ! npx --yes supabase@3.1.0 start \
+            --exclude realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor \
+            >"$startup_log" 2>&1; then
+            echo "The local Supabase stack failed to start. Recent diagnostic lines follow."
+            tail -n 100 "$startup_log" | grep -Eiv '(api.?key|secret|token|service_role|anon.?key|postgresql://)' || true
+            exit 1
+          fi
+          echo "The isolated local database, Auth and Storage services are ready."
+
+      - name: Run database policy, partner and community assertions
+        timeout-minutes: 5
+        # CLI 3 targets local by default; --local is not a supported flag.
+        run: npx --yes supabase@3.1.0 test db
+
+      - name: Stop the disposable local stack
+        if: always()
+        timeout-minutes: 3
+        continue-on-error: true
+        run: npx --yes supabase@3.1.0 stop --no-backup
