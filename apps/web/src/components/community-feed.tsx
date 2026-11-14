@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, BookOpen, Check, ChevronDown, Clock3, Compass, Copy, Flag, Globe2, Heart, LockKeyhole, MessageCircle, MoreHorizontal, RotateCcw, Send, Share2, ShieldCheck, Trash2, UserRound, Users, X } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, Clock3, Compass, Copy, Flag, Globe2, Heart, LockKeyhole, MessageCircle, MoreHorizontal, RotateCcw, Send, Share2, ShieldCheck, Trash2, UserRound, Users, UtensilsCrossed, X } from "lucide-react";
 import type { CommunityAuthor, CommunityFeed as FeedResult } from "@/lib/community";
 import { communityFeedSchema, communityWriteResultSchema } from "@/lib/community";
 import { createFeedPreview, PREVIEW_FEED_KEY, previewViewer, readFeedPreview, visiblePreviewPosts, type FeedPost, type FeedPreview } from "@/lib/feed-preview";
@@ -278,7 +278,15 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
   const canWrite = Boolean(viewer) && (preview || feed.status === "ready");
 
   return <div className={`${styles.community} ${demo ? styles.embedded : ""} ${passport ? styles.passportWall : ""}`}>
-    {passport ? <div className={styles.passportHeading}><h2>My wall</h2><Link href={path}>Public feed<ArrowRight size={15} /></Link></div> : <div className={styles.pageHeading}><div><h1>Community</h1><p>Food finds and stories from the neighbourhood.</p></div><Link href={explorePath} className={styles.exploreLink}><Compass size={18} />Explore the map<ArrowRight size={16} /></Link></div>}
+    {passport ? (
+      <div className={styles.passportHeading}><h2>My wall</h2><Link href={path}>Public feed<ArrowRight size={15} /></Link></div>
+    ) : (
+      <header className={styles.pageHeading}>
+        <div className={styles.conversationMark} aria-hidden="true"><UtensilsCrossed /></div>
+        <div className={styles.headingCopy}><h1>Community</h1><p>Food finds and stories from the neighbourhood.</p></div>
+        <Link href={explorePath} className={styles.exploreLink}><Compass size={18} />Explore the map<ArrowRight size={16} /></Link>
+      </header>
+    )}
     {preview && !demo && !passport && <div className={styles.previewNotice}><ShieldCheck size={18} /><p><strong>Example community.</strong> People, posts and activity are fictional. Changes stay in this browser.</p><button type="button" onClick={reset} aria-label="Reset community preview" title="Reset community preview"><RotateCcw size={15} />Reset</button>{!demo && <Link href="/feed">Public feed<ArrowRight size={14} /></Link>}</div>}
     <div className={styles.layout}>
       <div className={styles.feedColumn} ref={feedColumn}>
@@ -300,7 +308,10 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
           <header className={styles.postHeader}><Avatar author={post.author} /><div className={styles.authorCopy}><a href={`${path}?wall=${post.author.id}`} onClick={(event) => { if (!passport && !event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); navigate(post.author.id); } }}>{post.author.name}</a><p><time dateTime={post.createdAt}>{timeLabel(post.createdAt)}</time><span aria-hidden="true">·</span>{post.visibility === "private" ? <LockKeyhole size={12} aria-label="Only me" /> : <Globe2 size={12} aria-label="Public" />}{post.status !== "published" && <span className={styles.status}>{post.status === "pending" ? "Awaiting review" : "Only me"}</span>}</p></div>
             <details className={styles.options}><summary aria-label={`Post options for ${post.author.name}`}><MoreHorizontal size={20} /></summary><div onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.currentTarget.closest("details")?.removeAttribute("open"); }}>{post.author.id === viewer?.id ? <button type="button" disabled={Boolean(pending)} onClick={() => remove(post)}><Trash2 size={15} />Remove my post</button> : <><button type="button" disabled={!canWrite || Boolean(pending)} onClick={() => { setReporting(post.id); setSharing(null); }}><Flag size={15} />Report post</button><button type="button" disabled={!canWrite || Boolean(pending)} onClick={() => block(post.author)}><ShieldCheck size={15} />Block {post.author.name}</button></>}</div></details>
           </header>
-          <p className={styles.postBody}>{post.body}</p>{post.photo && <Image className={styles.postPhoto} src={post.photo.src} alt={post.photo.alt} width={900} height={620} sizes="(max-width:700px) 100vw, 650px" />}
+          <div className={post.photo ? styles.photoStory : undefined}>
+            {post.photo && <Image className={styles.postPhoto} src={post.photo.src} alt={post.photo.alt} width={900} height={620} sizes="(max-width: 620px) 100vw, 400px" />}
+            <p className={styles.postBody}>{post.body}</p>
+          </div>
           <div className={styles.postCounts}><span><Heart size={14} />{post.likeCount} {post.likeCount === 1 ? "like" : "likes"}</span><span>{post.commentCount} {post.commentCount === 1 ? "comment" : "comments"}<span aria-hidden="true"> · </span>{post.shareCount} {post.shareCount === 1 ? "share" : "shares"}{!preview && post.reachCount !== undefined && <><span aria-hidden="true"> · </span><span title="Distinct verified signed-in accounts, excluding the author">{post.reachCount} reached</span></>}</span></div>
           <div className={styles.postActions}><button type="button" onClick={() => like(post)} disabled={!canWrite || Boolean(pending) || post.status !== "published"} aria-pressed={post.liked} aria-label={`${post.liked ? "Unlike" : "Like"} post by ${post.author.name}`}><Heart size={18} fill={post.liked ? "currentColor" : "none"} />Like</button><button type="button" aria-expanded={commentsOpen.includes(post.id)} aria-controls={`comments-${post.id}`} onClick={() => setCommentsOpen((open) => open.includes(post.id) ? open.filter((id) => id !== post.id) : [...open, post.id])}><MessageCircle size={18} />Comment</button><button type="button" aria-expanded={sharing === post.id} aria-controls={`share-${post.id}`} onClick={() => { setSharing(sharing === post.id ? null : post.id); setReporting(null); }}><Share2 size={18} />Share</button></div>
           {post.status !== "published" && <p className={styles.privateNote}>{post.status === "private" ? "Only you can see this post. Private posts do not receive public likes, comments or shares." : "Only you can see this post while it waits for review. Public reactions open after approval."}</p>}
@@ -314,7 +325,19 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
         </article>; })}
         {!preview && feed.nextCursor && <button className={styles.loadMore} type="button" disabled={loading} onClick={morePosts}>{loading ? "Loading stories…" : "More stories"}<ChevronDown size={16} /></button>}
       </div>
-      {!passport && <aside className={styles.discoveryRail} aria-label="More to explore"><div className={styles.railStory}><Image src="/images/coffee.jpg" alt="Coffee and a golden pastry" width={350} height={260} /><h2>Plan your next stop.</h2><p>Keep the places and dishes you want to try together.</p><Link href={foodDexPath}><BookOpen size={16} />Open your FoodDex<ArrowRight size={15} /></Link><Link href={questPath}><Flag size={16} />Find a food trail<ArrowRight size={15} /></Link></div><div className={styles.communityNote}><ShieldCheck size={19} /><p>Share kindly. Keep personal details private. A story is not a verified check-in.</p></div><div className={styles.railLinks}><Link href="/help">Community and privacy<ArrowRight size={14} /></Link>{preview ? <Link href={demo ? "/demo/passport" : "/feed"}>{demo ? "Open your passport" : "Go to the public feed"}<ArrowRight size={14} /></Link> : <Link href="/feed-preview">Try the community preview<ArrowRight size={14} /></Link>}</div></aside>}
+      {!passport && <aside className={styles.discoveryRail} aria-label="More to explore">
+        <div className={styles.railStory}>
+          <Image src="/images/coffee.jpg" alt="Coffee and a golden pastry" width={350} height={260} />
+          <div className={styles.railCopy}>
+            <h2>Plan your next stop.</h2>
+            <p>Keep the places and dishes you want to try together.</p>
+            <Link href={foodDexPath}><BookOpen size={16} />Open your FoodDex<ArrowRight size={15} /></Link>
+            <Link href={questPath}><Flag size={16} />Find a food trail<ArrowRight size={15} /></Link>
+          </div>
+        </div>
+        <div className={styles.communityNote}><ShieldCheck size={19} /><p>Share kindly. Keep personal details private. A story is not a verified check-in.</p></div>
+        <div className={styles.railLinks}><Link href="/help">Community and privacy<ArrowRight size={14} /></Link>{preview ? <Link href={demo ? "/demo/passport" : "/feed"}>{demo ? "Open your passport" : "Go to the public feed"}<ArrowRight size={14} /></Link> : <Link href="/feed-preview">Try the community preview<ArrowRight size={14} /></Link>}</div>
+      </aside>}
     </div>
   </div>;
 }

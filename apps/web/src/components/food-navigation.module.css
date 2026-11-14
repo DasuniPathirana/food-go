@@ -1,0 +1,73 @@
+.directory {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2px, .55vw, 9px);
+  margin-inline: auto;
+}
+.directory a, .dock a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.directory a {
+  min-height: 44px;
+  padding: 6px clamp(7px, .85vw, 15px);
+  gap: 7px;
+  font: 700 18px/1 var(--font-display);
+  letter-spacing: .012em;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.directory a:hover { background: #fff9ee9c; }
+.directory a[aria-current] { background: var(--ink); color: var(--canvas); }
+.directory a[aria-current] svg { color: var(--sunny); }
+.dock { display: none; }
+@media (min-width: 761px) and (max-width: 940px) {
+  .directory { gap: 1px; }
+  .directory a { padding-inline: 8px; font-size: 17px; gap: 5px; }
+  .directory a svg { width: 16px; }
+}
+@media (max-width: 760px) {
+  .directory { display: none; }
+  .dock {
+    position: fixed;
+    z-index: 45;
+    inset: auto 0 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 4px 8px calc(5px + env(safe-area-inset-bottom));
+    background: var(--canvas);
+    border-top: 1px solid var(--ink);
+    box-shadow: 0 -3px 12px #241b290a;
+  }
+  .dock a {
+    min-height: 55px;
+    flex-direction: column;
+    gap: 2px;
+    font: 650 13px/1.1 var(--font-body);
+    position: relative;
+    border-radius: 8px;
+  }
+  .dock a > svg { width: 32px; height: 28px; padding: 3px; }
+  .dock a[aria-current] { color: var(--petrol); font-weight: 800; }
+  .dock a[aria-current]::before {
+    content: "";
+    position: absolute;
+    inset: -5px 24% auto;
+    height: 3px;
+    background: var(--petrol);
+  }
+  .dock a.explore > svg {
+    border-radius: 12px;
+    background: var(--sunny);
+    color: var(--ink);
+    height: 32px;
+    width: 43px;
+    padding: 4px;
+  }
+  .dock a.explore[aria-current] > svg { color: var(--sunny); background: var(--ink); }
+}

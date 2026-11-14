@@ -77,7 +77,7 @@ export function ExplorerProfile({
       </div>
       <CatalogueStatus catalogue={catalogue} />
       <div className="profile-grid">
-        <section className="profile-card" aria-labelledby="guest-profile-title">
+        <section className={`profile-card ${passportStyles.connectedCover}`} aria-labelledby="guest-profile-title">
           <span className="avatar">
             <UserRound size={28} />
           </span>

@@ -3,36 +3,6 @@
 @font-face { font-family: "Bricolage Grotesque"; src: url("/fonts/bricolage-grotesque-variable.ttf") format("truetype"); font-style: normal; font-weight: 200 800; font-display: swap; }
 @font-face { font-family: "Source Sans 3"; src: url("/fonts/source-sans-3-variable.ttf") format("truetype"); font-style: normal; font-weight: 200 900; font-display: swap; }
 
-/* Daylight adventure: saturated food colours on warm, readable surfaces. */
-:root {
-  color-scheme: light;
-  --font-display: Arial, Helvetica, sans-serif;
-  --font-body: Arial, Helvetica, sans-serif;
-  --canvas: #fffefa;
-  --paper: #ffffff;
-  --surface-raised: #f4f3ed;
-  --ink: #111111;
-  --forest: #111111;
-  --muted: #414141;
-  --line: #dddcd4;
-  --line-strong: #8c8d82;
-  --sage-light: #eaf8f5;
-  --sage: #8de4da;
-  --tomato: #c73527;
-  --accent: #f26a4f;
-  --accent-ink: #252522;
-  --accent-hover: #f58065;
-  --sunny: #f4ce55;
-  --xp: #f4ce55;
-  --coral: #f26a4f;
-  --turquoise: #337363;
-  --link: #2459d3;
-  --focus: #2459d3;
-  --danger: #b93128;
-  --shadow-control: 0 3px 8px #20344d12;
-  --shadow-panel: 0 8px 24px #20344d0d;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -3329,7 +3299,7 @@ h3 {
 body { caret-color: var(--link); }
 ::selection { background: var(--accent); color: var(--accent-ink); }
 * { scrollbar-color: #8593a2 var(--canvas); }
-.site-header { background: var(--paper); border-bottom: 1px solid var(--line); }
+.site-header { background: var(--sunny); border-bottom: 1px solid var(--ink); }
 .header-inner { height: 76px; }
 .skip-link { background: var(--accent); color: var(--accent-ink); }
 .brand { color: var(--ink); font-family: var(--font-display); font-weight: 600; letter-spacing: -.035em; }
@@ -3351,14 +3321,14 @@ body { caret-color: var(--link); }
 .preview-dot, .edition-mark { background: var(--tomato); }
 .site-footer strong { color: var(--ink); }
 .site-footer { color: var(--muted); }
-.primary-button, .secondary-button { border-radius: 12px; font-size: 13px; font-weight: 800; gap: 8px; }
-.primary-button { background: var(--accent); color: var(--accent-ink); border: 1px solid #d85237; box-shadow: var(--shadow-control); }
+.primary-button, .secondary-button { border-radius: 9px; font-size: 15px; font-weight: 750; gap: 8px; line-height: 1.2; }
+.primary-button { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--ink); box-shadow: var(--shadow-control); }
 .primary-button:hover { background: var(--accent-hover); box-shadow: 0 4px 12px #20344d1a; }
 .secondary-button { color: var(--ink); border-color: var(--line-strong); background: var(--paper); }
 .secondary-button:hover { background: var(--surface-raised); border-color: var(--ink); }
 .primary-button:active, .secondary-button:active { box-shadow: none; }
 .text-button, .place-details, .story-link, .intro-trail-link strong, .back-link { color: var(--link); }
-.discovery-intro h1, .page-intro h1, .venue-detail-copy h1, .partner-hero h1, .auth-intro h1 { font-family: var(--font-display); font-weight: 600; letter-spacing: -.025em; }
+.discovery-intro h1, .page-intro h1, .venue-detail-copy h1, .partner-hero h1, .auth-intro h1 { font-family: var(--font-display); font-weight: 800; line-height: .99; letter-spacing: -.015em; }
 .edition-label, .eyebrow { font-family: var(--font-body); }
 .search-bar { border-color: var(--line-strong); background: var(--paper); border-radius: 14px; box-shadow: var(--shadow-control); }
 .discovery-search { color: var(--muted); }
@@ -3439,3 +3409,13 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--link); }
 h1,h2,h3 { font-optical-sizing: auto; }
 
 .brand-go { font-weight: inherit; }
+.brand-icon, .brand-go, .brand-dot { color: var(--petrol); }
+.header-inner { max-width: 1600px; }
+.site-header .brand { color: var(--ink); }
+.site-header .account-entry { border-radius: 8px; background: var(--ink); color: var(--canvas); }
+.preview-strip { background: var(--canvas); color: var(--ink); font: 650 13px/1.3 var(--font-body); }
+.preview-strip a { color: var(--link); text-decoration-thickness: 1px; }
+@media (max-width: 760px) {
+  .preview-strip { font-size: 12px; gap: 6px; padding-inline: 15px; }
+  .header-inner { padding-inline: 16px; }
+}

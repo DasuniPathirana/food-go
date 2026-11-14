@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bookmark, Building2, ChevronDown, Compass, Footprints, Hand, LocateFixed, MapPin, Minus, Pause, PersonStanding, Play, Plus, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bookmark, Building2, Check, ChevronDown, Compass, Footprints, Hand, LocateFixed, MapPin, Minus, Pause, PersonStanding, Play, Plus, SlidersHorizontal, Store, X } from "lucide-react";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
 import { venueHref } from "@/lib/catalogue-contracts";
 import { illustratedMapStops } from "@/lib/explore-stops";
@@ -22,6 +22,7 @@ type Props = {
   overlay?: ReactNode;
   sheet?: ReactNode;
   resultsLabel?: string;
+  explorerName?: string;
   routeVenueId?: string;
   routeArrived?: boolean;
   venueLink?: (venue: CatalogueVenue) => string;
@@ -35,7 +36,7 @@ const ambience = [
 ];
 
 /** The approved prototype scene. It makes no map, GPS, visit, or reward claim. */
-export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, sheet, resultsLabel = "Places to explore", routeVenueId, routeArrived = false, venueLink = venueHref, selectionPanel = true }: Props) {
+export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, sheet, resultsLabel = "Places to explore", explorerName = "Preview explorer", routeVenueId, routeArrived = false, venueLink = venueHref, selectionPanel = true }: Props) {
   const id = useId();
   const frame = useRef<HTMLElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
@@ -177,7 +178,7 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
         <Image className={styles["map-base"]} src="/images/adventure/neighbourhood.svg" alt="" fill sizes="100vw" loading="eager" draggable={false} unoptimized />
         <div className={styles.mapPlane}>
         {destination && <svg className={styles["map-route"]} viewBox="0 0 1500 1000" preserveAspectRatio="none" aria-hidden="true">
-          {["#fffdf4", "#46775c"].map((stroke, index) => <path key={stroke} d={`M${player.x * 15} ${player.y * 10} L${player.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${destination.y * 10}`}
+          {["#fff9ee", "#006d68"].map((stroke, index) => <path key={stroke} d={`M${player.x * 15} ${player.y * 10} L${player.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${destination.y * 10}`}
             fill="none" stroke={stroke} strokeWidth={index ? 5 : 10} strokeDasharray={index ? "3 13" : undefined} strokeLinecap="round" strokeLinejoin="round" />)}
         </svg>}
         {stops.map((stop) => <button type="button" key={stop.id} className={`${styles["map-pin"]} ${targetStop?.id === stop.id ? styles.selected : ""}`}
@@ -188,8 +189,9 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
           aria-label={stop.isBuilding ? `Browse ${stop.venues.length} example ${stop.venues.length === 1 ? "shop" : "shops"} in ${stop.name}` : `Select example venue ${stop.name}`}
           aria-pressed={targetStop?.id === stop.id} aria-expanded={stop.isBuilding ? expanded === "building" && buildingId === stop.id : undefined}
           aria-controls={stop.isBuilding ? `${id}-building` : undefined}>
-          <span className={styles["pin-xp"]}>{stop.isBuilding ? `${stop.venues.length} ${stop.venues.length === 1 ? "SHOP" : "SHOPS"}` : "EXAMPLE"}</span>
-          <span className={`${styles["pin-photo"]} ${stop.isBuilding ? styles.buildingPhoto : ""}`}>{stop.isBuilding ? <Building2 size={29} aria-hidden="true" /> : <Image src={stop.venues[0].image} alt="" width={80} height={80} draggable={false} />}</span>
+          {stop.isBuilding && <span className={styles.shopCount}>{stop.venues.length} {stop.venues.length === 1 ? "shop" : "shops"}</span>}
+          <span className={`${styles["pin-photo"]} ${stop.isBuilding ? styles.buildingPhoto : ""}`}>{stop.isBuilding ? <Store size={29} aria-hidden="true" /> : <Image src={stop.venues[0].image} alt="" width={80} height={80} draggable={false} />}</span>
+          {targetStop?.id === stop.id && <span className={styles.selectionTick} aria-hidden="true"><Check size={12} strokeWidth={3.5} /></span>}
           <span className={styles["pin-label"]}>{stop.name}</span>
         </button>)}
         {ambience.map((item, index) => <span key={item.icon} className={styles["wild-token"]} style={{ left: `${item.x}%`, top: `${item.y}%`, animationDelay: `${index * -.8}s` }} aria-hidden="true">
@@ -197,7 +199,7 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
         </span>)}
         <div className={`${styles.explorer} ${preferences.avatarId !== "explorer" ? styles.threeExplorer : ""}`} style={{ left: `${player.x}%`, top: `${player.y}%` }}>
           <span className={styles.radar} aria-hidden="true" /><div className={styles.avatarFigure}><ExplorerAvatar avatarId={preferences.avatarId} action={avatarAction} actionToken={avatarToken} walking={walking} animate={animate && (preferences.idleMotion || avatarAction !== "idle" || walking)} onActivate={() => playAvatar("wave")} /></div>
-          <span className={styles["explorer-name"]}>PREVIEW EXPLORER</span>
+          <span className={styles["explorer-name"]} title={explorerName}>{explorerName}</span>
         </div>
         </div>
       </div>

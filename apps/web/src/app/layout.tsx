@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { SiteShell } from "@/components/site-shell";
 import { getAuthState } from "@/lib/auth/server";
 import { getCatalogueMode } from "@/lib/catalogue-server";
+import "@fontsource/barlow-condensed/latin-700.css";
+import "@fontsource/barlow-condensed/latin-800.css";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#fffefa",
+  themeColor: "#ffd445",
 };
 export default async function RootLayout({
   children,

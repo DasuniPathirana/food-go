@@ -1,0 +1,249 @@
+.page {
+  --ticket-ink: var(--ink, #241b29);
+  --ticket-paper: #fffdf6;
+  --ticket-teal: #006d68;
+  --ticket-seam: #c6bcae;
+  color: var(--ticket-ink);
+  width: min(1180px, 100%);
+  margin-inline: auto;
+  padding: clamp(22px, 3vw, 38px) clamp(16px, 4vw, 48px) 38px;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.heading h1 {
+  margin: 0;
+  color: var(--ticket-ink);
+  font: 800 clamp(3.25rem, 7vw, 5.75rem)/0.94 var(--font-display);
+  letter-spacing: -0.025em;
+}
+
+.heading p {
+  max-width: 55ch;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.4;
+  margin: 9px 0 0;
+}
+
+.mapLink {
+  flex: none;
+  color: var(--ticket-teal);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+  padding-inline: 4px;
+  font-size: 0.94rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mapLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  align-items: center;
+  padding: 10px 0;
+  border-block: 1px solid var(--ticket-ink);
+  margin: 0;
+}
+
+.summary > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--ticket-ink);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.summary svg {
+  align-self: center;
+  color: var(--ticket-teal);
+  width: 16px;
+  height: 16px;
+}
+
+.summary strong {
+  font-family: var(--font-display);
+  color: var(--ticket-ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.collection {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.dealCard {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+  border: 1px solid var(--ticket-ink);
+  border-radius: 8px;
+  background: var(--ticket-paper);
+  overflow: hidden;
+}
+
+.dealPhoto {
+  position: relative;
+  min-width: 0;
+  height: clamp(160px, 16vw, 207px);
+  overflow: hidden;
+}
+
+.dealPhoto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dealInfo {
+  padding: 16px 16px 13px;
+  min-width: 0;
+}
+
+.dealInfo h2 {
+  margin: 0;
+  font: 800 clamp(1.4rem, 2.2vw, 2rem)/1.1 var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--ticket-ink);
+  overflow-wrap: anywhere;
+}
+
+.dealInfo p {
+  margin: 7px 0 0;
+  color: var(--ticket-ink);
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.dealInfo small {
+  display: block;
+  color: var(--muted);
+  margin-top: 3px;
+  font-size: 0.875rem;
+}
+
+.stub {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 15px;
+  border-top: 1px dashed var(--ticket-seam);
+  background: #fff0cb;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.stub > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stub strong {
+  white-space: nowrap;
+  color: var(--ticket-ink);
+}
+
+.note {
+  margin: 20px 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .collection {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin-bottom: 10px;
+  }
+  .heading h1 {
+    font-size: clamp(2.9rem, 14vw, 4.3rem);
+  }
+  .heading p {
+    font-size: 0.95rem;
+    margin-top: 6px;
+  }
+  .mapLink {
+    font-size: 0.88rem;
+    padding-inline: 0;
+  }
+  .summary {
+    gap: 4px 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  .collection {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .dealCard {
+    grid-template-columns: clamp(100px, 28vw, 135px) minmax(0, 1fr);
+    grid-template-rows: 1fr auto;
+    overflow: hidden;
+  }
+  .dealPhoto {
+    grid-row: span 2;
+    height: 100%;
+    min-height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .dealPhoto img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .dealInfo {
+    padding: 12px 12px 8px;
+  }
+  .dealInfo h2 {
+    font-size: 1.45rem;
+  }
+  .dealInfo p {
+    font-size: 0.92rem;
+    margin-top: 4px;
+  }
+  .dealInfo small {
+    font-size: 0.8rem;
+  }
+  .stub {
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    border-top: 1px dashed var(--ticket-seam);
+  }
+}
