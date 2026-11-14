@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T00:18:20.978Z",
+  "title": "Design System: Food Go",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "canvas"
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "surface"
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "surface raised"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "ink"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "muted"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "line"
+      },
+      "coral": {
+        "role": "accent",
+        "displayName": "coral"
+      },
+      "primary": {
+        "role": "accent",
+        "displayName": "primary"
+      },
+      "gold": {
+        "role": "accent",
+        "displayName": "gold"
+      },
+      "focus": {
+        "role": "accent",
+        "displayName": "focus"
+      },
+      "success": {
+        "role": "accent",
+        "displayName": "completion green"
+      },
+      "passport-cover": {
+        "role": "neutral",
+        "displayName": "Passport cover"
+      },
+      "forest": {
+        "role": "neutral",
+        "displayName": "Near-black functional text alias"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Arial/Helvetica headings",
+        "purpose": "Familiar functional headings, weight 700; demo titles cap at 40px desktop and 30px phone."
+      },
+      "body": {
+        "displayName": "Arial/Helvetica reading",
+        "purpose": "16px/1.55 in the demo; 15px/1.6 in the shared catalogue. Stories, forms and navigation."
+      },
+      "label": {
+        "displayName": "Arial/Helvetica action labels",
+        "purpose": "Usually 15px/1.4, weight 600. Compact metadata uses 12–14px."
+      },
+      "brand": {
+        "displayName": "Bricolage Grotesque wordmark",
+        "purpose": "Original Food Go wordmark only; self-hosted licensed font, weight 800."
+      }
+    },
+    "shadows": [
+      {
+        "name": "map-dock-lift",
+        "value": "0 5px 18px #284c2420",
+        "purpose": "Separates optional-panel triggers from the scene."
+      },
+      {
+        "name": "photo-pin-depth",
+        "value": "0 4px 0 #6b794b, 0 9px 15px #294b3529",
+        "purpose": "Preserves the approved dimensional map marker."
+      }
+    ],
+    "motion": [
+      {
+        "name": "map-pan",
+        "value": "transform .45s ease",
+        "purpose": "World position and zoom transitions; disabled during dragging."
+      },
+      {
+        "name": "explorer-move",
+        "value": "left .6s ease, top .6s ease",
+        "purpose": "Simulated explorer movement."
+      },
+      {
+        "name": "ambient-float",
+        "value": "4s ease-in-out infinite",
+        "purpose": "Floating food tokens; paused on request, offscreen or hidden page."
+      },
+      {
+        "name": "radar-pulse",
+        "value": "4s ease-out infinite",
+        "purpose": "Explorer radar loop; removed for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-location",
+        "value": "1180px"
+      },
+      {
+        "name": "wrapped-masthead",
+        "value": "950px"
+      },
+      {
+        "name": "bottom-navigation",
+        "value": "760px"
+      },
+      {
+        "name": "map-phone",
+        "value": "700px"
+      },
+      {
+        "name": "narrow-phone",
+        "value": "370px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Guide action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Tomato action on a fresh light surface.",
+      "html": "<button class=\"ds-action\">Start trail</button>",
+      "css": ".ds-action{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 17px;border:1px solid #c73527;border-radius:5px;background:#c73527;color:white;font:600 15px/1.4 Arial,Helvetica,sans-serif}.ds-action:focus-visible{outline:3px solid #2459d3;outline-offset:4px}"
+    },
+    {
+      "name": "Example XP",
+      "kind": "badge",
+      "description": "Butter-yellow progression with readable dark ink. Example value only.",
+      "html": "<span class=\"ds-xp\">320 XP</span>",
+      "css": ".ds-xp{display:inline-flex;align-items:center;min-height:44px;padding:8px 11px;border:1px solid #eed584;border-radius:5px;background:#fae8a8;color:#111111;font:700 16px Arial,Helvetica,sans-serif}"
+    },
+    {
+      "name": "Passport cover",
+      "kind": "panel",
+      "description": "A contained deep-green identity surface within the light theme.",
+      "html": "<section class=\"ds-passport\"><h2>Alex</h2><p>Example explorer progress</p></section>",
+      "css": ".ds-passport{padding:22px 26px;border:1px solid #303a31;border-radius:7px;background:#303a31;color:#fffef5}.ds-passport h2{font:700 34px/1.15 Arial,Helvetica,sans-serif}.ds-passport p{color:#d7dacd;font:400 14px/1.55 Arial,Helvetica,sans-serif}"
+    },
+    {
+      "name": "Original wordmark",
+      "kind": "brand",
+      "description": "Expressive lettering stays in the Food Go mark while functional text uses Arial/Helvetica.",
+      "html": "<span class=\"ds-brand\">foodgo.</span>",
+      "css": ".ds-brand{font:800 35px/1 \"Bricolage Grotesque\",Arial,Helvetica,sans-serif;color:#111111;letter-spacing:-.04em}"
+    }
+  ],
+  "narrative": {
+    "overview": "A neighbourhood food guide for all ages: fresh white surfaces, near-black functional text, tomato actions and butter-yellow progression. Familiar Arial/Helvetica headings and reading, with Bricolage Grotesque reserved for the original wordmark. The approved interactive map remains the visual anchor.",
+    "rules": [
+      "Desktop uses a horizontal masthead; Explore stays first and centred in phone navigation, with Feed prominent.",
+      "Fit the complete map in the available viewport; keep walking inline and optional details below the scene.",
+      "Passport places the owner wall and composer below a compact identity cover; additional game/profile detail expands on request.",
+      "Each page uses one natural document scroll with compact first sections. Longer feeds and collections continue below; do not freeze all content into one viewport.",
+      "Feed is story-led, trails pair photography with routes, and collections use open captions.",
+      "Demo activity stays separate from connected verified-account progression."
+    ],
+    "dos": [
+      "Use tomato for decisive actions, yellow for XP, #111111 for functional reading and #414141 for secondary text.",
+      "Keep standalone header actions at least 44px, visible focus, labelled controls and reduced-motion fallbacks.",
+      "Use credited food photography and preserve the original illustrated map and avatar options."
+    ],
+    "donts": [
+      "Do not present simulated visits or audience counts as verified.",
+      "Do not modify the original prototype.",
+      "Do not treat screenshots or contrast pairs as proof of production readiness or physical-device performance."
+    ]
+  }
+}

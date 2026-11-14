@@ -1,0 +1,17 @@
+{
+  "name": "@food-go/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./demo-game": "./src/demo-game.ts",
+    "./avatar": "./src/avatar.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "scripts": {
+    "test": "tsx --test src/*.test.ts"
+  }
+}

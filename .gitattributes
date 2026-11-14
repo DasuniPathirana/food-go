@@ -1,0 +1,2 @@
+# Retain the original vendor licence text, including its upstream whitespace.
+apps/web/public/fonts/*OFL*.txt -whitespace

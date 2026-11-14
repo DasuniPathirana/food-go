@@ -1,0 +1,6 @@
+{
+  "name": "food-go-client-prototype",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node server.mjs", "check": "node --check app.js && node --check map.js && node --check partner.js && node --check server.mjs" }
+}

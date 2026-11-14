@@ -1,0 +1,21 @@
+# Hosted development settings only. Keep separate from the local Docker stack.
+# The target project is supplied explicitly to every config command.
+project_id = "food-go-hosted-development"
+
+[api]
+# Future tables need explicit reviewed grants before Data API clients can use them.
+auto_expose_new_tables = false
+
+[auth]
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = [
+  "http://127.0.0.1:3000/auth/callback?next=/profile",
+  "http://127.0.0.1:3000/auth/callback?next=/auth/reset-password"
+]
+# Registration stays closed until mail delivery and abuse controls are tested.
+enable_signup = false
+minimum_password_length = 12
+
+[auth.email]
+enable_confirmations = true
+secure_password_change = true
