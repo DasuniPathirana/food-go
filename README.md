@@ -4,6 +4,10 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
+Explore opens with real Melbourne aerial photography, satellite imagery and 3D buildings. Select any point for directions. Choose Adventure to play the illustrated map. Feed, collections, Deals and Passport share the market-signage design. [Map coverage and demo walkthrough](docs/progress/14-melbourne-geography.md).
+
+## Earlier milestones
+
 Milestone 11 fits the complete Explore scene within the available browser section, replaces the separate Walk panel with an inline arrow pad, and exposes selected-place external map links. Fictional venues open an explicitly labelled real area; complete published addresses retain exact directions. See [map behaviour and verification](docs/progress/11-map-fit-and-navigation.md).
 
 Milestone 10 refreshes the browser experience as a neighbourhood food guide: a white canvas, dark ink, tomato actions, butter-yellow XP, Bricolage Grotesque headings and Source Sans 3 reading text. A horizontal desktop masthead gives the approved map more space. Feed shows stories sooner; photographic trails, open collections and the Passport cover have distinct layouts. The game, social and optional avatar flows remain available. See [the design system](DESIGN.md), [primary-source UI research](docs/research/10-distinctive-ui-research.md) and [delivery verification](docs/progress/10-neighbourhood-guide.md). Start the local browser demo at **`/demo/explore`**. This is a browser UI refresh, not a production release or native redesign.
@@ -28,7 +32,7 @@ Milestone 02 revised the website and React Native interface with a warm paper pa
 
 The website now includes sign-in, registration and recovery screens with server-side Supabase account integration. Account services remain disabled until sender configuration, controlled delivery tests and connected account release checks pass. Public release also requires the remaining account safeguards and connected tests described in [the identity guide](docs/security/identity.md).
 
-With partner accounts disabled, the venue form remains an in-memory preview. With configured verified accounts and `FOOD_GO_PARTNER_ENABLED=true`, it saves private drafts atomically and lists them in the partner dashboard. Saving does not verify ownership or publish a venue. Venue and dish bookmarks have separate browser stores and do not sync between devices. Restaurant ownership review, saved-draft editing, payments, live maps, uploads, rewards and administration workflows remain unfinished.
+With partner accounts disabled, the venue form remains an in-memory preview. With configured verified accounts and `FOOD_GO_PARTNER_ENABLED=true`, it saves private drafts atomically and lists them in the partner dashboard. Saving does not verify ownership or publish a venue. Venue and dish bookmarks have separate browser stores and do not sync between devices. Restaurant ownership review, saved-draft editing, payments, nationwide venue coverage, uploads, rewards and administration workflows remain unfinished.
 
 ## Run locally
 

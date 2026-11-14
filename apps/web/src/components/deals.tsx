@@ -82,7 +82,7 @@ export function DemoDeals() {
           <h1>Deals</h1>
           <p>Discover delicious offers from local venues near you.</p>
         </div>
-        <Link className={styles.mapLink} href="/demo/explore">
+        <Link className={styles.mapLink} href="/demo/explore?map=adventure">
           <Compass size={17} /> Find a place <Zap size={15} />
         </Link>
       </header>

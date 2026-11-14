@@ -20,6 +20,6 @@ export function CatalogueStatus({ catalogue }: { catalogue: CatalogueState }) {
   return <p className="inline-notice"><ShieldCheck size={18} />
     {catalogue.mode === "demo"
       ? "Example catalogue. All venues and dishes are fictional. Saves stay on this browser."
-      : "Published venue catalogue. Saves stay on this browser. Live maps and verified check-ins are not connected."}
+      : "Published venue catalogue. Saves stay on this browser. Places with a geographic position appear on the real map."}
   </p>;
 }

@@ -4,6 +4,10 @@ Use `apps/web/.env.example` for local names and safe defaults. In hosting, set v
 
 ## Credential-free demonstration
 
+The Melbourne real map ships with aerial photography, a dated satellite image and surveyed building heights. The browser downloads these assets from the deployment itself. No map provider account is required for this coverage.
+
+For satellite imagery outside central Melbourne, create an origin-restricted public MapTiler browser key on a suitable plan. Set `NEXT_PUBLIC_MAPTILER_KEY` for the intended hosting environment and rebuild. This value is public in the browser bundle. Verify satellite tiles, attribution, usage limits and allowed deployment origins on that environment. The wider imagery layer does not extend the bundled 3D building survey. [Satellite dataset](https://docs.maptiler.com/schema-raster/satellite/)
+
 These values make the deployed site an explicit demo with live account services closed:
 
 ```dotenv

@@ -58,12 +58,10 @@ export default function HelpPage() {
           <MapPin size={25} />
           <h2>Your location stays yours</h2>
           <p>
-            {demo ? "The example map does not track your location or confirm a visit. Melbourne is the starting example area."
-              : "Explore keeps an interactive illustrated neighbourhood alongside published venue results. The illustration is not geographic data and does not track you. Published venues with a complete address offer links to Google Maps or Apple Maps."}
+            Explore starts in central Melbourne. Choose an aerial photo or satellite image, then select a place or drop a pin to open directions in Google Maps or Apple Maps.
           </p>
           <p>
-            Live exploration will request location permission when it is needed
-            and provide suburb or postcode search as an alternative.
+            The map uses the point you select. Your location stays private. Choose Adventure to walk through the fictional neighbourhood and collect demo XP.
           </p>
           <Link className="text-button" href="/venue-dex">
             See how places are collected

@@ -3409,6 +3409,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--link); }
 h1,h2,h3 { font-optical-sizing: auto; }
 
 .brand-go { font-weight: inherit; }
+.main-content.discovery-main:has([aria-label="Geographic exploration"]) { padding: 0; max-width: none; }
 .brand-icon, .brand-go, .brand-dot { color: var(--petrol); }
 .header-inner { max-width: 1600px; }
 .site-header .brand { color: var(--ink); }

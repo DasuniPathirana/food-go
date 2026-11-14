@@ -14,6 +14,6 @@ export default async function DemoPage({ params, searchParams }: {
   const catalogue = await loadCatalogue({ mode: "demo" });
   if (segments[0] === "venue" && !catalogue.venues.some((venue) => venue.id === segments[1])) notFound();
   const query = await searchParams;
-  return <DemoAdventure screen={segments[0]} venueId={segments[1]} venues={catalogue.venues}
+  return <DemoAdventure screen={segments[0]} venueId={segments[1]} venues={catalogue.venues} realMap={query.map !== "adventure"}
     initialWall={typeof query.wall === "string" ? query.wall : "public"} initialPost={typeof query.post === "string" ? query.post : undefined} />;
 }

@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Award, Bell, BookOpen, Bookmark, Building2, Check, ChevronDown, ChevronRight, Compass, Flag, Gift, LockKeyhole, MapPin, MessagesSquare, Navigation, QrCode, RotateCcw, Search, Settings2, Sparkles, Star, Store, UserRound, X, Zap } from "lucide-react";
 import { AdventureMap } from "./adventure-map";
+import { GeographicExplore } from "./geographic-explore";
+import { MapModeNav } from "./map-mode-nav";
+import atlasStyles from "./geographic-explore.module.css";
 import { DemoCollection, DemoRewards, DemoTrails } from "./market-collections";
 import { DemoDeals } from "./deals";
 import { CommunityFeed } from "./community-feed";
@@ -22,7 +25,7 @@ import { venueAreaMaps } from "@/lib/directions";
 import styles from "./demo-adventure.module.css";
 import passportStyles from "./passport-wall.module.css";
 
-const href = (id: string) => `/demo/${id}`;
+const href = (id: string) => id === "explore" ? "/demo/explore?map=adventure" : `/demo/${id}`;
 const venueHref = (venue: CatalogueVenue) => href(`venue/${venue.id}`);
 type Dispatch = (action: DemoGameAction) => DemoGameState;
 
@@ -56,7 +59,7 @@ function StopActions({ venue, state, dispatch, compact = false }: { venue: Catal
   </section>;
 }
 
-export function DemoAdventure({ screen, venueId, venues, initialWall = "public", initialPost }: { screen: string; venueId?: string; venues: CatalogueVenue[]; initialWall?: string; initialPost?: string }) {
+export function DemoAdventure({ screen, venueId, venues, realMap, initialWall = "public", initialPost }: { screen: string; venueId?: string; venues: CatalogueVenue[]; realMap: boolean; initialWall?: string; initialPost?: string }) {
   const { preferences: avatarPreferences } = useAvatarPreferences();
   const { state, dispatch: send, progress, ready, notice, persistent } = useDemoGame();
   const path = usePathname();
@@ -121,8 +124,8 @@ export function DemoAdventure({ screen, venueId, venues, initialWall = "public",
     <a className={styles.skip} href="#demo-main">Skip to content</a>
     <div className={styles.workspace}>
       <header className={styles.header}>
-        <Link href={href("explore")} className={styles.mastheadBrand} aria-label="Food Go Explore"><Brand /></Link>
-        <div className={styles.location}><MapPin size={18} /><span>Melbourne<small>Illustrated neighbourhood</small></span></div>
+        <Link href="/demo/explore" className={styles.mastheadBrand} aria-label="Food Go Explore"><Brand /></Link>
+        <div className={styles.location}><MapPin size={18} /><span>Melbourne<small>{screen === "explore" && realMap ? "Victoria, Australia" : "Illustrated neighbourhood"}</small></span></div>
         <FoodNavigation pathname={path} demo />
         <div className={styles.headerActions}>
           <Link className={styles.xpPill} href={href("passport")} aria-label={`Open Passport, ${progress.xp} demo XP`}>
@@ -137,7 +140,9 @@ export function DemoAdventure({ screen, venueId, venues, initialWall = "public",
 
       {notifications && <section className={styles.notifications} aria-label="Demo notifications"><div className={styles.sectionTitle}><h2>Good things on your radar</h2><button className={styles.roundButton} onClick={() => setNotifications(false)} aria-label="Close notifications"><X size={18} /></button></div><Link href={href("quests")} onClick={() => setNotifications(false)}><Flag size={21} /><span><strong>{completeQuest ? "Your trail reward is ready" : mission.title}</strong><small>{completeQuest ? "Open food trails and claim your example XP." : "Open your trail and choose the next stop."}</small><ArrowRight size={16} /></span></Link><Link href={href("rewards")} onClick={() => setNotifications(false)}><Gift size={21} /><span><strong>{dailyClaimed ? "Daily boost collected" : "25 demo XP is waiting"}</strong><small>Daily claims use the Australia/Sydney calendar.</small></span></Link></section>}
       <main id="demo-main" className={styles.main} key={path}>
-        {screen === "explore" && <>
+        {screen === "explore" && realMap && <GeographicExplore basePath="/demo/explore" />}
+        {screen === "explore" && !realMap && <>
+          <div className={atlasStyles.adventureBar}><MapModeNav geographic={false} basePath="/demo/explore" /></div>
           <div className={styles.mapWrap}><AdventureMap selectionPanel={false} explorerName={state.name} demoVenues={filtered} selected={selected?.id} onSelect={(id) => setSelectedId(id)} overlay={overlay} routeVenueId={state.route?.venueId} routeArrived={state.route?.stage === "arrived"} venueLink={venueHref} sheet={<div className={styles.mapRecommendations}>{filtered.map((entry) => <button key={entry.id} onClick={() => setSelectedId(entry.id)}><Image src={entry.image} alt="" width={100} height={75} /><span><strong>{entry.name}</strong><small>{entry.building ? `${entry.building.name} · ${entry.building.unit}` : entry.cuisine}</small></span><ChevronRight size={17} /></button>)}</div>} resultsLabel={`${filtered.length} example places`} /></div>
           {banner}
           {selected && <StopActions key={selected.id} venue={selected} state={state} dispatch={dispatch} compact />}
@@ -179,8 +184,10 @@ export function DemoAdventure({ screen, venueId, venues, initialWall = "public",
         {screen === "rewards" && <DemoRewards ready={ready} claimed={dailyClaimed} onCollect={() => dispatch({ type: "daily" })} />}
         {screen === "feed" && <div className={styles.feedContent}><CommunityFeed preview previewName={state.name} basePath="/demo/feed" initialWall={initialWall} initialPost={initialPost} /></div>}
       </main>
-      {screen !== "explore" && banner}
-      <footer className={styles.guideFooter}><Link href="/">Browse published places <ArrowRight size={15} /></Link><Link href="/help">Help and privacy</Link></footer>
+      {screen === "explore" && realMap
+        ? <div className={styles.demoBanner}><span>Adventure demo</span><div className={styles.guideLinks}><Link href={href("quests")}><Flag size={13} />Food trails</Link><Link href={href("rewards")}><Gift size={13} />Rewards</Link></div></div>
+        : screen !== "explore" && banner}
+      <footer className={styles.guideFooter}><Link href="/?view=catalogue">Browse published places <ArrowRight size={15} /></Link><Link href="/help">Help and privacy</Link></footer>
       <div className={styles.status} role="status" aria-live="polite">
         {notice && <span key={notice + progress.xp} className={notice.startsWith("+") ? styles.xpReceipt : undefined}>
           {notice.startsWith("+") && <Zap size={16} fill="currentColor" aria-hidden="true" />}{notice}

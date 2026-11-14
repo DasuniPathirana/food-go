@@ -14,7 +14,7 @@ type GameProps = {
   venues: CatalogueVenue[];
 };
 
-const explore = "/demo/explore";
+const explore = "/demo/explore?map=adventure";
 const venueUrl = (id: string) => `/demo/venue/${encodeURIComponent(id)}`;
 
 export function DemoCollection({ dishes, state, dispatch, venues, xp }: GameProps & { dishes: boolean; xp: number }) {

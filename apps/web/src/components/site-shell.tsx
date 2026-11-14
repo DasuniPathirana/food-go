@@ -51,7 +51,7 @@ export function SiteShell({
         <span className="preview-dot" />
         <span>Development preview</span>
         <span className="preview-detail">
-          {socialPreview ? "Fictional community. Changes stay on this browser." : examplePage || catalogueMode === "demo" ? "Example venues. No live bookings or check-ins." : "Published venues only. No live bookings or check-ins."}
+          {pathname === "/" ? "Melbourne imagery and local discovery." : socialPreview ? "Fictional community. Changes stay on this browser." : examplePage || catalogueMode === "demo" ? "Example venues. No live bookings or check-ins." : "Published venues only. No live bookings or check-ins."}
         </span>
         <Link href="/demo">Play the full adventure demo</Link>
       </div>

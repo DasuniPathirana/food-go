@@ -43,9 +43,11 @@ const rowSchema = z.object({
   venue_type: z.enum(VENUE_TYPES), cuisine: z.string().min(2).max(60),
   address: z.string().max(200), suburb: z.string().max(100), state: z.enum(AU_STATES),
   postcode: z.string().regex(/^\d{4}$/u), venue_dishes: z.array(dishSchema).max(200),
+  latitude: z.number().min(-90).max(90).nullish().catch(null),
+  longitude: z.number().min(-180).max(180).nullish().catch(null),
 });
 
-const publicColumns = "id,slug,name,description,venue_type,cuisine,address,suburb,state,postcode,venue_dishes(id,name,description,price_aud_cents)";
+const publicColumns = "id,slug,name,description,venue_type,cuisine,address,suburb,state,postcode,latitude,longitude,venue_dishes(id,name,description,price_aud_cents)";
 export const DEFAULT_CATALOGUE_LIMIT = 50;
 
 /** Fictional mall shops for the illustrated preview only; never used by the public DTO. */
@@ -88,6 +90,9 @@ function dto(row: z.infer<typeof rowSchema>): CatalogueVenue {
   return {
     id: row.id, source: "supabase", slug: row.slug, name: row.name, description: row.description,
     type: row.venue_type, cuisine: row.cuisine, address: row.address, suburb: row.suburb,
+    ...(row.latitude != null && row.longitude != null && {
+      coordinates: { latitude: row.latitude, longitude: row.longitude },
+    }),
     state: row.state, postcode: row.postcode, tags: [], dish: row.venue_dishes[0]?.name || "",
     image: "/images/venue-placeholder.svg", imageAlt: "Food Go venue illustration. No venue photograph supplied.",
     accent: "generic", dishes: row.venue_dishes.map((dish) => ({
