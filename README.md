@@ -94,10 +94,10 @@ For a configured local Supabase project, run `npm run check:supabase`. This load
 
 ## Design rules
 
-Fresh white surfaces, dark ink, tomato actions and yellow progression. Bricolage Grotesque for short headings, Source Sans 3 for reading. Preserve the approved illustrated map and use distinct, content-led layouts for Feed, trails, collections and Passport. Accessible labels, visible focus and responsive spacing. One main vertical page scroll with fixed mobile navigation, rather than nested scrolling panels. No emojis or em dashes in application copy or project documentation. See [DESIGN.md](DESIGN.md).
+Use dark ink on warm paper, a saffron masthead, petrol place signs and mandarin actions. Barlow Condensed sets short headings, Source Sans 3 sets reading text, and Bricolage Grotesque sets the wordmark. Keep the geographic map and illustrated Adventure within one viewport, with visible focus and a single page scroll for the surrounding content. See [DESIGN.md](DESIGN.md).
 
 ## Documentation
 
-Start at [the current UI delivery](docs/progress/10-neighbourhood-guide.md), [UI research](docs/research/10-distinctive-ui-research.md), [go-live requirements](docs/launch/go-live-checklist.md) and [email and SMS setup](docs/integrations/messaging.md). The earlier [complete project analysis](docs/progress/04-project-analysis.md) and [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explain the foundation, subscriptions and client actions at their delivery dates. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
+Start with the [geographic map and UI delivery](docs/progress/14-melbourne-geography.md), [UI research](docs/research/10-distinctive-ui-research.md), [go-live requirements](docs/launch/go-live-checklist.md) and [email and SMS setup](docs/integrations/messaging.md). The earlier [complete project analysis](docs/progress/04-project-analysis.md) and [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explain the foundation, subscriptions and client actions at their delivery dates. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
 
 Next, complete the Mobile Message hook and sender setup for controlled SMS sign-in testing. Configure Brevo when the verified sender is ready. Complete account safeguards and operator ownership review before opening registration or publishing real venues. See the latest analysis for the tested state and remaining national marketplace, game and native-app work.

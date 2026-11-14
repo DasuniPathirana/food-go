@@ -20,7 +20,7 @@ FOOD_GO_PHONE_AUTH_ENABLED=false
 FOOD_GO_SMS_ENABLED=false
 ```
 
-The `/demo` map, social examples, XP and avatars use browser-local fictional data. Leave Supabase, cookie-signing and SMS secrets unset for this mode. The normal connected routes may show disabled/empty states as designed. Use `/demo/explore` as the presentation entry URL.
+Use `/demo/explore` to present the geographic map. Its imagery and landmark coordinates come from the public datasets listed in the map credits. Adventure uses fictional game locations, and its social examples, XP and avatar preferences stay in the browser. Leave Supabase, cookie-signing and SMS secrets unset for this mode. Connected routes can show an empty catalogue or a closed account sign-in screen.
 
 Set `APP_ORIGIN` to the exact stable HTTPS origin once the domain is chosen, for example `https://food-go-preview.example.com`. That example is not an owned/live domain. Omit a trailing slash, path, query and fragment. Do not trust request headers to choose the application's origin. A different temporary preview hostname is a different origin; keep Auth disabled on arbitrary branch previews rather than weakening origin checks.
 
