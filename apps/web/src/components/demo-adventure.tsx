@@ -64,6 +64,11 @@ export function DemoAdventure({ screen, venueId, venues, initialWall = "public",
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Everything");
   const [mapOptionsOpen, setMapOptionsOpen] = useState(false);
+  const mapOptionsToggle = useRef<HTMLButtonElement>(null);
+  function closeMapOptions() {
+    setMapOptionsOpen(false);
+    mapOptionsToggle.current?.focus({ preventScroll: true });
+  }
   const [selectedId, setSelectedId] = useState<string | undefined>(venueId);
   const [collectionTab, setCollectionTab] = useState("all");
   const [notifications, setNotifications] = useState(false);
@@ -94,7 +99,12 @@ export function DemoAdventure({ screen, venueId, venues, initialWall = "public",
   const missionPanel = <Link className={styles.missionPill} href={href("quests")}><span className={styles.missionIcon}><Flag size={18} /></span><span><strong>{mission.title}</strong></span><span className={styles.missionCount}>{demoQuestProgress(state, mission.id)}/{mission.stops.length}<ChevronRight size={16} /></span></Link>;
   const selectedArea = selected ? venueAreaMaps(selected) : null;
   const mapShortcut = selected && selectedArea ? <a className={`${styles.missionPill} ${styles.mapsPill}`} href={selectedArea.googleMaps} target="_blank" rel="noopener noreferrer" aria-label={`Open real ${selectedArea.area} area in Google Maps`}><Navigation size={18} /><span><strong>{selected.name}</strong><small>Google Maps · {selectedArea.area} area</small></span><ArrowRight size={16} /></a> : missionPanel;
-  const overlay = <div className={styles.mapOverlay} onKeyDown={(event) => { if (event.key === "Escape") setMapOptionsOpen(false); }}><div className={styles.searchBox}><Search size={21} /><input aria-label="Search example venues and dishes" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search coffee, pizza, a place…" />{query && <button onClick={() => setQuery("")} aria-label="Clear search"><X size={18} /></button>}<button className={styles.mapOptionsToggle} aria-label="Map filters and selected place" aria-expanded={mapOptionsOpen} aria-controls="demo-map-options" onClick={() => setMapOptionsOpen((open) => !open)}><Settings2 size={19} /></button></div><div id="demo-map-options" className={`${styles.mapOptions} ${mapOptionsOpen ? styles.mapOptionsOpen : ""}`}><div className={styles.filters} aria-label="Example venue filters">{["Everything", "Cafes", "Pizza", "In the arcade"].map((item) => <button key={item} className={category === item ? styles.filterActive : ""} onClick={() => { setCategory(item); setMapOptionsOpen(false); }} aria-pressed={category === item}>{item === "In the arcade" && <Building2 size={14} />}{item}</button>)}</div>{mapShortcut}</div></div>;
+  const overlay = <div className={styles.mapOverlay} onKeyDown={(event) => { if (event.key === "Escape" && mapOptionsOpen) { event.preventDefault(); closeMapOptions(); } }}>
+    <div className={styles.searchBox}><Search size={21} /><input aria-label="Search example venues and dishes" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search coffee, pizza, a place…" />{query && <button onClick={() => setQuery("")} aria-label="Clear search"><X size={18} /></button>}<button ref={mapOptionsToggle} className={styles.mapOptionsToggle} aria-label="Map filters and selected place" aria-expanded={mapOptionsOpen} aria-controls="demo-map-options" onClick={() => setMapOptionsOpen((open) => !open)}><Settings2 size={19} /></button></div>
+    <div id="demo-map-options" className={`${styles.mapOptions} ${mapOptionsOpen ? styles.mapOptionsOpen : ""}`}>
+      <div className={styles.filters} aria-label="Example venue filters">{["Everything", "Cafes", "Pizza", "In the arcade"].map((item) => <button key={item} className={category === item ? styles.filterActive : ""} onClick={() => { setCategory(item); closeMapOptions(); }} aria-pressed={category === item}>{item === "In the arcade" && <Building2 size={14} />}{item}</button>)}</div>{mapShortcut}
+    </div>
+  </div>;
   const nav = navigation.map((item) => <Link key={item.id} href={href(item.id)} className={`${styles.navItem} ${screen === item.id || (item.id === "explore" && screen === "venue") ? styles.navActive : ""} ${item.id === "explore" ? styles.exploreNav : ""}`} aria-current={screen === item.id ? "page" : undefined}><item.icon size={22} /><span>{item.label}</span></Link>);
   return <div className={styles.demo}>
     <a className={styles.skip} href="#demo-main">Skip to content</a>

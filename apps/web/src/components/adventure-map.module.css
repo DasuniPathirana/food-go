@@ -360,7 +360,7 @@
 }
 @media (max-width: 360px) {
   .utilityControls { grid-template-columns: repeat(2, 44px); }
-  .immersive .mapPlane { bottom: 160px; }
+  .immersive .mapPlane { bottom: 116px; }
   .pin-photo { width: 44px; height: 44px; }
   .pin-label { margin-top: 6px; padding: 3px 4px; font-size: 8px; line-height: 1.2; }
   .map-pin::after { top: 50px; height: 15px; }
@@ -375,16 +375,25 @@
   .pin-xp { font-size: 8px; }
 }
 
-/* Short narrow phones keep movement visible; view tools open only on request. */
+/* Phone controls leave the scene open; view tools appear only on request. */
 .frame .utilityControls > .viewToolsToggle { display: none !important; }
-@media (max-width: 360px) and (max-height: 700px) {
-  .immersive .mapPlane { top: calc(var(--adventure-overlay-bottom, 64px) + 50px); bottom: 116px; }
+@media (max-width: 700px), (max-height: 500px) {
+  .utilityControls { grid-template-columns: repeat(3, 44px); }
   .frame .utilityControls > .viewToolsToggle { display: grid !important; }
   .frame .utilityControls .tools { display: none; }
   .frame .utilityControls.toolsOpen .tools {
     position: absolute; top: auto; right: auto; left: 0; bottom: calc(100% + 8px);
     display: grid; grid-template-columns: repeat(3, 44px); grid-auto-rows: 44px;
     gap: 0; border: 1px solid var(--line-strong); border-radius: 6px;
-    background: var(--paper); box-shadow: var(--shadow-control);
+    background: var(--paper); box-shadow: var(--shadow-control); pointer-events: auto;
   }
+  .walkControls button { position: relative; border: 0; background: transparent; box-shadow: none; isolation: isolate; }
+  .walkControls button::before { content: ""; position: absolute; width: 32px; height: 32px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--paper); z-index: -1; }
+  .walkControls button:hover { background: transparent; }
+  .walkControls button:hover::before { background: var(--surface-raised); }
+  .walkControls button svg { width: 14px; height: 14px; }
+  .walkControls > .walkLabel { font-size: 10px; }
+  .walkControls > .walkLabel svg { width: 13px; height: 13px; }
 }
+@media (max-width: 360px) and (min-height: 501px) { .utilityControls { grid-template-columns: repeat(2, 44px); } }
+@media (max-width: 360px) and (max-height: 500px) { .utilityControls { left: 4px; } .walkControls { right: 4px; } }
