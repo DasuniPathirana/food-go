@@ -25,6 +25,8 @@ The [deployment guide](../deployment/README.md), [environment manifest](../deplo
 - The final phone Explore scene remained at top 126.7px and bottom 751.7px in an 844px viewport. Fonts computed as Arial for functional text and Bricolage for the wordmark; primary ink computed as `rgb(17, 17, 17)`.
 - Final browser logs contained no warnings or errors. Disposable QA posts/progress were reset to 320 example XP. No live public post, account or Supabase record was changed.
 
+The isolated CI database exposed a platform-specific fixture precondition: a fresh CLI stack need not have the hosted project's explicit `service_role` defaults for new postgres-owned objects. The fixture now inspects `pg_default_acl` and requires probe access only for applicable explicit global/public defaults. All 27 tenant-security assertions, migrations and application grants remain unchanged. Independent source review approved the fix; all seven SQL capture/preparation tests passed. The complete isolated database suite is verified by the PR workflow rather than by modifying the hosted development database.
+
 ## Review evidence
 
 - [Passport with example public/private stories](../screenshots/12-passport-wall-desktop.jpg)

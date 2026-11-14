@@ -39,11 +39,32 @@ insert into public.food_go_future_privilege_probe(id) values (1);
 create function public.food_go_future_function_probe()
 returns integer language sql immutable set search_path = '' as $$ select 1; $$;
 
+-- Hosted projects may supply explicit service_role defaults which a fresh CLI
+-- stack does not have. Require the probe privilege only when postgres has that
+-- corresponding global or public-schema default; do not grant anything here.
 do $food_go_test_service_defaults$
 begin
-  if not has_table_privilege('service_role', 'public.food_go_future_privilege_probe', 'SELECT')
-    or not has_function_privilege('service_role', 'public.food_go_future_function_probe()', 'EXECUTE') then
-    raise exception 'The fixture requires preserved explicit service_role public defaults';
+  if exists (
+    select 1 from pg_default_acl d
+    cross join lateral aclexplode(d.defaclacl) as acl_entry
+    where d.defaclrole = 'postgres'::regrole
+      and (d.defaclnamespace = 0 or d.defaclnamespace = 'public'::regnamespace)
+      and d.defaclobjtype = 'r'
+      and acl_entry.grantee = 'service_role'::regrole
+      and acl_entry.privilege_type = 'SELECT'
+  ) and not has_table_privilege('service_role', 'public.food_go_future_privilege_probe', 'SELECT') then
+    raise exception 'An explicit service_role table default did not apply to the probe';
+  end if;
+  if exists (
+    select 1 from pg_default_acl d
+    cross join lateral aclexplode(d.defaclacl) as acl_entry
+    where d.defaclrole = 'postgres'::regrole
+      and (d.defaclnamespace = 0 or d.defaclnamespace = 'public'::regnamespace)
+      and d.defaclobjtype = 'f'
+      and acl_entry.grantee = 'service_role'::regrole
+      and acl_entry.privilege_type = 'EXECUTE'
+  ) and not has_function_privilege('service_role', 'public.food_go_future_function_probe()', 'EXECUTE') then
+    raise exception 'An explicit service_role function default did not apply to the probe';
   end if;
 end;
 $food_go_test_service_defaults$;
