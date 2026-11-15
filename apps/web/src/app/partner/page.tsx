@@ -31,7 +31,7 @@ export default function PartnerPage() {
           </Link>
           <Link href="/partner/dashboard" className="text-button">View my venues <ArrowRight size={16} /></Link>
           <span className="partner-preview-caption">
-            An early look at self-service onboarding. Nothing is published.
+            Your dashboard brings your listing, menu, promotions and customer discoveries together.
           </span>
         </div>
         <div className="partner-hero-art" aria-hidden="true">
@@ -64,8 +64,7 @@ export default function PartnerPage() {
           </span>
           <h2>Manage your own listing</h2>
           <p>
-            Bring your venue details together in one clear draft, ready for a
-            future shared marketplace.
+            Save and edit your business details, manage dishes and submit promotions from your dashboard.
           </p>
         </article>
         <article>
@@ -74,8 +73,7 @@ export default function PartnerPage() {
           </span>
           <h2>Join food trails</h2>
           <p>
-            Explore how your venue could join neighbourhood food discoveries and
-            future adventures.
+            Give customers a short-lived visit QR and separate dish codes to collect discoveries.
           </p>
         </article>
         <article>
@@ -84,8 +82,7 @@ export default function PartnerPage() {
           </span>
           <h2>Verify your business</h2>
           <p>
-            Try the experience with fictional details. Account creation and
-            ownership verification are still to come.
+            Register as a restaurant owner and submit your listing for independent ownership review.
           </p>
         </article>
       </section>

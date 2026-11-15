@@ -16,7 +16,7 @@ npm run build:web
 npm run start:web:local
 ```
 
-Open `http://127.0.0.1:3000/demo/explore`. The `/demo` presentation needs no Supabase, email, SMS, GPS or paid map credentials. Fictional progress stays in the browser. Keep local account and delivery flags disabled. In another terminal, `npm run check:web` runs loopback-only HTTP checks. It must be used only with closed account services; it intentionally exercises rejected requests.
+Open `http://127.0.0.1:3000/`. Explore uses the bundled geographic map and the connected public catalogue. Configure Supabase and Auth for the customer and owner journeys described in the [connected release guide](connected-release.md). In another terminal, `npm run check:web` verifies the production server with account services disabled. The CI database job separately exercises enabled signup, confirmation, owner management and customer XP against a disposable Supabase stack.
 
 The repository includes `.nvmrc` with `24`. `npm ci` must run at the repository root, since `@food-go/domain` is a local workspace and the only lockfile lives at the root. Do not install the web workspace as an unrelated project or replace its workspace dependency with a registry package.
 

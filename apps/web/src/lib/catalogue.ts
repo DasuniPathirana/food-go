@@ -20,8 +20,7 @@ function publicKey(value: string) {
 
 /** Catalogue access deliberately does not depend on the account release flag. */
 export function readCatalogueConfig(env: Environment): CatalogueConfig {
-  const mode = env.FOOD_GO_CATALOGUE_MODE || (env.NODE_ENV === "production" ? "supabase" : "demo");
-  if (mode === "demo") return { mode: "demo" };
+  const mode = env.FOOD_GO_CATALOGUE_MODE || "supabase";
   if (mode !== "supabase") return { mode: "supabase", configured: false };
   try {
     const url = new URL(env.SUPABASE_URL || "");

@@ -6,20 +6,24 @@ import { ArrowUpRight } from "lucide-react";
 import { Brand } from "./brand";
 import { FoodNavigation } from "./food-navigation";
 import type { CatalogueMode } from "@/lib/catalogue-contracts";
+import { useJourney } from "./journey-provider";
 
 export function SiteShell({
   children,
   signedIn = false,
   displayName,
   catalogueMode,
+  accountType,
 }: {
   children: React.ReactNode;
   signedIn?: boolean;
   displayName?: string;
   catalogueMode: CatalogueMode;
+  accountType?: "explorer" | "partner";
 }) {
   const pathname = usePathname();
-  if (pathname === "/demo" || pathname.startsWith("/demo/")) return <>{children}</>;
+  const journey = useJourney();
+  const ownerView = accountType === "partner" && pathname.startsWith("/partner");
   const exampleNeighbourhood = pathname === "/explore-preview";
   const examplePage = exampleNeighbourhood || pathname.startsWith("/explore-preview/");
   const socialPreview = pathname === "/feed-preview";
@@ -33,10 +37,11 @@ export function SiteShell({
           <Link href="/" aria-label="Food Go home" className="brand-link">
             <Brand />
           </Link>
-          <FoodNavigation pathname={pathname} />
+          <FoodNavigation pathname={pathname} owner={ownerView} />
           <div className="header-actions">
-            <Link href="/partner" className="venue-entry">
-              For venues <ArrowUpRight size={14} />
+            {signedIn && journey?.data && <Link className="account-entry" href="/profile">{journey.data.progress.xp} XP · Level {journey.data.progress.level}</Link>}
+            <Link href={accountType === "partner" ? "/partner/dashboard" : "/partner"} className="venue-entry">
+              {accountType === "partner" ? "My restaurants" : "For venues"} <ArrowUpRight size={14} />
             </Link>
             <Link
               href={signedIn ? "/profile" : "/auth/sign-in"}
@@ -53,10 +58,6 @@ export function SiteShell({
       >
         {children}
       </main>
-      {(socialPreview || examplePage || catalogueMode === "demo") && <div className="preview-strip">
-        <span className="preview-dot" /><span>{socialPreview ? "Example feed" : "Demo neighbourhood"}</span>
-        <span className="preview-detail">Example activity stays on this browser.</span>
-      </div>}
       <footer className="site-footer">
         <div>
           <strong>Food Go</strong>
@@ -64,7 +65,7 @@ export function SiteShell({
         </div>
         <nav aria-label="Information">
           <Link href="/partner">List your venue</Link>
-          <Link href="/demo">Play the full adventure demo</Link>
+          <Link href="/collect">Collect a visit</Link>
           <Link href="/help">Help and privacy</Link>
           <a
             href="https://github.com/Kalana8/Food_Go"
@@ -75,7 +76,7 @@ export function SiteShell({
           </a>
         </nav>
       </footer>
-      <FoodNavigation pathname={pathname} mobile />
+      <FoodNavigation pathname={pathname} mobile owner={ownerView} />
     </div>
   );
 }

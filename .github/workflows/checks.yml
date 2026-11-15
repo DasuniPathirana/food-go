@@ -49,7 +49,7 @@ jobs:
         shell: bash
         env:
           APP_ORIGIN: http://127.0.0.1:3000
-          FOOD_GO_CATALOGUE_MODE: demo
+          FOOD_GO_CATALOGUE_MODE: supabase
           FOOD_GO_AUTH_ENABLED: "false"
           FOOD_GO_AUTH_PRODUCTION_READY: "false"
           FOOD_GO_COMMUNITY_ENABLED: "false"

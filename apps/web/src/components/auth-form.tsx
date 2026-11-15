@@ -21,7 +21,7 @@ const content = {
   register: {
     title: "Create your account",
     description:
-      "Create a Food Go account. Collection sync will be connected in a later stage.",
+      "Save your discoveries, collect XP and share your food stories.",
     button: "Create account",
   },
   "forgot-password": {
@@ -41,15 +41,16 @@ export function AuthForm({
   mode,
   configured,
   notice,
-  destination = "/profile",
+  destination,
 }: {
   mode: AuthMode;
   configured: boolean;
   notice?: "link-expired" | "password-updated";
-  destination?: "/profile" | "/admin";
+  destination?: "/profile" | "/admin" | "/partner/dashboard" | "/collect";
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
+  const [accountType, setAccountType] = useState<"explorer" | "partner">("explorer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -79,7 +80,7 @@ export function AuthForm({
             : signInSchema;
     const input =
       mode === "register"
-        ? { displayName, email, password }
+        ? { displayName, email, password, accountType }
         : mode === "forgot-password"
           ? { email }
           : mode === "reset-password"
@@ -125,7 +126,8 @@ export function AuthForm({
       setPassword("");
       setConfirmation("");
       if (mode === "sign-in") {
-        router.replace(destination);
+        const next = "redirectTo" in data && ["/", "/partner/dashboard"].includes(String(data.redirectTo)) ? String(data.redirectTo) : "/";
+        router.replace(destination || next);
         router.refresh();
       } else if (mode === "reset-password") {
         router.replace("/auth/sign-in?notice=password-updated");
@@ -159,11 +161,9 @@ export function AuthForm({
       <div className="auth-panel">
         {!configured && (
           <div className="auth-status" role="status">
-            <strong>Accounts are not connected yet</strong>
+            <strong>Account services are unavailable</strong>
             <p>
-              You can browse this preview without an account. Sign-in will open
-              after the server and email service are configured. Do not enter
-              real account details here yet.
+              Please try again shortly. You can browse published places while account services are unavailable.
             </p>
           </div>
         )}
@@ -190,6 +190,11 @@ export function AuthForm({
           </div>
         ) : (
           <form onSubmit={submit} noValidate>
+            {mode === "register" && <div className="form-field"><label htmlFor="account-type">I am joining as</label>
+              <select id="account-type" value={accountType} disabled={!configured || pending}
+                onChange={event => setAccountType(event.target.value as "explorer" | "partner")}>
+                <option value="explorer">A food explorer</option><option value="partner">A restaurant or cafe owner</option>
+              </select><p className="field-hint">Business owners get a venue dashboard. Ownership is reviewed before publication.</p></div>}
             {mode === "register" && (
               <div className="form-field">
                 <label htmlFor="auth-field-displayName">Your name</label>

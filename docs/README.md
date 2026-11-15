@@ -4,6 +4,8 @@ This documentation explains what exists, what has been checked, and what will be
 
 ## Start here
 
+- [Connected release and end-to-end journeys](deployment/connected-release.md) covers signup, the customer and restaurant interfaces, saved collections, verified XP, migration order and deployment acceptance.
+
 - [Geographic Explore and the market-signage UI](progress/14-melbourne-geography.md) covers the Melbourne data, 3D buildings, phone controls and demo presentation.
 - [Compact phone map controls](progress/13-compact-map-controls.md): smaller search and control groups, on-demand filters/tools and preserved tap targets.
 - [Milestone 12: Passport and deployment](progress/12-passport-and-deployment.md): compact single-scroll pages, familiar darker text, personal wall under Passport and repository/deployment handoff.

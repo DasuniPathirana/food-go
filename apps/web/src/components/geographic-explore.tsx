@@ -132,7 +132,7 @@ export function GeographicExplore({ basePath, venues = noVenues, catalogueUnavai
           </form>
         </div>
         <div className={styles.bar}>
-          <MapModeNav geographic basePath={basePath} />
+          <Link className={styles.modeNav} href="/collect">Collect a visit</Link>
           <div className={styles.layers} role="group" aria-label="Imagery and perspective">
             <button type="button" aria-pressed={imagery === "satellite"} onClick={() => setImagery("satellite")}><Satellite size={16} />Satellite</button>
             <button type="button" aria-pressed={imagery === "aerial"} onClick={() => setImagery("aerial")}><ScanLine size={16} />Aerial</button>

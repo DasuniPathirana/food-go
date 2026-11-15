@@ -338,7 +338,7 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
           </div>
         </div>
         <div className={styles.communityNote}><ShieldCheck size={19} /><p>Share kindly. Keep personal details private. A story is not a verified check-in.</p></div>
-        <div className={styles.railLinks}><Link href="/help">Help and privacy<ArrowRight size={14} /></Link>{preview ? <Link href={demo ? "/demo/passport" : "/feed"}>{demo ? "Open your passport" : "Go to the public feed"}<ArrowRight size={14} /></Link> : <Link href="/feed-preview">Try the example feed<ArrowRight size={14} /></Link>}</div>
+        <div className={styles.railLinks}><Link href="/help">Help and privacy<ArrowRight size={14} /></Link><Link href="/profile">Open Passport<ArrowRight size={14} /></Link></div>
       </aside>}
     </div>
   </div>;

@@ -47,13 +47,13 @@ function authenticatorCode(secret) {
 }
 
 const cookies = new Map();
-async function webPost(path, body) {
+async function webPost(path, body, jar = cookies, extraHeaders = {}) {
   const response = await fetch(origin + path, { method: "POST", headers: {
-    Origin: origin, "Content-Type": "application/json", Cookie: [...cookies].map(([k,v]) => `${k}=${v}`).join("; "),
+    Origin: origin, "Content-Type": "application/json", Cookie: [...jar].map(([k,v]) => `${k}=${v}`).join("; "), ...extraHeaders,
   }, body: JSON.stringify(body), signal: AbortSignal.timeout(90000) });
   for (const header of response.headers.getSetCookie()) {
     const pair = header.split(";")[0], equals = pair.indexOf("=");
-    cookies.set(pair.slice(0, equals), pair.slice(equals + 1));
+    jar.set(pair.slice(0, equals), pair.slice(equals + 1));
   }
   return response;
 }
@@ -61,7 +61,8 @@ const venueSlug = `ci-${venue}`;
 const app = spawn(process.execPath, ["../../node_modules/next/dist/bin/next", "dev", "-H", "127.0.0.1", "-p", "3026"], {
   cwd: "apps/web", stdio: "ignore", env: { ...process.env, NODE_ENV: "development", APP_ORIGIN: origin,
     SUPABASE_URL: provider, SUPABASE_PUBLISHABLE_KEY: publicKey, FOOD_GO_AUTH_COOKIE_SECRET: randomBytes(36).toString("base64url"),
-    FOOD_GO_AUTH_ENABLED: "true", FOOD_GO_CATALOGUE_MODE: "supabase", NEXT_TELEMETRY_DISABLED: "1" },
+    FOOD_GO_AUTH_ENABLED: "true", FOOD_GO_PARTNER_ENABLED: "true", FOOD_GO_COMMUNITY_ENABLED: "true",
+    FOOD_GO_CATALOGUE_MODE: "supabase", NEXT_TELEMETRY_DISABLED: "1" },
 });
 try {
   let ready = false;
@@ -112,7 +113,91 @@ try {
     assert.ok(deals.ok, "Public Deals page renders");
     assert.equal((await deals.text()).includes(draft.title), visible, "Signed-out Deals follows the operator decision");
   }
-  console.log("Verified sign-in, role assignment, TOTP step-up, draft, publication and withdrawal on the disposable stack.");
+  async function read(path, jar = cookies) {
+    const response = await fetch(origin + path, { headers: { Cookie: [...jar].map(([key,value]) => `${key}=${value}`).join("; ") },
+      signal: AbortSignal.timeout(90000) });
+    assert.ok(response.ok, "Read " + path.split("?")[0]);
+    return response.json();
+  }
+  async function signup(accountType) {
+    const address = `${accountType}-${randomUUID()}@example.test`, jar = new Map();
+    const registered = await webPost("/api/auth/register", { email: address, password, displayName: "Fixture " + accountType, accountType }, jar);
+    assert.equal(registered.status, 200, "Register through the application");
+    const before = await webPost("/api/auth/sign-in", { email: address, password }, jar);
+    assert.equal(before.status, 400, "Unconfirmed account cannot sign in");
+    let mail;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const response = await fetch("http://127.0.0.1:54324/api/v1/message/latest");
+      if (response.ok) {
+        const latest = await response.json();
+        if (latest.To?.some(to => to.Address === address)) { mail = latest; break; }
+      }
+      await delay(500);
+    }
+    assert.ok(mail, "Confirmation email arrives in the local inbox");
+    const link = /href="([^"]+\/auth\/v1\/verify[^"]+)"/u.exec(mail.HTML || "")?.[1]?.replaceAll("&amp;", "&");
+    assert.ok(link, "Confirmation email contains a verification link");
+    const verificationUrl = new URL(link);
+    assert.ok(verificationUrl.origin === provider && verificationUrl.pathname === "/auth/v1/verify", "Confirmation stays on the disposable provider");
+    const verifiedEmail = await fetch(verificationUrl, { redirect: "manual" });
+    const callback = new URL(verifiedEmail.headers.get("location"));
+    assert.ok(callback.origin === origin && callback.pathname === "/auth/callback", "Provider returns to the application callback");
+    const confirmed = await fetch(callback, { redirect: "manual", headers: { Cookie: [...jar].map(([k,v]) => `${k}=${v}`).join("; ") } });
+    for (const header of confirmed.headers.getSetCookie()) {
+      const pair = header.split(";")[0], equals = pair.indexOf("=");
+      jar.set(pair.slice(0, equals), pair.slice(equals + 1));
+    }
+    const target = new URL(confirmed.headers.get("location"), origin);
+    assert.ok(target.pathname === (accountType === "partner" ? "/partner/dashboard" : "/"), "Confirmed account reaches its own interface");
+    assert.equal((await read("/api/journey", jar)).accountType, accountType);
+    return { address, jar };
+  }
+  const owner = await signup("partner"), customer = await signup("explorer");
+  const created = await webPost("/api/partner/venues", {
+    name: "Connected fixture kitchen", email: owner.address, phone: "0391234567",
+    address: "123 Test Street", suburb: "Melbourne", state: "VIC", postcode: "3000", cuisine: "Italian",
+    venueType: "restaurant", description: "Fixture restaurant created through the owner registration journey.",
+    gameEnabled: true, acceptedTerms: true,
+  }, owner.jar, { "Idempotency-Key": randomUUID() });
+  assert.equal(created.status, 201, "Owner saves their restaurant");
+  const createdVenue = (await created.json()).data.id;
+  let workspace = await read("/api/partner/manage?venueId=" + createdVenue, owner.jar);
+  assert.equal((await webPost("/api/partner/manage", { action: "issue", venueId: createdVenue }, owner.jar)).status, 409, "Unpublished venues cannot issue verification codes");
+  assert.ok((await webPost("/api/partner/manage", { action: "submit", venueId: createdVenue, version: workspace.venue.updated_at }, owner.jar)).ok);
+  for (const action of ["venue.verify","venue.publish"]) {
+    const version = localSql(`select to_json(updated_at)#>>'{}' from public.venues where id='${createdVenue}'`);
+    await change({ action, id: createdVenue, requestId: randomUUID(), version, reason: "Fixture independent business review" });
+  }
+  const dishId = randomUUID();
+  const menu = await webPost("/api/partner/manage", { action: "dish", venueId: createdVenue, dishId, name: "Pasta", description: "Handmade pasta", price: 2500, available: true }, owner.jar);
+  assert.ok(menu.ok, "Owner adds the menu");
+  assert.ok((await read("/api/venues?q=Connected")).data.some(v => v.id === createdVenue), "Published restaurant appears to explorers");
+  assert.equal((await webPost("/api/partner/manage", { action: "issue", venueId: createdVenue }, customer.jar)).status, 403, "Customer cannot issue verification evidence");
+  for (const [kind, id] of [["venue", createdVenue],["dish", dishId]]) {
+    const saved = await webPost("/api/journey", { action: "save", kind, id, saved: true }, customer.jar);
+    assert.ok(saved.ok, "Save to the signed-in collection");
+    const issued = await webPost("/api/partner/manage", { action: "issue", venueId: createdVenue, ...(kind === "dish" && { dishId }) }, owner.jar);
+    assert.ok(issued.ok, "Owner issues a visit or dish QR");
+    const evidence = await issued.json();
+    assert.ok(evidence.qr?.startsWith("data:image/png;base64,"), "QR image is generated locally");
+    const claim = { action: "redeem", code: evidence.code };
+    const receipt = await webPost("/api/journey", claim, customer.jar);
+    assert.ok(receipt.ok && (await receipt.json()).points === (kind === "venue" ? 50 : 100), "Server awards the fixed discovery points");
+    const retry = await webPost("/api/journey", claim, customer.jar);
+    assert.ok(retry.ok && (await retry.json()).points === 0, "Retry cannot duplicate an award");
+    assert.equal((await webPost("/api/journey", claim, owner.jar)).status, 403, "Venue owner cannot collect their own evidence");
+  }
+  const progress = await read("/api/journey", customer.jar);
+  assert.ok(progress.savedVenues.includes(createdVenue) && progress.savedDishes.includes(dishId), "Collections survive a fresh account read");
+  assert.equal(progress.visits.length, 1);
+  assert.equal(progress.discoveries.length, 1);
+  assert.equal(progress.progress.xp, 150);
+  const newSession = new Map();
+  const returning = await webPost("/api/auth/sign-in", { email: customer.address, password }, newSession);
+  assert.ok(returning.ok && (await returning.json()).redirectTo === "/", "Returning explorer reaches Explore");
+  assert.equal((await read("/api/journey", newSession)).progress.xp, 150, "Progress survives a new sign-in session");
+  assert.equal((await read("/api/journey", owner.jar)).progress.xp, 0, "Progress is isolated between accounts");
+  console.log("Verified customer and owner signup, confirmation email, role routing, restaurant review, menu, QR visits, dish XP, retry handling and persistent collections.");
 } finally {
   app.kill("SIGTERM");
 }

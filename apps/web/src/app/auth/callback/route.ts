@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { readAuthConfig } from "@/lib/auth/config";
 import { safeAuthDestination } from "@/lib/auth/contracts";
 import { createAuthClient } from "@/lib/auth/server";
+import { accountLanding } from "@/lib/auth/landing";
 import {
   createRecoveryPermission,
   recoveryCookieName,
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
       next = "/auth/reset-password";
     } else {
       store.set(recoveryCookieName, "", { ...recoveryOptions, maxAge: 0 });
-      if (next === "/auth/reset-password") next = "/profile";
+      if (next === "/auth/reset-password" || next === "/profile") next = await accountLanding(client, verification.data.user.id);
     }
     return NextResponse.redirect(new URL(next, config.origin), {
       status: 303,

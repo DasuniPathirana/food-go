@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { CatalogueMode } from "./catalogue-contracts";
+import { useJourney } from "@/components/journey-provider";
 
 /** Store only non-sensitive demo preferences. No tokens, profiles or location history. */
 function useSavedItems(key: string) {
@@ -39,10 +40,14 @@ function useSavedItems(key: string) {
   return { saved, toggle };
 }
 
-export function useSavedVenues(mode: CatalogueMode = "demo") {
-  return useSavedItems(mode === "demo" ? "food-go:demo-saved:v1" : "food-go:supabase-saved-venues:v1");
+export function useSavedVenues(mode: CatalogueMode = "supabase") {
+  const local = useSavedItems("food-go:demo-saved:v1");
+  const journey = useJourney();
+  return mode === "demo" ? local : { saved: journey?.data?.savedVenues ?? [], toggle: (id: string) => { void journey?.save("venue", id); } };
 }
 
-export function useSavedDishes(mode: CatalogueMode = "demo") {
-  return useSavedItems(`food-go:${mode}-saved-dishes:v1`);
+export function useSavedDishes(mode: CatalogueMode = "supabase") {
+  const local = useSavedItems("food-go:demo-saved-dishes:v1");
+  const journey = useJourney();
+  return mode === "demo" ? local : { saved: journey?.data?.savedDishes ?? [], toggle: (id: string) => { void journey?.save("dish", id); } };
 }

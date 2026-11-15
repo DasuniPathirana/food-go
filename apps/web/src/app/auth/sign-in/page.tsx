@@ -10,8 +10,9 @@ export default async function SignInPage({
 }) {
   const state = await getAuthState();
   const query = await searchParams;
-  const destination = query.next === "/admin" ? "/admin" : "/profile";
-  if (state.user) redirect(destination);
+  const destination = query.next === "/admin" ? "/admin" : query.next === "/collect" ? "/collect" :
+    query.next === "/partner/dashboard" ? "/partner/dashboard" : undefined;
+  if (state.user) redirect(destination || (state.user.accountType === "partner" ? "/partner/dashboard" : "/"));
   const notice =
     query.notice === "link-expired" || query.notice === "password-updated"
       ? query.notice

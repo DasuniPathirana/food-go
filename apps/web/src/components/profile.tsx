@@ -1,203 +1,57 @@
 "use client";
-
 import Link from "next/link";
 import { useState } from "react";
-import {
-  ArrowRight,
-  Bookmark,
-  BookOpen,
-  Compass,
-  ChevronDown,
-  Flag,
-  Leaf,
-  LockKeyhole,
-  MapPin,
-  MessagesSquare,
-  ShieldCheck,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MapPin, Bookmark, Utensils, Flag } from "lucide-react";
 import type { CatalogueState } from "@/lib/catalogue-contracts";
-import { useSavedVenues } from "@/lib/preferences";
 import { SignOutButton } from "./auth-form";
 import { GameProgress } from "./game-progress";
 import { AvatarWardrobe } from "./avatar-customizer";
 import { CommunityFeed } from "./community-feed";
-import passportStyles from "./passport-wall.module.css";
+import { useJourney } from "./journey-provider";
+import styles from "./passport-wall.module.css";
 
-const achievements = [
-  {
-    title: "The first good bite",
-    description: "For your first verified dish discovery.",
-    icon: Leaf,
-  },
-  {
-    title: "Neighbourhood curious",
-    description: "For verified visits to a few local places.",
-    icon: MapPin,
-  },
-  {
-    title: "A trail of your own",
-    description: "For completing your first verified quest.",
-    icon: Flag,
-  },
-];
-
-export function ExplorerProfile({
-  account,
-  catalogue,
-}: {
-  account?: { displayName: string; email: string | null; phone?: string | null } | null;
-  catalogue: CatalogueState;
-}) {
-  const { saved, toggle } = useSavedVenues(catalogue.mode);
-  const [message, setMessage] = useState("");
-  const savedCount = saved.length;
-
-  function clearSavedExamples() {
-    saved.forEach((id) => toggle(id));
-    setMessage(
-      "Your saved places have been cleared from this browser.",
-    );
+export function ExplorerProfile({ account }: { account?: {
+  displayName: string; email: string | null; phone?: string | null; accountType?: "explorer" | "partner";
+} | null; catalogue: CatalogueState }) {
+  const journey = useJourney();
+  const router = useRouter();
+  const [error, setError] = useState("");
+  async function becomePartner() {
+    setError("");
+    try {
+      const response = await fetch("/api/journey", { method: "POST", credentials: "same-origin",
+        headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "account", accountType: "partner" }) });
+      if (!response.ok) throw new Error();
+      await journey?.refresh(); router.push("/partner/dashboard"); router.refresh();
+    } catch { setError("Your business account could not be opened. Try again."); }
   }
-
-  return (
-    <>
-      <div className="page-intro">
-        <div>
-          <h1>Your food passport</h1>
-          <p>Your food stories, saved places and exploration.</p>
-        </div>
-        <Link className="secondary-button" href="/">
-          <Compass size={17} />
-          Find a place
-          <ArrowRight size={16} />
-        </Link>
-      </div>
-      <section className={`profile-card ${passportStyles.connectedCover}`} aria-labelledby="guest-profile-title">
-          <span className="avatar">
-            <UserRound size={28} />
-          </span>
-          <p>
-            {account ? "Signed in" : "Browsing without an account"}
-          </p>
-          <h2 id="guest-profile-title">
-            {account?.displayName || "Guest explorer"}
-          </h2>
-          <p>
-            {account
-              ? "Your posts and shared discoveries appear below."
-              : "Sign in to post and share food discoveries."}
-          </p>
-          <Link className="text-button" href="/help">
-            Help and privacy
-            <ArrowRight size={16} />
-          </Link>
-          {account ? (
-            <SignOutButton />
-          ) : (
-            <Link href="/auth/sign-in" className="primary-button">
-              Sign in <ArrowRight size={16} />
-            </Link>
-          )}
-      </section>
-      {account ? <section className={passportStyles.connectedWall} aria-label="Your posts"><CommunityFeed initialWall="me" presentation="passport" basePath="/feed" /></section> : <section className={passportStyles.guestWall} aria-labelledby="personal-wall-title"><h2 id="personal-wall-title"><MessagesSquare size={22} />Your posts</h2><p>Sign in to keep your food stories and shared discoveries here.</p><div><Link href="/auth/sign-in" className="primary-button">Sign in<ArrowRight size={16} /></Link><Link href="/demo/passport" className="secondary-button">Try the example passport<ArrowRight size={16} /></Link></div></section>}
-      <details className={passportStyles.details}>
-        <summary><BookOpen size={18} /><span>Avatar, progress and browser preferences</span><ChevronDown size={17} /></summary>
-        <div className={passportStyles.detailsBody}>
-        <section
-          className="content-panel"
-          aria-labelledby="passport-summary-title"
-        >
-          <div className="section-heading">
-            <div>
-              <h2 id="passport-summary-title">Your activity</h2>
-            </div>
-            <BookOpen size={24} />
-          </div>
-          <div className="stat-grid" aria-label="Guest explorer summary">
-            <div className="stat-card">
-              <Bookmark size={19} />
-              <strong>{savedCount}</strong>
-              <span>Saved places</span>
-            </div>
-            <div className="stat-card">
-              <MapPin size={19} />
-              <strong>0</strong>
-              <span>Verified visits</span>
-            </div>
-            <div className="stat-card">
-              <Flag size={19} />
-              <strong>0</strong>
-              <span>Completed quests</span>
-            </div>
-          </div>
-          <p>
-            Saving a place helps you plan. It does not create a verified visit,
-            an explorer level, or a public profile.
-          </p>
-        </section>
-      <AvatarWardrobe />
-      {account && <GameProgress />}
-      <section aria-labelledby="achievements-title">
-        <div className="section-heading">
-          <div>
-            <h2 id="achievements-title">Badges to work towards</h2>
-          </div>
-        </div>
-        <div className="badge-grid">
-          {achievements.map(({ title, description, icon: Icon }) => (
-            <article className="badge-tile is-locked" key={title}>
-              <span className="leaf-disc">
-                <Icon size={25} />
-              </span>
-              <h3>{title}</h3>
-              <p>{description}</p>
-              <span>
-                <LockKeyhole size={13} />
-                Not earned
-              </span>
-            </article>
-          ))}
-        </div>
-        <p className="inline-notice">
-          <ShieldCheck size={19} />
-          These are example achievement designs. No badges or levels have been
-          awarded.
-        </p>
-      </section>
-      <section
-        className="content-panel"
-        aria-labelledby="browser-preferences-title"
-      >
-        <div className="section-heading">
-          <div>
-            <h2 id="browser-preferences-title">Manage saved places</h2>
-          </div>
-          <button
-            className="secondary-button"
-            onClick={clearSavedExamples}
-            disabled={saved.length === 0}
-          >
-            <Trash2 size={16} />
-            Clear saved places
-          </button>
-        </div>
-        <p>
-          Clear the venue bookmarks saved on this browser.
-        </p>
-        {message && (
-          <p className="inline-notice" role="status">
-            {message}
-          </p>
-        )}
-        <Link className="text-button" href="/help">
-          Help and privacy
-          <ArrowRight size={16} />
-        </Link>
-      </section>
-        </div>
-      </details>
-    </>
-  );
+  const visits = journey?.data?.visits.length ?? 0, dishes = journey?.data?.discoveries.length ?? 0;
+  return <><header className="page-intro"><div><h1>Your food passport</h1><p>Your stories, discoveries and progress.</p></div>
+    <Link className="secondary-button" href="/collect">Collect a discovery</Link></header>
+    <section className={`profile-card ${styles.connectedCover}`}><h2>{account?.displayName || "Welcome, explorer"}</h2>
+      {account ? <><p>{account.accountType === "partner" ? "Restaurant partner and food explorer" : "Food explorer"}</p><SignOutButton/></> :
+        <><p>Sign in to save places, collect XP and share stories.</p><Link className="primary-button" href="/auth/sign-in">Sign in</Link>
+          <Link className="secondary-button" href="/auth/register">Create an account</Link></>}
+    </section>
+    {account && <><GameProgress/><section className="stat-grid" aria-label="Your discoveries">
+      <div className="stat-card"><Bookmark size={20}/><strong>{journey?.data?.savedVenues.length ?? 0}</strong><span>Saved places</span></div>
+      <div className="stat-card"><MapPin size={20}/><strong>{visits}</strong><span>Verified places</span></div>
+      <div className="stat-card"><Utensils size={20}/><strong>{dishes}</strong><span>Verified dishes</span></div>
+    </section>
+    <section className={styles.connectedWall} aria-label="Your posts"><CommunityFeed initialWall="me" presentation="passport" basePath="/feed"/></section>
+    <details className={styles.details}><summary>Achievements, avatar and account</summary><div className={styles.detailsBody}>
+      <section className="content-panel"><h2>Your achievements</h2><div className="badge-grid">
+        {[{ name: "First good bite", earned: dishes > 0, icon: Utensils, text: "Try your first verified dish." },
+          { name: "Neighbourhood curious", earned: visits > 0, icon: MapPin, text: "Collect your first verified visit." },
+          { name: "Three places discovered", earned: visits >= 3, icon: Flag, text: "Collect three places for a 100 XP bonus." },
+        ].map(({ name, earned, icon: Icon, text }) => <article key={name} className={`badge-tile ${earned ? "" : "is-locked"}`}>
+          <Icon size={24}/><h3>{name}</h3><p>{text}</p><strong>{earned ? "Earned" : "Keep exploring"}</strong></article>)}
+      </div></section><AvatarWardrobe/>
+      <section className="content-panel"><h2>Your business</h2>
+        {account.accountType === "partner" ? <Link className="primary-button" href="/partner/dashboard">Manage my restaurants</Link> :
+          <button className="secondary-button" onClick={becomePartner}>I own a restaurant or cafe</button>}
+        {error && <p className="field-error" role="alert">{error}</p>}
+      </section></div></details></>}
+  </>;
 }

@@ -9,10 +9,5 @@ import { loadCatalogue } from "@/lib/catalogue";
 export default async function Page({ searchParams }: { searchParams: Promise<{ map?: string; view?: string }> }) {
   const [catalogue, query] = await Promise.all([getCatalogue(), searchParams]);
   if (query.view === "catalogue") return <Discovery catalogue={catalogue} />;
-  if (query.map === "adventure") return <>
-    <div className={styles.adventureBar}><MapModeNav geographic={false} basePath="/" /></div>
-    <Discovery catalogue={catalogue.mode === "demo" ? catalogue : await loadCatalogue({mode: "demo"})} />
-    <Suspense fallback={null}><PublishedStorefront /></Suspense>
-  </>;
   return <><GeographicExplore basePath="/" venues={catalogue.venues} catalogueUnavailable={catalogue.status === "unavailable"} /><Suspense fallback={null}><PublishedStorefront /></Suspense></>;
 }

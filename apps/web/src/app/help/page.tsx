@@ -1,144 +1,19 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { getCatalogueMode } from "@/lib/catalogue-server";
-import {
-  ArrowRight,
-  BookOpen,
-  CircleHelp,
-  MapPin,
-  MessagesSquare,
-  ShieldCheck,
-  Store,
-  UserRound,
-} from "lucide-react";
-
-export const metadata: Metadata = { title: "Help & information" };
-
+export const metadata = { title: "Help and information" };
 export default function HelpPage() {
-  const demo = getCatalogueMode() === "demo";
-  return (
-    <>
-      <div className="page-intro">
-        <div>
-          <div className="eyebrow">A LITTLE CLARITY GOES A LONG WAY</div>
-          <h1>Good to know before you go.</h1>
-          <p>
-            A few things about this early Food Go preview and what comes next.
-          </p>
-        </div>
-        <Link className="secondary-button" href="/">
-          Back to exploring
-          <ArrowRight size={17} />
-        </Link>
-      </div>
-      <div className="inline-notice">
-        <CircleHelp size={20} />
-        <p>
-          {demo ? "The venue catalogue contains fictional examples. The dishes, trails and achievement designs are previews. They are not live offers or completed experiences."
-            : "The venue catalogue reads published, ownership-approved listings. Available menu items come from those venues. Trails and achievement designs remain examples, and do not award verified progress."}
-        </p>
-      </div>
-      <div className="help-grid">
-        <section className="help-card">
-          <BookOpen size={25} />
-          <h2>Explore a little</h2>
-          <p>
-            {demo ? "Try venue search, category filters and the example map. Save a place, browse dish ideas, or add an example trail to your session plan."
-              : "Search venue names, suburbs and cuisines, or filter by state and venue type. Save a place or an available menu item. Only approved public listings appear."}
-          </p>
-          <p>
-            Venue bookmarks and dish wishlists are separate and stay on this browser. They do not sync with an account or another device. Example trail plans last for the current quests page session.
-          </p>
-          <Link className="text-button" href="/food-dex">
-            Browse the FoodDex
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-        <section className="help-card">
-          <MapPin size={25} />
-          <h2>Your location stays yours</h2>
-          <p>
-            Explore starts in central Melbourne. Choose an aerial photo or satellite image, then select a place or drop a pin to open directions in Google Maps or Apple Maps.
-          </p>
-          <p>
-            The map uses the point you select. Your location stays private. Choose Adventure to walk through the fictional neighbourhood and collect demo XP.
-          </p>
-          <Link className="text-button" href="/venue-dex">
-            See how places are collected
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-        <section className="help-card">
-          <ShieldCheck size={25} />
-          <h2>A save is not a check-in</h2>
-          <p>
-            Saved places and dishes are a planning list. Verified visits will
-            need secure check-ins. A verified dish will need its own
-            confirmation.
-          </p>
-          <p>
-            This preview cannot award points, verify a visit, or create a public
-            explorer ranking.
-          </p>
-          <Link className="text-button" href="/quests">
-            Look at example trails
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-        <section className="help-card">
-          <MessagesSquare size={25} />
-          <h2>Share around the table</h2>
-          <p>Share food stories in Feed and find your posts and shared discoveries in Passport. Only you can see your private posts and posts awaiting review.</p>
-          <p>Use the post menu to report a story or block someone. The Feed preview uses fictional people and stories. You can reset it on this browser.</p>
-          <Link className="text-button" href="/feed">Open the Feed <ArrowRight size={16} /></Link>
-        </section>
-        <section className="help-card">
-          <UserRound size={25} />
-          <h2>Accounts and privacy</h2>
-          <p>
-            Browsing is available without an account. Account access opens when the account service is ready. Public profile controls and account lifecycle safeguards are being completed.
-          </p>
-          <p>
-            Your venue bookmarks can be cleared from the passport.
-            A final privacy policy and account controls are required before real
-            accounts launch.
-          </p>
-          <Link className="text-button" href="/profile">
-            Manage saved places
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-        <section className="help-card">
-          <Store size={25} />
-          <h2>For restaurant owners</h2>
-          <p>
-            Use the venue form to prepare the information a listing needs. Creating a draft does not verify ownership or publish a venue.
-          </p>
-          <p>
-            Ownership review and partner operations are being connected. Only a reviewed and approved listing can appear in the public catalogue.
-          </p>
-          <Link className="text-button" href="/partner">
-            Preview venue onboarding
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-        <section className="help-card">
-          <CircleHelp size={25} />
-          <h2>What comes next</h2>
-          <p>
-            The next stage connects real accounts and verified venue onboarding,
-            followed by marketplace tools and secure exploration.
-          </p>
-          <p>
-            Bookings, dining payments, live offers and customer support services
-            are not operational in this preview.
-          </p>
-          <Link className="text-button" href="/">
-            Keep exploring the preview
-            <ArrowRight size={16} />
-          </Link>
-        </section>
-      </div>
-    </>
-  );
+  return <><header className="page-intro"><div><h1>How Food Go works</h1><p>Find a place, collect a discovery and share your story.</p></div></header>
+    <div className="help-grid">
+      <section className="help-card"><h2>Your account</h2><p>Choose food explorer or restaurant owner when you sign up. Confirm your email to sign in. Phone sign-in uses an Australian mobile code.</p>
+        <p>Saved places, dishes, verified discoveries and XP belong to your account.</p><Link href="/auth/register">Create an account</Link></section>
+      <section className="help-card"><h2>Explore and directions</h2><p>Search published venues, select a pin and open Google Maps or Apple Maps. The bundled satellite and building survey cover central Melbourne. Map sources show capture dates and coverage.</p>
+        <Link href="/">Explore Melbourne</Link></section>
+      <section className="help-card"><h2>Collect XP</h2><p>Ask the restaurant for its visit QR when you arrive, or a code for the dish you tried. Codes expire after ten minutes. Each place earns 50 XP once and each dish earns 100 XP once. Three different places earn a further 100 XP.</p>
+        <p>Codes for a venue's own staff accounts cannot earn discoveries at that venue. XP tracks progress and has no cash value.</p><Link href="/collect">Collect a discovery</Link></section>
+      <section className="help-card"><h2>Feed and Passport</h2><p>Post public stories or keep a post private. Food Go reviews public stories and replies. Approved contributions, likes received and unique signed-in reach count towards your progress.</p>
+        <p>Use a post's menu to report content or block another account. Passport holds your own wall.</p><Link href="/feed">Open Feed</Link></section>
+      <section className="help-card"><h2>Restaurant owners</h2><p>Your dashboard holds listing details, menu items, offers and customer verification codes. Submit your listing for ownership review. An operator verifies and publishes it before customers can discover it.</p>
+        <p>New offers need operator approval. Changing the restaurant name or address triggers a fresh review.</p><Link href="/partner/dashboard">My restaurants</Link></section>
+      <section className="help-card"><h2>Privacy and account access</h2><p>Your saved list and private posts are visible to your account. Restaurant operators see their business submissions and customer discovery totals. Public Feed displays your explorer name.</p>
+        <p>Use the password recovery screen if you cannot sign in. Confirm dietary needs, prices and availability directly with the venue.</p><Link href="/auth/forgot-password">Recover account access</Link></section>
+    </div></>;
 }

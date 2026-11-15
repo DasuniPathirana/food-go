@@ -21,6 +21,7 @@ export const signInSchema = z.strictObject({
   password: z.string().min(1, "Enter your password.").max(128),
 });
 export const registerSchema = z.strictObject({
+  accountType: z.enum(["explorer", "partner"]).default("explorer"),
   displayName: z
     .string()
     .trim()

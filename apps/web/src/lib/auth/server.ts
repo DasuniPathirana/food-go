@@ -11,6 +11,7 @@ export type SafeAccount = {
   displayName: string;
   email: string | null;
   phone?: string | null;
+  accountType: "explorer" | "partner";
 };
 export type AuthState = { configured: boolean; user: SafeAccount | null };
 
@@ -80,14 +81,16 @@ export const getAuthState = cache(async (): Promise<AuthState> => {
     if (error || !data.user || !hasVerifiedIdentity(data.user))
       return { configured: true, user: null };
     const rawName: unknown = data.user.user_metadata?.display_name;
+    const profile = await client.from("profiles").select("account_type,display_name").eq("id", data.user.id).single();
     return {
       configured: true,
       user: {
         id: data.user.id,
+        accountType: profile.data?.account_type === "partner" ? "partner" : "explorer",
         displayName:
-          typeof rawName === "string" && rawName.trim()
+          profile.data?.display_name || (typeof rawName === "string" && rawName.trim()
             ? rawName.trim().slice(0, 80)
-            : "Food explorer",
+            : "Food explorer"),
         email: data.user.email ?? null,
         phone: data.user.phone_confirmed_at ? australianMobile(data.user.phone) : null,
       },

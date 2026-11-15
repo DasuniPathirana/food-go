@@ -2,29 +2,29 @@
 
 Use `apps/web/.env.example` for local names and safe defaults. In hosting, set variables on the **web project**, scoped separately to Preview and Production. The web code reads these on the server; it does not require browser-visible Supabase variables. Do not copy a developer's ignored `.env.local` into the repository.
 
-## Credential-free demonstration
+## Maps and connected accounts
 
 The Melbourne real map ships with aerial photography, a dated satellite image and surveyed building heights. The browser downloads these assets from the deployment itself. No map provider account is required for this coverage.
 
 For satellite imagery outside central Melbourne, create an origin-restricted public MapTiler browser key on a suitable plan. Set `NEXT_PUBLIC_MAPTILER_KEY` for the intended hosting environment and rebuild. This value is public in the browser bundle. Verify satellite tiles, attribution, usage limits and allowed deployment origins on that environment. The wider imagery layer does not extend the bundled 3D building survey. [Satellite dataset](https://docs.maptiler.com/schema-raster/satellite/)
 
-These values make the deployed site an explicit demo with live account services closed:
+Use these values after supplying the server settings below and configuring the intended Auth provider:
 
 ```dotenv
-FOOD_GO_CATALOGUE_MODE=demo
-FOOD_GO_COMMUNITY_ENABLED=false
-FOOD_GO_AUTH_ENABLED=false
-FOOD_GO_AUTH_PRODUCTION_READY=false
-FOOD_GO_PARTNER_ENABLED=false
+FOOD_GO_CATALOGUE_MODE=supabase
+FOOD_GO_COMMUNITY_ENABLED=true
+FOOD_GO_AUTH_ENABLED=true
+FOOD_GO_AUTH_PRODUCTION_READY=true
+FOOD_GO_PARTNER_ENABLED=true
 FOOD_GO_PHONE_AUTH_ENABLED=false
 FOOD_GO_SMS_ENABLED=false
 ```
 
-Use `/demo/explore` to present the geographic map. Its imagery and landmark coordinates come from the public datasets listed in the map credits. Adventure uses fictional game locations, and its social examples, XP and avatar preferences stay in the browser. Leave Supabase, cookie-signing and SMS secrets unset for this mode. Connected routes can show an empty catalogue or a closed account sign-in screen.
+Open `/` for Explore. All website catalogue and account flows use connected records. The historical example routes return 404. Missing configuration produces an unavailable state. Enable the separate phone and SMS flags after their signed-hook and delivery tests pass.
 
-Set `APP_ORIGIN` to the exact stable HTTPS origin once the domain is chosen, for example `https://food-go-preview.example.com`. That example is not an owned/live domain. Omit a trailing slash, path, query and fragment. Do not trust request headers to choose the application's origin. A different temporary preview hostname is a different origin; keep Auth disabled on arbitrary branch previews rather than weakening origin checks.
+Set `APP_ORIGIN=https://food-go-three.vercel.app` for the current hosting address. Update it and the Supabase callback allowlist together when the final domain is chosen. Omit a trailing slash, path, query and fragment. Configure branch previews separately if accounts need to work on their origins.
 
-## Server configuration for a later connected release
+## Server configuration
 
 | Variable | Purpose | Requirement |
 | --- | --- | --- |
