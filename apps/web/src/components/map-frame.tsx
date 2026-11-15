@@ -46,7 +46,7 @@ export function MapFrame({ label, className, children }: { label: string; classN
   }, [expanded]);
 
   return <div className={className} ref={slot}>
-    <dialog ref={surface} open aria-label={label} className={styles.surface} onClose={restore}>
+    <dialog ref={surface} open role={expanded ? "dialog" : "region"} aria-label={label} className={styles.surface} onClose={restore}>
       <MapFrameContext.Provider value={{ expanded, toggle }}>{children}</MapFrameContext.Provider>
     </dialog>
   </div>;

@@ -69,6 +69,11 @@ for (const path of [
   const response = await request(path);
   const html = await response.text();
   check(response.status === 200 && html.includes("Food Go"), `${path} renders`);
+  if (path === "/" || path === "/demo/explore") {
+    check(html.includes("Search map places") && html.includes("Explore full map"), `${path} has place search and a full-map control`);
+    check(/<button[^>]*aria-pressed="true"[^>]*>(?:(?!<\/button>)[\s\S])*?Satellite<\/button>/u.test(html), `${path} starts in Satellite view`);
+  }
+  if (path === "/") check(html.includes('id="current-promotions"') && html.includes('id="restaurant-directory"'), "Explore includes promotions and the restaurant directory");
   check(
     response.headers.get("x-content-type-options") === "nosniff",
     `${path} has MIME protection`,
@@ -82,6 +87,10 @@ for (const path of [
     `${path} does not expose the framework header`,
   );
 }
+const adventureMarkup = await (await request("/demo/explore?map=adventure")).text();
+check(adventureMarkup.includes("Explore full map") && adventureMarkup.includes("Swipe to explore, tap to walk."), "Adventure has swipe guidance and an expandable map");
+check(!adventureMarkup.includes("Walk north"), "Adventure has no directional walking pad");
+check((await request("/feed?wall=me")).url === new URL("/profile", origin).href, "Personal wall opens under Passport");
 const communityResponse = await request("/api/community");
 const gameResponse = await request("/api/game");
 check(gameResponse.status === 503 && (await gameResponse.json()).status === "disabled", "Connected progression remains closed while accounts are disabled");

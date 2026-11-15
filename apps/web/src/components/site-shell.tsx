@@ -67,7 +67,7 @@ export function SiteShell({
           <Link href="/demo">Play the full adventure demo</Link>
           <Link href="/help">Help and privacy</Link>
           <a
-            href="https://github.com/DasuniPathirana/food-go"
+            href="https://github.com/Kalana8/Food_Go"
             target="_blank"
             rel="noopener noreferrer"
           >

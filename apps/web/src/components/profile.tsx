@@ -184,9 +184,7 @@ export function ExplorerProfile({
           </button>
         </div>
         <p>
-          Only your venue bookmarks are managed here. This does not delete an
-          account. Account deletion will be available when real accounts are
-          connected.
+          Clear the venue bookmarks saved on this browser.
         </p>
         {message && (
           <p className="inline-notice" role="status">
@@ -194,7 +192,7 @@ export function ExplorerProfile({
           </p>
         )}
         <Link className="text-button" href="/help">
-          Read about privacy in this preview
+          Help and privacy
           <ArrowRight size={16} />
         </Link>
       </section>

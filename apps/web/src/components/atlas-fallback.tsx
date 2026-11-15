@@ -198,7 +198,7 @@ export function AtlasFallback({ places, selected, onSelect, imagery, threeD }: P
     {places.map(place => {
       const position = markerPosition(place);
       if (Number(position.left) < 0 || Number(position.left) > size.width || Number(position.top) < 0 || Number(position.top) > size.height) return null;
-      return <button key={place.id} type="button" className={styles.marker} style={position}
+      return <button key={place.id} type="button" data-map-marker className={styles.marker} style={position}
         aria-pressed={place.id === selected?.id} aria-label={place.name} onClick={() => select({ id: place.id, longitude: place.longitude, latitude: place.latitude })}>
         <MapPin size={18} aria-hidden="true" /><span>{place.name}</span>
       </button>;

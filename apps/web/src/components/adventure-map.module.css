@@ -598,3 +598,10 @@
 .frame dialog:modal .topControls { padding: 5px; }
 .frame .disclosureArea { flex: none; }
 .frame .caption p { margin: 0; }
+@media (max-width: 760px) {
+  .frame { --adventure-bottom-inset: calc(65px + env(safe-area-inset-bottom)); }
+  .topControls :global(.discovery-intro > div > p), .topControls :global(.intro-trail-link) { display: none; }
+  .topControls :global(.discovery-intro) { display: block; }
+  .topControls :global(.category-options) { display: flex; flex-wrap: nowrap; overflow-x: auto; }
+  .topControls :global(.category-options button) { white-space: nowrap; flex-shrink: 0; }
+}

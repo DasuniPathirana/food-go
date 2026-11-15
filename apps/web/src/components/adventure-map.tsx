@@ -163,7 +163,7 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
           {["#fff9ee", "#006d68"].map((stroke, index) => <path key={stroke} d={`M${player.x * 15} ${player.y * 10} L${player.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${destination.y * 10}`}
             fill="none" stroke={stroke} strokeWidth={index ? 5 : 10} strokeDasharray={index ? "3 13" : undefined} strokeLinecap="round" strokeLinejoin="round" />)}
         </svg>}
-        {stops.map((stop) => <button type="button" key={stop.id} className={`${styles["map-pin"]} ${targetStop?.id === stop.id ? styles.selected : ""}`}
+        {stops.map((stop) => <button type="button" data-map-marker key={stop.id} className={`${styles["map-pin"]} ${targetStop?.id === stop.id ? styles.selected : ""}`}
           style={{ left: `${stop.position.x}%`, top: `${stop.position.y}%` }} onClick={(event) => {
             if (stop.isBuilding) { panelOpener.current = event.currentTarget; setBuildingId(stop.id); setExpanded("building"); }
             else { panelOpener.current = event.currentTarget; setBuildingId(null); setExpanded("venue"); onSelect?.(stop.venues[0].id); }

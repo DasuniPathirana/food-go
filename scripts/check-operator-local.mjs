@@ -90,6 +90,11 @@ try {
   const verified = await webPost("/api/admin/security", { action: "verify", factorId: setup.factorId, code: authenticatorCode(setup.secret) });
   assert.equal(verified.status, 200, "Verify a real TOTP challenge and upgrade the session");
   assert.equal((await verified.json()).verified, true);
+  const dashboard = await fetch(origin + "/admin", {
+    headers: { Cookie: [...cookies].map(([key, value]) => `${key}=${value}`).join("; ") },
+    signal: AbortSignal.timeout(90000),
+  });
+  assert.ok(dashboard.ok && (await dashboard.text()).includes("Fixture kitchen"), "Operator dashboard renders its restaurant queue");
   const change = async action => assert.ok((await webPost("/api/admin", action)).ok, `Apply ${action.action}`);
   const publicOffers = async () => {
     const response = await fetch(provider + "/rest/v1/rpc/food_go_active_promotions", { method: "POST",
@@ -103,6 +108,9 @@ try {
     const version = localSql(`select to_json(updated_at)#>>'{}' from public.promotions where id='${offer}'`);
     await change({ action, id: offer, requestId: randomUUID(), version, reason: "Fixture offer lifecycle" });
     assert.equal(await publicOffers(), visible, "Public read follows the operator decision");
+    const deals = await fetch(origin + "/deals", { signal: AbortSignal.timeout(90000) });
+    assert.ok(deals.ok, "Public Deals page renders");
+    assert.equal((await deals.text()).includes(draft.title), visible, "Signed-out Deals follows the operator decision");
   }
   console.log("Verified sign-in, role assignment, TOTP step-up, draft, publication and withdrawal on the disposable stack.");
 } finally {
