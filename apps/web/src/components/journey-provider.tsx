@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { journeySchema, type Journey } from "@/lib/journey";
 import { usePathname } from "next/navigation";
 
@@ -14,16 +14,20 @@ export function JourneyProvider({ signedIn, children }: { signedIn: boolean; chi
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const revision = useRef(0);
+  const mutationPending = useRef(false);
   const refresh = useCallback(async () => {
     if (!signedIn) { setData(null); return; }
+    if (mutationPending.current) return;
+    const requestRevision = ++revision.current;
     setLoading(true);
     try {
       const response = await fetch("/api/journey", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(12000) });
       const parsed = journeySchema.safeParse(await response.json());
       if (!response.ok || !parsed.success) throw new Error();
-      setData(parsed.data); setError("");
-    } catch { setError("Your collection could not load. Please try again."); }
-    finally { setLoading(false); }
+      if (requestRevision === revision.current) { setData(parsed.data); setError(""); }
+    } catch { if (requestRevision === revision.current) setError("Your collection could not load. Please try again."); }
+    finally { if (requestRevision === revision.current) setLoading(false); }
   }, [signedIn]);
   useEffect(() => { void refresh(); }, [refresh, pathname]);
   useEffect(() => {
@@ -35,7 +39,10 @@ export function JourneyProvider({ signedIn, children }: { signedIn: boolean; chi
   async function save(kind: "venue" | "dish", id: string) {
     if (!signedIn) { window.location.assign("/auth/sign-in"); return; }
     if (!data) { setError("Your collection is still loading. Please try again shortly."); return; }
-    if (saving) return;
+    if (mutationPending.current) return;
+    mutationPending.current = true;
+    revision.current++;
+    setLoading(false);
     setSaving(true);
     try {
       const saved = !(kind === "venue" ? data.savedVenues : data.savedDishes).includes(id);
@@ -45,7 +52,7 @@ export function JourneyProvider({ signedIn, children }: { signedIn: boolean; chi
       if (!response.ok || !parsed.success) throw new Error(typeof body.error === "string" ? body.error : "Your change could not be saved.");
       setData(parsed.data); setError("");
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Your change could not be saved."); }
-    finally { setSaving(false); }
+    finally { mutationPending.current = false; setSaving(false); }
   }
   return <JourneyContext.Provider value={{ signedIn, data, loading, error, refresh, save, saving }}>
     {error && <div className="inline-notice" role="alert">{error}<button type="button" onClick={() => void refresh()}>Try again</button></div>}
