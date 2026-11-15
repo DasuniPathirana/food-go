@@ -8,9 +8,11 @@ The website now uses connected signup, customer collections, venue-issued verifi
 
 The [connected release handoff](docs/deployment/connected-release.md) covers the operator portal, authenticator sign-in, restaurant and promotion publication, Feed, Passport and the revised Explore controls. It includes the deployment order and acceptance checks for the existing Vercel site.
 
-Explore opens with real Melbourne aerial photography, satellite imagery and 3D buildings. Select any point for directions. Choose Adventure to play the illustrated map. Feed, collections, Deals and Passport share the market-signage design. [Map coverage and demo walkthrough](docs/progress/14-melbourne-geography.md).
+Explore now has worldwide streets, available 3D buildings and an interactive avatar. Search a place or type coordinates, position the explorer manually, follow a real pedestrian route, or enable live location. Worldwide satellite requires an origin-restricted provider key; bundled Melbourne imagery stays clearly labelled. A 2D world map preserves interactions without WebGL. Feed, collections, Deals and Passport share the light market-signage design. [World explorer delivery](docs/progress/15-world-explorer.md) and [map deployment requirements](docs/deployment/world-map.md).
 
 ## Earlier milestones
+
+The following records describe their delivery dates. Their old demo entry points are retired in the connected website; use `/` for the current Explore experience.
 
 Milestone 11 fits the complete Explore scene within the available browser section, replaces the separate Walk panel with an inline arrow pad, and exposes selected-place external map links. Fictional venues open an explicitly labelled real area; complete published addresses retain exact directions. See [map behaviour and verification](docs/progress/11-map-fit-and-navigation.md).
 

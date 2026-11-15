@@ -5,6 +5,8 @@ This documentation explains what exists, what has been checked, and what will be
 ## Start here
 
 - [Connected release and end-to-end journeys](deployment/connected-release.md) covers signup, the customer and restaurant interfaces, saved collections, verified XP, migration order and deployment acceptance.
+- [Worldwide explorer](progress/15-world-explorer.md) records the interactive world map, live-location consent, pedestrian route walking, avatar controls and browser verification.
+- [World map operations](deployment/world-map.md) covers provider keys, public-service rate limits, the shared database migration, location privacy and actual-device checks.
 
 - [Geographic Explore and the market-signage UI](progress/14-melbourne-geography.md) covers the Melbourne data, 3D buildings, phone controls and demo presentation.
 - [Compact phone map controls](progress/13-compact-map-controls.md): smaller search and control groups, on-demand filters/tools and preserved tap targets.
@@ -64,4 +66,4 @@ Screenshots are evidence of a particular state. They do not establish that authe
 
 ## Evidence status
 
-Milestone 12 is the current browser UI and deployment-handoff delivery. Milestone 11 records viewport-fit maps and inline walking; Milestone 10 records the neighbourhood-guide redesign. Milestone 09 records avatar behaviour; Milestone 08 records the unified demo game and connected social XP work. Milestone 05 records the approved-map integration and earlier database validation. Milestone 04 is the complete foundation analysis. Each page preserves the checks at its delivery date. A prepared deployment configuration does not establish successful remote CI, public deployment or live account readiness. Future capabilities described in the roadmap are not claims that those capabilities are available today.
+Milestone 15 is the current worldwide browser-map delivery. The connected release handoff records current signup, owner, operator and verified XP flows. Milestone 14 records the earlier Melbourne geography; 12 records Passport and deployment preparation. Earlier milestones preserve their historical checks and demo behaviour. A prepared deployment configuration does not establish successful public deployment or real provider/device acceptance. Future capabilities described in the roadmap are not claims that those capabilities are available today.

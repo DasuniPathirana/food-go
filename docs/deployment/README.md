@@ -38,7 +38,7 @@ Use the client's account and import the GitHub repository. Start with a **Previe
 
 After review, the owner may choose `develop` as the deployment branch for the demonstration project. Set that in the Vercel project's Git settings. Do not merge to or configure a deployment from `main` as a shortcut. Promoting a public production release is a separate decision from accepting a preview build.
 
-Use the [demo environment values](environment.md) first, scoped to this project's Preview environment. No server secret belongs in a `NEXT_PUBLIC_` variable. Keep personal `.env.local`, `.vercel` linkage files and provider credentials out of source control. Provide actual secrets through the hosting/provider dashboards.
+Use the [environment manifest](environment.md), scoped to the intended Preview or Production environment. No server secret belongs in a `NEXT_PUBLIC_` variable. Keep personal `.env.local`, `.vercel` linkage files and provider credentials out of source control. Provide actual secrets through the hosting/provider dashboards. Apply the shared map-service lease migration and follow [world map operations](world-map.md) for worldwide search, satellite and pedestrian routing.
 
 This configuration follows Vercel's [monorepo workflow](https://vercel.com/docs/monorepos), [build settings](https://vercel.com/docs/builds/configure-a-build) and [Node version settings](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions). Confirm the final settings shown in the deployment log before sharing the URL. The Vercel adapter deployment itself has not been exercised in this environment.
 

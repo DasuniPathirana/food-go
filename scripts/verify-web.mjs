@@ -30,7 +30,8 @@ for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/ven
   check(csp.includes("frame-ancestors 'none'") && !csp.includes("unsafe-eval"), `${path} has the production CSP`);
   if (path === "/") {
     check(html.includes("Search map places") && html.includes("Explore full map"), "Explore has search and an expanded map");
-    check(/<button[^>]*aria-pressed="true"[^>]*>(?:(?!<\/button>)[\s\S])*?Satellite<\/button>/u.test(html), "Explore opens in Satellite");
+    check(html.includes("Streets") && html.includes("Enable live location") && html.includes("Avatar options"), "Explore exposes worldwide maps, opt-in location and the avatar");
+    check((response.headers.get("permissions-policy") || "").includes("geolocation=(self)"), "Geolocation is permitted for this site's explicit request");
   }
 }
 for (const path of ["/demo","/demo/explore","/demo/passport","/explore-preview","/feed-preview","/explore-preview/venues/finch-and-field"]) {
@@ -39,6 +40,9 @@ for (const path of ["/demo","/demo/explore","/demo/passport","/explore-preview",
 check((await request("/feed?wall=me")).url === new URL("/profile", origin).href, "Personal wall opens in Passport");
 for (const query of ["q=a&q=b","limit=1000","state=other","status=draft"]) {
   check((await request("/api/venues?" + query)).status === 400, "Catalogue rejects invalid query");
+}
+for (const path of ["/api/map/search?q=a","/api/map/search?q=A&q=B","/api/map/route?from=1,2&to=999,3"]) {
+  check((await request(path)).status === 400, "Map services reject invalid or ambiguous input");
 }
 for (const path of ["/api/journey","/api/game","/api/partner/venues"]) {
   check((await request(path)).status === 503, `${path} is disabled when Auth is unconfigured`);

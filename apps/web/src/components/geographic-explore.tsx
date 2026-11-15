@@ -3,166 +3,200 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowUpRight, Box, ChevronDown, MapPin, Satellite, ScanLine, Search, X } from "lucide-react";
+import { ArrowUpRight, Box, Compass, Hand, LocateFixed, MapPin, Pause, PersonStanding, Play, Search, Sparkles, X } from "lucide-react";
 import { atlasStops, geographicPoint, pointDirections } from "@/lib/atlas-places";
-import { ATLAS_AERIAL, ATLAS_SATELLITE, ATLAS_CORNERS, ATLAS_PLACES, ATLAS_ATTRIBUTION, ATLAS_SATELLITE_DATE } from "@/lib/melbourne-atlas";
+import { ATLAS_CENTER, ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
-import type { AtlasSelection } from "./atlas-canvas";
+import type { MapSearchResult } from "@/lib/map-services";
+import { useAvatarPreferences } from "@/lib/avatar-preferences";
+import type { AtlasCanvasProps, AtlasImagery, AtlasSelection } from "./atlas-canvas";
 import { MapExpandButton, MapFrame } from "./map-frame";
+import { MapPlayer } from "./map-player";
+import { AvatarCustomizer, type AvatarAction } from "./avatar-customizer";
+import { useExplorerLocation } from "./use-explorer-location";
+import { useStreetWalk } from "./use-street-walk";
 import styles from "./geographic-explore.module.css";
 
 const Canvas = dynamic(() => import("./atlas-canvas").then(module => module.AtlasCanvas), { ssr: false });
-const FlatCanvas = dynamic(() => import("./atlas-fallback").then(module => module.AtlasFallback), { ssr: false });
+const FlatCanvas = dynamic(() => import("./world-map-fallback").then(module => module.WorldMapFallback), { ssr: false });
 const noVenues: CatalogueVenue[] = [];
-const withinImage = (point: AtlasSelection) => point.longitude >= ATLAS_CORNERS[0][0] && point.longitude <= ATLAS_CORNERS[2][0]
-  && point.latitude <= ATLAS_CORNERS[0][1] && point.latitude >= ATLAS_CORNERS[2][1];
+const initialPosition = { longitude: ATLAS_CENTER[0], latitude: ATLAS_CENTER[1] };
+const globalSatellite = !!process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
 
-export function GeographicExplore({ basePath, venues = noVenues, catalogueUnavailable = false }: {
+export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false }: {
   basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean;
 }) {
-  const frame = useRef<HTMLDivElement>(null);
-  const controls = useRef<HTMLDivElement>(null);
-  const field = useRef<HTMLInputElement>(null);
+  const frame = useRef<HTMLDivElement>(null), controls = useRef<HTMLDivElement>(null), field = useRef<HTMLInputElement>(null);
+  const searchRequest = useRef<AbortController | null>(null);
   const resultsId = useId();
-  const [query, setQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [results, setResults] = useState<CatalogueVenue[]>(noVenues);
-  const [searchError, setSearchError] = useState(false);
-  const [pending, setPending] = useState(false);
-  const [chosen, setChosen] = useState<CatalogueVenue[]>(noVenues);
+  const [query, setQuery] = useState(""), [searchOpen, setSearchOpen] = useState(false);
+  const [worldResults, setWorldResults] = useState<MapSearchResult[]>([]);
+  const [venueResults, setVenueResults] = useState<CatalogueVenue[]>([]);
+  const [chosenVenues, setChosenVenues] = useState<CatalogueVenue[]>([]);
+  const [searchMessage, setSearchMessage] = useState(""), [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<AtlasSelection | null>(null);
-  const [imagery, setImagery] = useState<"aerial" | "satellite">("satellite");
-  const [threeD, setThreeD] = useState(true);
-  const [renderer, setRenderer] = useState<"loading" | "ready" | "local">("loading");
-  const [providerFailed, setProviderFailed] = useState(false);
-  const needle = query.trim().toLocaleLowerCase("en-AU");
-  const allVenues = useMemo(() => Array.from(new Map([...venues, ...chosen, ...results].map(venue => [venue.id, venue])).values()), [venues, chosen, results]);
-  const stops = useMemo(() => atlasStops(ATLAS_PLACES, allVenues), [allVenues]);
+  const [selectedName, setSelectedName] = useState("");
+  const [imagery, setImagery] = useState<AtlasImagery>(globalSatellite ? "satellite" : "street");
+  const [threeD, setThreeD] = useState(true), [loaded, setLoaded] = useState(false);
+  const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl"), [providerFailed, setProviderFailed] = useState(false);
+  const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
+  const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
+  const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
+  const preferences = useAvatarPreferences();
+  const location = useExplorerLocation(initialPosition);
+  const walk = useStreetWalk({ start: location.position, enabled: location.mode === "manual" });
+  const player = walk.position;
+  const allVenues = useMemo(() => [...new Map([...venues, ...chosenVenues, ...venueResults].map(v => [v.id, v])).values()], [venues, chosenVenues, venueResults]);
+  const stops = useMemo(() => atlasStops([], allVenues), [allVenues]);
   const active = stops.find(stop => stop.id === selected?.id);
-  const remote = !!process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim() && imagery === "satellite" && renderer !== "local" && !providerFailed;
-  const shown = useMemo(() => remote ? stops : stops.filter(withinImage), [stops, remote]);
-  const matched = stops.filter(stop => stop.members.some(member => (member.name + " " + member.area).toLocaleLowerCase("en-AU").includes(needle)
-    || results.some(venue => venue.id === member.id)));
-  const onSelect = useCallback((point: AtlasSelection) => { if (geographicPoint(point)) { setSelected(point); setSearchOpen(false); } }, []);
-  const ready = useCallback(() => setRenderer("ready"), []);
-  const unavailable = useCallback(() => setRenderer("local"), []);
-  const satelliteUnavailable = useCallback(() => setProviderFailed(true), []);
+  const localMatches = stops.filter(stop => stop.name.toLocaleLowerCase("en-AU").includes(query.trim().toLocaleLowerCase("en-AU")));
   const directions = selected && pointDirections(selected);
-
-  useEffect(() => {
-    setResults(noVenues);
-    setSearchError(false);
-    if (basePath !== "/" || !searchOpen || needle.length < 2) { setPending(false); return; }
-    const controller = new AbortController();
-    setPending(true);
-    const timer = window.setTimeout(async () => {
-      try {
-        const params = new URLSearchParams({ q: needle, limit: "50" });
-        const response = await fetch(`/api/venues?${params}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]), cache: "no-store" });
-        if (!response.ok) throw new Error("Search unavailable");
-        const data = await response.json();
-        if (!controller.signal.aborted && data.mode === "supabase" && Array.isArray(data.data)) setResults(data.data);
-      } catch {
-        if (!controller.signal.aborted) setSearchError(true);
-      } finally {
-        if (!controller.signal.aborted) setPending(false);
-      }
-    }, 250);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, [basePath, needle, searchOpen]);
-
-  function choose(stop: (typeof stops)[number]) {
-    const ids = new Set(stop.members.map(member => member.id));
-    setChosen(allVenues.filter(venue => ids.has(venue.id)));
-    setQuery(stop.name);
-    onSelect(stop);
+  const walking = walk.phase === "walking";
+  const ready = useCallback(() => setLoaded(true), []);
+  const unavailable = useCallback(() => { setRenderer("fallback"); setLoaded(false); }, []);
+  const satelliteUnavailable = useCallback(() => setProviderFailed(true), []);
+  const cameraMoved = useCallback(() => setFollow(false), []);
+  const selectPoint = useCallback((point: AtlasSelection) => {
+    if (!geographicPoint(point)) return;
+    setSelected(point); setSelectedName(""); setFollow(false); setSearchOpen(false);
+  }, []);
+  function choose(point: AtlasSelection, name: string) {
     field.current?.focus({ preventScroll: true });
-    setSearchOpen(false);
+    selectPoint(point); setSelectedName(name); setQuery(name);
+    if (point.id) {
+      const stop = stops.find(item => item.id === point.id);
+      const ids = new Set([point.id, ...(stop?.members.map(member => member.id) ?? [])]);
+      setChosenVenues(allVenues.filter(v => ids.has(v.id)));
+    }
   }
-
-  function search(event: FormEvent<HTMLFormElement>) {
+  function perform(next: AvatarAction) { setAction(next); setActionToken(n => n + 1); }
+  function editQuery(value: string) {
+    searchRequest.current?.abort(); setSearching(false); setQuery(value);
+    setWorldResults([]); setVenueResults([]); setSearchMessage("");
+  }
+  useEffect(() => {
+    if (action === "idle") return;
+    const timer = setTimeout(() => setAction("idle"), 2800);
+    return () => clearTimeout(timer);
+  }, [action, actionToken]);
+  useEffect(() => () => searchRequest.current?.abort(), []);
+  async function search(event: FormEvent) {
     event.preventDefault();
-    if (needle && matched[0]) choose(matched[0]);
-    else setSearchOpen(true);
+    const text = query.trim();
+    if (text.length < 2) { setSearchOpen(true); setSearchMessage("Enter a town, address or latitude, longitude."); return; }
+    searchRequest.current?.abort();
+    const request = new AbortController();
+    searchRequest.current = request;
+    setSearching(true); setSearchOpen(true); setSearchMessage(""); setWorldResults([]); setVenueResults([]);
+    const coordinates = /^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/u.exec(text);
+    if (coordinates && geographicPoint({ latitude: Number(coordinates[1]), longitude: Number(coordinates[2]) })) {
+      choose({ latitude: Number(coordinates[1]), longitude: Number(coordinates[2]) }, text); setSearching(false); return;
+    }
+    const [places, restaurants] = await Promise.allSettled([
+      fetch("/api/map/search?" + new URLSearchParams({ q: text }), { signal: request.signal, cache: "no-store" }).then(async response => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(response.status === 429 ? "Search is busy. Wait a moment and submit again." : "World search is temporarily unavailable. You can enter latitude, longitude.");
+        if (!Array.isArray(body.results)) throw new Error("Place search is unavailable.");
+        return body.results.filter((result: MapSearchResult) => geographicPoint(result) && typeof result.name === "string").slice(0, 8) as MapSearchResult[];
+      }),
+      fetch("/api/venues?" + new URLSearchParams({ q: text.slice(0, 100), limit: "20" }), { signal: request.signal, cache: "no-store" })
+        .then(async response => { const body = await response.json(); return response.ok && body.mode === "supabase" && Array.isArray(body.data) ? body.data as CatalogueVenue[] : []; }),
+    ]);
+    if (request.signal.aborted) return;
+    if (places.status === "fulfilled") { setWorldResults(places.value); setSearchMessage(places.value.length ? "" : "No matching places. Try a nearby town or address."); }
+    else setSearchMessage(places.reason instanceof Error ? places.reason.message : "Place search is unavailable.");
+    if (restaurants.status === "fulfilled") setVenueResults(restaurants.value);
+    setSearching(false);
   }
-
   useLayoutEffect(() => {
     const node = frame.current;
     if (!node) return;
-    const measure = () => {
-      if (!node.closest("dialog:modal")) node.style.setProperty("--atlas-top", `${Math.ceil(node.getBoundingClientRect().top + window.scrollY)}px`);
-    };
+    const measure = () => { if (!node.closest("dialog:modal")) node.style.setProperty("--atlas-top", `${Math.ceil(node.getBoundingClientRect().top + window.scrollY)}px`); };
     measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(document.body);
+    const observer = new ResizeObserver(measure); observer.observe(document.body);
     if (controls.current) observer.observe(controls.current);
     window.addEventListener("resize", measure);
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
-
+  const canvasProps: AtlasCanvasProps = {
+    places: stops, selected, imagery, threeD, player, followPlayer: follow, focusPlayerNonce: focus,
+    location: location.mode === "live" ? location.position : null, accuracy: location.accuracy ?? undefined,
+    heading: location.mode === "live" ? location.heading ?? undefined : walk.heading, route: walk.route,
+    playerContent: <MapPlayer avatarId={preferences.preferences.avatarId} walking={walking} action={action} actionToken={actionToken}
+      animate={!paused && (preferences.preferences.idleMotion || walking || action !== "idle")} onActivate={() => perform("wave")}/>,
+    onSelect: selectPoint, onReady: ready, onUnavailable: unavailable, onCameraInteraction: cameraMoved, onSatelliteUnavailable: satelliteUnavailable,
+  };
   return <section className={styles.atlas} aria-label="Geographic exploration">
-    <MapFrame label="Explore Melbourne map">
-      <div ref={controls} className={styles.controls}>
-        <div className={styles.placeBar}>
-          <h1>Melbourne</h1>
-          <form className={styles.search} role="search" onSubmit={search}
-            onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}
-            onKeyDown={event => {
-              if (event.key === "Escape" && searchOpen) {
-                event.preventDefault(); event.stopPropagation(); field.current?.focus(); setSearchOpen(false);
-              }
-            }}>
-            <div className={styles.field}><Search size={17} aria-hidden="true" />
-              <input ref={field} aria-label="Search map places" type="search" maxLength={100} autoComplete="off" placeholder="Search restaurants and places"
-                value={query} onFocus={() => setSearchOpen(true)} onClick={() => setSearchOpen(true)}
-                onChange={event => { setQuery(event.target.value); setResults(noVenues); setSearchOpen(true); }} />
-              <button type="button" title={query ? "Clear search" : "Browse map places"} aria-label={query ? "Clear search" : "Browse map places"}
-                aria-controls={resultsId} aria-expanded={searchOpen} onClick={() => {
-                  if (query) { setQuery(""); field.current?.focus(); setSearchOpen(true); }
-                  else setSearchOpen(value => !value);
-                }}>{query ? <X size={16} /> : <ChevronDown size={16} />}</button>
-            </div>
-            {searchOpen && <div id={resultsId} className={styles.results}>
-              {matched.slice(0, 8).map(stop => <button key={stop.id} type="button" onClick={() => choose(stop)}>
-                <MapPin size={16} /><span><strong>{stop.name}</strong><small>{stop.members.length > 1 ? stop.members.map(member => member.name).join(", ") : stop.area}</small></span><ArrowUpRight size={15} />
-              </button>)}
-              <span role="status">{pending ? "Searching venues…" : searchError ? "Venue search unavailable." : matched.length > 8 ? "Refine your search for more places." : !matched.length ? "No mapped places found." : ""}</span>
-            </div>}
-          </form>
+    <MapFrame label="Explore the world">
+      <div ref={controls} className={styles.controls}><div className={styles.placeBar}>
+        <h1>Explore</h1><form className={styles.search} role="search" onSubmit={search}
+          onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}
+          onKeyDown={event => { if (event.key === "Escape" && searchOpen) { event.preventDefault(); event.stopPropagation(); setSearchOpen(false); } }}>
+          <div className={styles.field}><Search size={17}/><input ref={field} type="search" aria-label="Search map places" maxLength={120} autoComplete="off"
+            placeholder="Search anywhere in the world" value={query} onFocus={() => setSearchOpen(true)} onChange={e => editQuery(e.target.value)}/>
+            {query && <button type="button" aria-label="Clear place search" onClick={() => { editQuery(""); field.current?.focus(); }}><X size={17}/></button>}
+            <button type="submit" aria-label="Search worldwide" aria-controls={resultsId} aria-expanded={searchOpen} aria-busy={searching}><Search size={18}/></button></div>
+          {searchOpen && <div id={resultsId} className={styles.results}>
+            {localMatches.slice(0, 4).map(stop => <button key={stop.id} type="button" onClick={() => choose(stop, stop.name)}><MapPin size={17}/><span><strong>{stop.name}</strong><small>Food Go · {stop.area}</small></span></button>)}
+            {worldResults.map(result => <button key={result.id} type="button" onClick={() => choose(result, result.name)}><Compass size={17}/><span><strong>{result.name}</strong><small>OpenStreetMap place</small></span></button>)}
+            <span role="status">{searching ? "Searching places…" : searchMessage || (!query ? "Type a place or address, then search." : !worldResults.length && !localMatches.length ? "Press Search to look worldwide." : "")}</span>
+          </div>}
+        </form></div>
+        <div className={styles.bar}><div className={styles.layers} role="group" aria-label="Imagery and perspective">
+          {([["street","Streets"],["satellite", globalSatellite && !providerFailed ? "Satellite" : "Melbourne satellite"],["aerial","Melbourne aerial"]] as const).map(([mode,label]) =>
+            <button key={mode} type="button" aria-pressed={imagery === mode} onClick={() => setImagery(mode)}>{label}</button>)}
+          <button type="button" className={styles.depth} aria-label="3D buildings" aria-pressed={renderer === "webgl" && threeD} disabled={renderer === "fallback"} onClick={() => setThreeD(v => !v)}><Box size={16}/>3D</button>
+        </div></div>
+      </div>
+      <div ref={frame} className={styles.stage}><div className={styles.scene}><MapExpandButton/>
+        {renderer === "webgl" ? <Canvas {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
+        {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
+        <div className={styles.locationTools}>
+          <button type="button" title={location.mode === "live" ? "Turn off live location" : "Enable live location"} aria-label={location.mode === "live" ? "Turn off live location" : "Enable live location"}
+            aria-pressed={location.mode === "live"} onClick={() => { walk.cancel(); if (location.mode === "live") location.stop(); else { location.enable(); setFollow(true); setFocus(n => n + 1); } }}><LocateFixed size={19}/></button>
+          <button type="button" title="Follow my explorer" aria-label="Follow my explorer" aria-pressed={follow} onClick={() => { setFollow(true); setFocus(n => n + 1); }}><Compass size={19}/></button>
+          <button type="button" title="Avatar options" aria-label="Avatar options" aria-expanded={avatarOpen} onClick={() => setAvatarOpen(v => !v)}><PersonStanding size={19}/></button>
         </div>
-        <div className={styles.bar}>
-          <Link className={styles.modeNav} href="/collect">Collect a visit</Link>
-          <div className={styles.layers} role="group" aria-label="Imagery and perspective">
-            <button type="button" aria-pressed={imagery === "satellite"} onClick={() => setImagery("satellite")}><Satellite size={16} />Satellite</button>
-            <button type="button" aria-pressed={imagery === "aerial"} onClick={() => setImagery("aerial")}><ScanLine size={16} />Aerial</button>
-            <button type="button" className={styles.depth} aria-label="3D buildings" aria-pressed={threeD} onClick={() => setThreeD(value => !value)}><Box size={16} />3D</button>
-          </div>
+        <span className={styles.modeStatus}>{location.mode === "live" ? location.status === "live" ? "Live location" : "Waiting for location" : "Manual explorer"}{location.accuracy != null ? ` · ±${Math.round(location.accuracy)} m` : ""}</span>
+      </div>
+        <div className={styles.readout}><div className={styles.readoutName}><MapPin size={17}/><div><strong>{active?.name || selectedName || (directions ? "Selected point" : "Choose your next stop")}</strong>
+          <small>{directions ? directions.coordinate : "Search a place or select a point on the map."}</small></div></div>
+          {directions && <div className={styles.directions}><a href={directions.google} target="_blank" rel="noopener noreferrer">Google Maps<ArrowUpRight size={14}/></a><a href={directions.apple} target="_blank" rel="noopener noreferrer">Apple Maps<ArrowUpRight size={14}/></a></div>}
+        </div>
+        <div className={styles.gameBar} aria-label="Explorer controls">
+          {selected && <><button type="button" onClick={() => { location.place(selected); walk.place(selected); setFollow(true); setFocus(n => n + 1); }}>Place explorer here</button>
+            <button type="button" className={styles.walkButton} disabled={walk.phase === "routing" || (location.mode === "live" && location.status !== "live")} onClick={() => {
+              if (location.mode === "live") void walk.planTo(selected); else void walk.walkTo(selected);
+              setFollow(true);
+            }}><Play size={15}/>{walk.phase === "routing" ? "Finding streets…" : location.mode === "live" ? "Plan walking route" : "Walk here"}</button></>}
+          {walking && <button type="button" onClick={walk.pause}><Pause size={15}/>Pause walk</button>}
+          {walk.phase === "paused" && location.mode === "manual" && <button type="button" onClick={walk.resume}><Play size={15}/>Resume walk</button>}
+          {walk.route && <button type="button" onClick={walk.cancel}><X size={15}/>End route</button>}
+          <button type="button" aria-pressed={paused} onClick={() => { setPaused(v => !v); if (walking) walk.pause(); }}>{paused ? "Enable avatar motion" : "Pause avatar motion"}</button>
+          <span className={styles.walkDistance}>{walk.totalDistance > 0 ? `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m` : "Tap your explorer to wave"}</span>
         </div>
       </div>
-      <div ref={frame} className={styles.stage}>
-        <div className={styles.scene} style={{ backgroundImage: `url("${imagery === "aerial" ? ATLAS_AERIAL : ATLAS_SATELLITE}")` }}>
-          <MapExpandButton />
-          {renderer === "local"
-            ? <FlatCanvas places={shown} selected={selected && withinImage(selected) ? selected : null} imagery={imagery} threeD={threeD} onSelect={onSelect} />
-            : <Canvas places={shown} selected={selected && (remote || withinImage(selected)) ? selected : null} imagery={imagery} threeD={threeD} onSelect={onSelect} onReady={ready} onUnavailable={unavailable} onSatelliteUnavailable={satelliteUnavailable} />}
-          {renderer === "loading" && <span className={styles.loading} role="status">Opening map…</span>}
-        </div>
-        <div className={styles.readout} aria-live="polite">
-          <div className={styles.readoutName}><MapPin size={17} /><div><strong>{active?.name || (directions ? "Dropped pin" : "Melbourne city centre")}</strong>
-            <small>{directions ? `${directions.coordinate}${!remote && selected && !withinImage(selected) ? " · Outside local imagery" : ""}` : imagery === "satellite" ? (remote ? "Satellite imagery" : `Satellite · ${ATLAS_SATELLITE_DATE}`) : "Aerial survey · May 2020"}</small></div></div>
-          {directions && <div className={styles.directions}><a href={directions.google} target="_blank" rel="noopener noreferrer">Google Maps<ArrowUpRight size={14} /></a><a href={directions.apple} target="_blank" rel="noopener noreferrer">Apple Maps<ArrowUpRight size={14} /></a></div>}
-        </div>
-      </div>
+      {avatarOpen && <div className={styles.avatarPanel}><AvatarCustomizer onClose={() => setAvatarOpen(false)} onAction={perform} motionPaused={paused}/></div>}
     </MapFrame>
-    {active && (active.members.length > 1 || active.href) && <div className={styles.members}>{active.members.map(member => <div key={member.id}>
-      {member.href ? <Link href={member.href}>{member.name}<ArrowUpRight size={14} /></Link> : <strong>{member.name}</strong>}<span>{member.area}</span>
-    </div>)}</div>}
+    <div className={styles.explorerStatus} role="status"><p>{walk.message || location.message}</p>{walk.route && location.mode === "manual" && <label>Walk speed<select value={walk.speed} onChange={e => walk.setSpeed(Number(e.target.value) as 1 | 4)}><option value="1">1×</option><option value="4">4×</option></select></label>}</div>
+    <details className={styles.playHelp}><summary>Explorer actions and location</summary>
+      <div className={styles.actionRow}><button type="button" disabled={paused} onClick={() => perform("wave")}><Hand size={16}/>Wave</button>
+        <button type="button" disabled={paused} onClick={() => perform("cheer")}><Sparkles size={16}/>Celebrate</button>
+        <button type="button" disabled={paused} onClick={() => perform("look")}><Compass size={16}/>Look around</button></div>
+      <p>Allow live location to move with your device, or place your explorer manually and follow a real pedestrian route. Virtual walks track this session's movement. Collect verified XP using a restaurant's code.</p>
+      <p>GPS fixes stay in this page. Map tiles reveal the viewed area to the map provider. Searches and requested route endpoints go to their providers. Location turns off when you leave or hide Explore.</p>
+      <p>{Math.round(walk.sessionMetres)} metres explored this session.</p><Link href="/collect">Collect a verified discovery</Link>
+    </details>
+    {active && active.members.length > 0 && <div className={styles.members}>{active.members.map(member => <div key={member.id}>
+      {member.href ? <Link href={member.href}>{member.name}<ArrowUpRight size={14}/></Link> : <strong>{member.name}</strong>}<span>{member.area}</span></div>)}</div>}
     <div className={styles.credits}>
-      <p>Swipe to move. Tap for directions.</p>
-      <a href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">Map sources<ArrowUpRight size={13} /></a>
-      {basePath === "/" && <Link href="/?view=catalogue">Venue catalogue<ArrowUpRight size={13} /></Link>}
-      {providerFailed && imagery === "satellite" && <p>Local Melbourne imagery</p>}
-      {catalogueUnavailable && <p>Venue listings are temporarily unavailable.</p>}
+      <span>Streets by OpenFreeMap and OpenStreetMap.</span><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Fix the map</a>
+      {walk.attribution && <span>{walk.attribution}</span>}
+      <a href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">Melbourne imagery sources</a>
+      {imagery === "satellite" && (!globalSatellite || providerFailed) && <span>Satellite image covers Melbourne CBD. Worldwide satellite requires a configured map provider.</span>}
+      {imagery === "aerial" && <span>Aerial survey covers Melbourne CBD.</span>}
+      {renderer === "fallback" && <span>Interactive 2D map</span>}
+      {catalogueUnavailable && <span>Food Go venue listings are temporarily unavailable.</span>}
     </div>
   </section>;
 }

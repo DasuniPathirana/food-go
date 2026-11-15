@@ -81,3 +81,36 @@
   .modeNav a svg { width: 14px; }
   .readout .directions a svg { display: none; }
 }
+.locationTools { position: absolute; top: 12px; right: 60px; z-index: 14; display: flex; gap: 5px; }
+.locationTools button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #85796c; border-radius: 10px; background: #fffdf5; color: var(--petrol); box-shadow: 0 2px 7px #193a3024; }
+.locationTools button[aria-pressed=true] { color: var(--canvas); background: var(--petrol); border-color: var(--petrol); }
+.modeStatus { position: absolute; left: 12px; bottom: 12px; z-index: 3; padding: 5px 9px; border-radius: 6px; background: #fffdf0e8; color: #27463e; font: 700 12px/1.2 var(--font-body); pointer-events: none; }
+.gameBar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; min-height: 46px; padding: 4px 10px; background: var(--paper); border-top: 1px solid var(--line); }
+.gameBar button, .actionRow button { display: inline-flex; gap: 5px; align-items: center; justify-content: center; min-height: 38px; padding: 5px 10px; background: #f2ede1; color: #23473e; border: 1px solid #c0b8a6; border-radius: 7px; font: 700 13px/1.2 var(--font-body); }
+.gameBar .walkButton { background: var(--petrol); border-color: var(--petrol); color: white; }
+.gameBar button:focus-visible, .locationTools button:focus-visible, .actionRow button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.gameBar button:disabled { opacity: .6; cursor: wait; }
+.walkDistance { margin-left: auto; color: var(--muted); font: 600 12px/1.2 var(--font-body); }
+.explorerStatus, .playHelp, .avatarPanel { margin: 8px clamp(12px, 2.5vw, 36px); }
+.explorerStatus { display: flex; gap: 8px; align-items: center; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.atlas .explorerStatus p { margin: 0; font-size: inherit; }
+.explorerStatus label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.explorerStatus select { padding: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: 7px; font: inherit; }
+.playHelp { padding-block: 6px; border-block: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.playHelp summary { min-height: 36px; padding: 6px 0; font-weight: 700; cursor: pointer; }
+.atlas .playHelp p { max-width: 85ch; font-size: 14px; }
+.actionRow { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 8px; }
+.avatarPanel { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); padding: 10px; }
+.atlas dialog:modal .avatarPanel { position: absolute; z-index: 40; right: 10px; top: 70px; width: min(820px, calc(100% - 20px)); max-height: calc(100dvh - 90px); overflow: auto; margin: 0; box-shadow: var(--shadow-panel); }
+.layers button:disabled { opacity: .5; }
+@media (max-width: 600px) {
+  .locationTools { top: 8px; right: 56px; gap: 4px; }
+  .locationTools button { width: 40px; height: 40px; }
+  .gameBar { gap: 3px 5px; padding: 3px 6px; }
+  .gameBar button { padding: 4px 7px; font-size: 12px; }
+  .walkDistance { font-size: 11px; }
+  .layers { gap: 2px; }
+  .layers button { padding-inline: 5px; font-size: 12px; }
+  .explorerStatus { flex-wrap: wrap; }
+  .modeStatus { font-size: 11px; left: 7px; }
+}

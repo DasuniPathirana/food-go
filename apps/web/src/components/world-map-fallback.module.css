@@ -1,0 +1,10 @@
+.wrapper { position: absolute; inset: 0; z-index: 0; isolation: isolate; }
+.map { position: absolute; inset: 0; height: 100%; width: 100%; background: #e1eadf; font-family: var(--font-body); }
+.pinContainer, .playerContainer { border: 0; background: transparent; }
+.place { max-width: 140px; min-height: 40px; padding: 7px 10px; border: 2px solid #006d68; border-radius: 9px; background: #fffaf0; color: #1d352f; font: 700 13px/1.1 var(--font-body); box-shadow: 0 3px 7px #122d3026; }
+.place:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.explorer { width: 100px; height: 126px; }
+.playerContainer { pointer-events: auto; }
+.provider { position: absolute; z-index: 1000; left: 8px; bottom: 36px; padding: 3px 6px; border-radius: 4px; background: #fffaf0ed; }
+.provider img { display: block; width: 88px; height: 22px; }
+.error { position: absolute; z-index: 1001; bottom: 30px; left: 8px; right: 8px; max-width: 400px; margin: 0; padding: 7px 10px; color: #302c22; background: #fff9ee; font-size: 12px; border: 1px solid #cec3ad; border-radius: 6px; }

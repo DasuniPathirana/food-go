@@ -1,6 +1,6 @@
 ---
 name: Food Go
-description: Melbourne food discovery, a geographic city map and a collectible neighbourhood adventure.
+description: Food discovery, a worldwide geographic explorer and a social food passport.
 colors:
   canvas: "#fff9ee"
   surface: "#ffffff"
@@ -24,8 +24,8 @@ Use the visual language of a Melbourne food market. The saffron masthead identif
 
 | Destination | First screen | Phone adaptation |
 | --- | --- | --- |
-| Real map | Satellite opens first. Search sits above the imagery. An in-map button expands the same camera and selection. The readout links to directions. | Swipe to pan and pinch to zoom. The close control returns to the original section. |
-| Adventure | Illustrated streets, animated explorer, radar and food photo markers. An arcade storefront groups shops by floor and unit. | Swipe to pan, pinch to zoom and tap to walk. Additional details open below the map. |
+| Explore | Worldwide streets, an animated explorer and optional licensed satellite imagery. Search sits above the map. An in-map button expands the same camera and selection. | Swipe to pan and pinch to zoom. Compact location, follow and avatar controls preserve the view. |
+| Explorer controls | Choose a point and place the explorer or follow a real pedestrian route. Live location is optional. Group co-located approved restaurants into a directory below the map. | Route actions sit beneath the scene. Avatar customisation expands only when requested. |
 | Feed | A public timeline, composer and social actions. Passport holds the personal wall. | One document scroll through the composer and stories. |
 | FoodDex, VenueDex and trails | Food photos, concise collection status, numbered itineraries and perforated reward stubs. | Short horizontal collection rows and stacked trail photographs. |
 | Deals | Active, published offers show their venue and expiry. Explore includes promotions and a three-column restaurant directory. | The directory adapts to the available width. The offer highlight respects reduced motion. |
@@ -33,12 +33,12 @@ Use the visual language of a Melbourne food market. The saffron masthead identif
 
 ## Map behaviour
 
-Explore is the centre destination and opens on real geography. The detailed aerial layer and building components use a City of Melbourne survey. The satellite layer uses a dated Copernicus observation. Pan, zoom and pitch establish the view. Place selection, arbitrary pin selection and directions stay available independently of a Food Go account. The illustrated game remains a separate selectable mode with walking, optional avatars and action previews. Only Adventure uses the fictional venue positions and browser game ledger.
+Explore is the centre destination and opens on worldwide real geography. OpenFreeMap provides street vectors and available 3D building data. The local aerial layer and building components use a City of Melbourne survey. The local satellite layer uses a dated Copernicus observation; worldwide satellite imagery requires a configured MapTiler key. Pan, zoom and pitch establish the view. Place search, arbitrary pin selection and external directions stay available independently of a Food Go account. The explorer, radar, avatar choices and actions carry the approved prototype's game interactions into real geography. The standalone prototype stays intact; its fictional venues and local progression never appear as verified production records.
 
 Each map fits below its own header and above the phone navigation. Long feeds and directories use normal page scrolling. Keep map inputs keyboard-accessible and respect reduced-motion settings. Labels and pressed states accompany colour changes. Licence attribution remains available on both geographic renderers.
 
 ## Product boundaries
 
-The map shows public landmark coordinates and validated, published venue positions. Google Maps and Apple Maps use the chosen geographic destination. Adventure links use real area searches for fictional places. Real map selection does not record location, prove a visit or award XP. Account-based social XP and reach use server verification. Native map parity and real-device performance require separate delivery and testing.
+The map shows provider place labels and validated, published Food Go venues. Google Maps and Apple Maps use the chosen geographic destination. Live GPS requires an explicit user action and browser permission; manual positioning remains available. Route walking follows a real pedestrian polyline and records session movement only. It does not prove a visit or award XP. Customer collections and social XP use server verification. Native map parity and physical-device GPS performance require separate delivery and testing.
 
-[Current map delivery](docs/progress/14-melbourne-geography.md) · [Launch requirements](docs/launch/go-live-checklist.md)
+[World map operations](docs/deployment/world-map.md) · [Launch requirements](docs/launch/go-live-checklist.md)

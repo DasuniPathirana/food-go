@@ -1,272 +1,251 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Compass, LocateFixed, Minus, Plus } from "lucide-react";
-import type { AttributionControl, Coordinates, LngLatBoundsLike, Map as GeographicMap, Marker, StyleSpecification } from "maplibre-gl";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Compass, LocateFixed, Minus, Plus, RefreshCw } from "lucide-react";
+import type { AttributionControl, GeoJSONSource, Map as GeographicMap, Marker, StyleSpecification } from "maplibre-gl";
+import type { LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
-import {
-  ATLAS_AERIAL, ATLAS_ATTRIBUTION, ATLAS_BUILDINGS, ATLAS_CENTER, ATLAS_CORNERS, ATLAS_SATELLITE,
-} from "@/lib/melbourne-atlas";
+import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
+import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
 import css from "./atlas-canvas.module.css";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
 export type AtlasPlace = AtlasSelection & { id: string; name: string };
-export type AtlasImagery = "aerial" | "satellite";
-type Props = {
-  places: readonly AtlasPlace[];
-  selected: AtlasSelection | null;
-  threeD: boolean;
-  imagery: AtlasImagery;
-  onSelect: (point: AtlasSelection) => void;
-  onReady: () => void;
-  onUnavailable: (reason: string) => void;
-  onSatelliteUnavailable?: () => void;
+export type AtlasImagery = "street" | "aerial" | "satellite";
+export type AtlasCanvasProps = {
+  places: readonly AtlasPlace[]; selected: AtlasSelection | null; threeD: boolean; imagery: AtlasImagery;
+  player?: AtlasSelection | null; playerContent?: ReactNode; followPlayer?: boolean; focusPlayerNonce?: number;
+  location?: AtlasSelection | null; accuracy?: number; heading?: number; route?: LineString | null;
+  onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
+  onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
 };
 
-const corners: Coordinates = [ATLAS_CORNERS[0], ATLAS_CORNERS[1], ATLAS_CORNERS[2], ATLAS_CORNERS[3]];
-const sampleBounds: LngLatBoundsLike = [corners[3], corners[1]];
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
-const pitch3D = 52;
-const bearing3D = -18;
 const homeZoom = 15.3;
-
-function style(imagery: AtlasImagery, threeD: boolean): StyleSpecification {
-  return {
-    version: 8,
-    light: { anchor: "map", position: [1.4, 195, 37], color: "#fff3d5", intensity: 0.5 },
-    sources: {
-      aerial: { type: "image", url: ATLAS_AERIAL, coordinates: corners },
-      satellite: { type: "image", url: ATLAS_SATELLITE, coordinates: corners },
-      buildings: { type: "geojson", data: ATLAS_BUILDINGS, maxzoom: 17 },
-    },
-    layers: [
-      { id: "outside-survey", type: "background", paint: { "background-color": "#e6e1d5" } },
-      ...(["aerial", "satellite"] as const).map((id) => ({
-        id, source: id, type: "raster" as const,
-        layout: { visibility: id === imagery ? "visible" as const : "none" as const },
-        paint: { "raster-fade-duration": 0 },
-      })),
-      {
-        id: "buildings", source: "buildings", type: "fill-extrusion",
-        layout: { visibility: threeD ? "visible" : "none" },
-        paint: {
-          "fill-extrusion-height": ["get", "height"],
-          "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
-          "fill-extrusion-color": ["interpolate", ["linear"], ["get", "height"], 0, "#eaddc1", 40, "#dad0b4", 120, "#afbcaf", 250, "#98b1ad"],
-          "fill-extrusion-opacity": 0.86,
-          "fill-extrusion-vertical-gradient": true,
-        },
-      },
-    ],
-  };
+function duration() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 380; }
+function valid(point: AtlasSelection | null | undefined): point is AtlasSelection {
+  return !!point && Number.isFinite(point.longitude) && Number.isFinite(point.latitude)
+    && Math.abs(point.longitude) <= 180 && Math.abs(point.latitude) <= 90;
+}
+function accuracyCircle(point: AtlasSelection, metres: number): Polygon {
+  const coordinates = Array.from({ length: 49 }, (_, index) => {
+    const angle = index / 48 * 2 * Math.PI;
+    return [
+      point.longitude + Math.sin(angle) * metres / (111320 * Math.max(0.01, Math.cos(point.latitude * Math.PI / 180))),
+      point.latitude + Math.cos(angle) * metres / 111320,
+    ];
+  });
+  return { type: "Polygon", coordinates: [coordinates] };
 }
 
-function duration() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 380;
-}
-
-function insideSurvey({ longitude, latitude }: AtlasSelection) {
-  return longitude >= corners[3][0] && longitude <= corners[1][0] && latitude >= corners[3][1] && latitude <= corners[1][1];
-}
-
-export function AtlasCanvas(props: Props) {
-  const { places, selected, threeD, imagery } = props;
+export function AtlasCanvas(props: AtlasCanvasProps) {
+  const { places, selected, threeD, imagery, player, playerContent, followPlayer, focusPlayerNonce, location, accuracy, route } = props;
   const latest = useRef(props);
   useEffect(() => { latest.current = props; }, [props]);
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<GeographicMap | null>(null);
-  const markerClass = useRef<typeof Marker | null>(null);
+  const pinClass = useRef<typeof Marker | null>(null);
   const creditClass = useRef<typeof AttributionControl | null>(null);
+  const streetLayers = useRef<ReturnType<typeof worldMapStyle>["streetLayers"]>([]);
   const placeMarkers = useRef(new Map<string, Marker>());
-  const remoteFailed = useRef(false);
+  const playerMarker = useRef<Marker | null>(null);
+  const satelliteFailed = useRef(false);
+  const focusRevision = useRef<number | undefined>(undefined);
+  const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
-  const [remoteActive, setRemoteActive] = useState(false);
   const [zoom, setZoom] = useState(homeZoom);
-  const [bearing, setBearing] = useState(bearing3D);
+  const [bearing, setBearing] = useState(-18);
+  const [tileIssue, setTileIssue] = useState(false);
+  const [remoteUnavailable, setRemoteUnavailable] = useState(false);
 
   useEffect(() => {
     const container = host.current;
     if (!container) return;
-    let cancelled = false;
-    let failed = false;
-    let map: GeographicMap | undefined;
-    let resize: ResizeObserver | undefined;
+    const controller = new AbortController();
+    let active: GeographicMap | undefined;
+    let observer: ResizeObserver | undefined;
+    let disposed = false, failed = false;
     const unavailable = (reason: string) => {
-      if (cancelled || failed) return;
+      if (disposed || failed) return;
       failed = true;
       latest.current.onUnavailable(reason);
     };
-    const timer = window.setTimeout(() => unavailable("The interactive map took too long to load."), 20000);
+    const timeout = window.setTimeout(() => unavailable("The world map took too long to load."), 20000);
     async function initialise() {
-      const gl = await import("maplibre-gl");
-      if (cancelled || failed || !container) return;
+      const [gl, response] = await Promise.all([
+        import("maplibre-gl"),
+        fetch(WORLD_STREET_STYLE, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) }),
+      ]);
+      if (!response.ok) throw new Error("World map unavailable");
+      const base = await response.json() as StyleSpecification;
+      if (base.version !== 8 || !base.sources || !Array.isArray(base.layers)) throw new Error("Invalid world map style");
+      if (disposed || failed || !container) return;
+      const composed = worldMapStyle(base, satelliteKey);
+      streetLayers.current = composed.streetLayers;
       gl.setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).toString());
       const initial = latest.current;
-      map = new gl.Map({
-        container, style: style(initial.imagery, initial.threeD), center: ATLAS_CENTER,
-        zoom: homeZoom, maxZoom: 20, maxPitch: 62, maxBounds: sampleBounds,
-        pitch: initial.threeD ? pitch3D : 0, bearing: initial.threeD ? bearing3D : 0,
-        cooperativeGestures: false, scrollZoom: false, renderWorldCopies: false, attributionControl: false,
+      active = new gl.Map({
+        container, style: composed.style, center: valid(initial.player) ? [initial.player.longitude, initial.player.latitude] : ATLAS_CENTER,
+        zoom: homeZoom, minZoom: 1, maxZoom: 20, maxPitch: 65,
+        pitch: initial.threeD ? 52 : 0, bearing: initial.threeD ? -18 : 0,
+        cooperativeGestures: false, scrollZoom: true, renderWorldCopies: true, attributionControl: false,
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       });
-      mapRef.current = map;
-      markerClass.current = gl.Marker;
-      creditClass.current = gl.AttributionControl;
-      const active = map;
-      active.getCanvas().setAttribute("aria-label", "Geographic map. Arrow keys pan, plus and minus zoom. Press Enter to pin the centre.");
-      active.on("click", (event) => {
+      const map = active;
+      mapRef.current = map; pinClass.current = gl.Marker; creditClass.current = gl.AttributionControl;
+      map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
+      map.on("click", event => {
         const point = event.lngLat.wrap();
         latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
       });
-      active.on("zoomend", () => setZoom(active.getZoom()));
-      active.on("rotate", () => setBearing(active.getBearing()));
-      active.on("webglcontextlost", () => unavailable("This browser lost its 3D graphics connection."));
-      active.on("error", (event) => {
+      map.on("zoomend", () => setZoom(map.getZoom()));
+      map.on("rotate", () => setBearing(map.getBearing()));
+      for (const event of ["dragstart", "rotatestart", "zoomstart"] as const) map.on(event, movement => {
+        if (movement.originalEvent) latest.current.onCameraInteraction?.();
+      });
+      map.on("webglcontextlost", () => unavailable("The browser lost its 3D graphics connection."));
+      map.on("error", event => {
         const source = "sourceId" in event ? event.sourceId : undefined;
-        if (source === "global-satellite") {
-          if (!remoteFailed.current) {
-            remoteFailed.current = true;
-            setRemoteActive(false);
-            if (active.getLayer("global-satellite")) active.removeLayer("global-satellite");
-            if (active.getSource("global-satellite")) active.removeSource("global-satellite");
-            active.setMaxBounds(sampleBounds);
+        if (source === MAP_SOURCE_IDS.globalSatellite) {
+          if (!satelliteFailed.current) {
+            satelliteFailed.current = true;
+            setRemoteUnavailable(true);
+            if (map.getLayer(MAP_SOURCE_IDS.globalSatellite)) map.setLayoutProperty(MAP_SOURCE_IDS.globalSatellite, "visibility", "none");
             latest.current.onSatelliteUnavailable?.();
           }
-        } else {
-          unavailable("The geographic layers could not be drawn.");
-        }
+        } else setTileIssue(true);
       });
-      active.on("load", () => {
-        if (cancelled || failed) return;
-        clearTimeout(timer);
-        setReady(true);
-        latest.current.onReady();
+      map.on("idle", () => setTileIssue(false));
+      map.on("load", () => {
+        if (disposed || failed) return;
+        clearTimeout(timeout);
+        const element = document.createElement("div");
+        element.className = css.player;
+        element.addEventListener("click", event => event.stopPropagation());
+        element.addEventListener("pointerdown", event => event.stopPropagation());
+        setPlayerElement(element); setReady(true); latest.current.onReady();
       });
-      resize = new ResizeObserver(() => active.resize());
-      resize.observe(container);
+      observer = new ResizeObserver(() => map.resize());
+      observer.observe(container);
     }
-    initialise().catch(() => unavailable("This browser could not start the 3D map."));
+    initialise().catch(() => { if (!controller.signal.aborted) unavailable("The world map could not start. Check your connection or browser graphics."); });
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      resize?.disconnect();
-      mapRef.current = null;
-      map?.remove();
+      disposed = true; controller.abort(); clearTimeout(timeout); observer?.disconnect();
+      mapRef.current = null; active?.remove();
     };
   }, []);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    for (const key of ["aerial", "satellite"]) {
-      map.setLayoutProperty(key, "visibility", key === imagery ? "visible" : "none");
-    }
-    const online = imagery === "satellite" && !!satelliteKey && !remoteFailed.current;
-    if (online && !map.getSource("global-satellite")) {
-      map.addSource("global-satellite", {
-        type: "raster", tileSize: 512,
-        url: `https://api.maptiler.com/tiles/satellite-v2/tiles.json?key=${encodeURIComponent(satelliteKey!)}`,
-      });
-      map.addLayer({ id: "global-satellite", type: "raster", source: "global-satellite" }, "buildings");
-    }
-    if (map.getLayer("global-satellite")) map.setLayoutProperty("global-satellite", "visibility", online ? "visible" : "none");
-    map.setMaxBounds(online ? null : sampleBounds);
-    setRemoteActive(online);
-  }, [ready, imagery]);
+    const globalSatellite = imagery === "satellite" && !!satelliteKey && !satelliteFailed.current;
+    // Without a global imagery account, the labelled Melbourne snapshot remains
+    // an overlay on the worldwide street map. The camera is never constrained.
+    for (const layer of streetLayers.current) map.setLayoutProperty(layer.id, "visibility",
+      imagery === "street" || !globalSatellite || layer.symbol ? layer.visibility : "none");
+    map.setLayoutProperty(MAP_SOURCE_IDS.aerial, "visibility", imagery === "aerial" ? "visible" : "none");
+    map.setLayoutProperty(MAP_SOURCE_IDS.satellite, "visibility", imagery === "satellite" && !globalSatellite ? "visible" : "none");
+    if (map.getLayer(MAP_SOURCE_IDS.globalSatellite)) map.setLayoutProperty(MAP_SOURCE_IDS.globalSatellite, "visibility", globalSatellite ? "visible" : "none");
+  }, [ready, imagery, remoteUnavailable]);
 
-  // Retain the provider's TileJSON attribution, including any imagery contributors it adds.
   useEffect(() => {
-    const map = mapRef.current;
-    const Credit = creditClass.current;
-    if (!remoteActive || !map || !Credit) return;
-    const credit = new Credit({ compact: false, customAttribution: [
+    const map = mapRef.current, Credit = creditClass.current;
+    if (!ready || !map || !Credit) return;
+    const credit = new Credit({ compact: true, customAttribution: [
       `<a href="${ATLAS_ATTRIBUTION}" target="_blank">City of Melbourne · Copernicus</a>`,
-      '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>',
-      '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap</a>',
+      ...(imagery === "satellite" && satelliteKey && !satelliteFailed.current ? ['<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>'] : []),
     ] });
     map.addControl(credit, "bottom-right");
     return () => { if (map.hasControl(credit)) map.removeControl(credit); };
-  }, [remoteActive]);
+  }, [ready, imagery, remoteUnavailable]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    map.setLayoutProperty("buildings", "visibility", threeD ? "visible" : "none");
-    map.setMaxPitch(threeD ? 62 : 0);
-    map.easeTo({ pitch: threeD ? pitch3D : 0, bearing: threeD ? bearing3D : 0, duration: duration() });
+    for (const layer of ["food-go-world-buildings", MAP_SOURCE_IDS.buildings])
+      if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", threeD ? "visible" : "none");
+    map.setMaxPitch(threeD ? 65 : 0);
+    map.easeTo({ pitch: threeD ? 52 : 0, duration: duration() });
   }, [ready, threeD]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    const Pin = markerClass.current;
+    const map = mapRef.current, Pin = pinClass.current;
     if (!ready || !map || !Pin) return;
     const pins = placeMarkers.current;
-    for (const place of places) {
+    for (const place of places.filter(valid)) {
       const button = document.createElement("button");
-      button.type = "button";
-      button.className = css.place;
+      button.type = "button"; button.className = css.place; button.title = place.name;
       button.setAttribute("aria-label", `Select ${place.name}`);
-      button.title = place.name;
-      const label = document.createElement("span");
-      label.textContent = place.name;
-      button.append(label);
-      button.onclick = (event) => {
-        event.stopPropagation();
-        latest.current.onSelect({ longitude: place.longitude, latitude: place.latitude, id: place.id });
-      };
-      const marker = new Pin({ element: button, anchor: "bottom", subpixelPositioning: true })
-        .setLngLat([place.longitude, place.latitude]).addTo(map);
-      pins.set(place.id, marker);
+      const label = document.createElement("span"); label.textContent = place.name; button.append(label);
+      button.onclick = event => { event.stopPropagation(); latest.current.onSelect({ longitude: place.longitude, latitude: place.latitude, id: place.id }); };
+      pins.set(place.id, new Pin({ element: button, anchor: "bottom", subpixelPositioning: true })
+        .setLngLat([place.longitude, place.latitude]).addTo(map));
     }
-    return () => {
-      for (const marker of pins.values()) marker.remove();
-      pins.clear();
-    };
+    return () => { for (const marker of pins.values()) marker.remove(); pins.clear(); };
   }, [ready, places]);
 
-  const lon = selected?.longitude;
-  const lat = selected?.latitude;
-  const id = selected?.id;
+  const longitude = selected?.longitude, latitude = selected?.latitude, selectedId = selected?.id;
   useEffect(() => {
-    for (const [markerId, marker] of placeMarkers.current) {
-      marker.getElement().setAttribute("aria-pressed", String(markerId === id));
-    }
-  }, [ready, places, id]);
+    for (const [id, marker] of placeMarkers.current) marker.getElement().setAttribute("aria-pressed", String(id === selectedId));
+  }, [ready, places, selectedId]);
   useEffect(() => {
-    const map = mapRef.current;
-    const Pin = markerClass.current;
-    if (!ready || !map || !Pin || lon === undefined || lat === undefined) return;
-    if (remoteActive || insideSurvey({ longitude: lon, latitude: lat })) {
-      map.easeTo({ center: [lon, lat], duration: duration(), zoom: Math.max(map.getZoom(), 15.5) });
-    }
-    if (id) return;
-    const dot = document.createElement("div");
-    dot.className = css.droppedPin;
-    dot.setAttribute("aria-hidden", "true");
-    const marker = new Pin({ element: dot, anchor: "center" }).setLngLat([lon, lat]).addTo(map);
+    const map = mapRef.current, Pin = pinClass.current;
+    if (!ready || !map || !Pin || !valid(selected)) return;
+    map.easeTo({ center: [selected.longitude, selected.latitude], duration: duration(), zoom: Math.max(map.getZoom(), 15.5) });
+    if (selected.id && placeMarkers.current.has(selected.id)) return;
+    const dot = document.createElement("div"); dot.className = css.droppedPin; dot.setAttribute("aria-hidden", "true");
+    const marker = new Pin({ element: dot, anchor: "center" }).setLngLat([selected.longitude, selected.latitude]).addTo(map);
     return () => { marker.remove(); };
-  }, [ready, lon, lat, id, remoteActive]);
+  }, [ready, longitude, latitude, selectedId]);
+
+  const playerLongitude = player?.longitude, playerLatitude = player?.latitude;
+  useEffect(() => {
+    const map = mapRef.current, Pin = pinClass.current;
+    if (!ready || !map || !Pin || !playerElement) return;
+    if (!valid(player)) { playerMarker.current?.remove(); playerMarker.current = null; return; }
+    if (!playerMarker.current) playerMarker.current = new Pin({ element: playerElement, anchor: "bottom", subpixelPositioning: true })
+      .setLngLat([player.longitude, player.latitude]).addTo(map);
+    else playerMarker.current.setLngLat([player.longitude, player.latitude]);
+    if (followPlayer) {
+      const refocus = focusRevision.current !== focusPlayerNonce;
+      focusRevision.current = focusPlayerNonce;
+      map.jumpTo({ center: [player.longitude, player.latitude], ...(refocus ? { zoom: Math.max(map.getZoom(), 16.5) } : {}) });
+    }
+  }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource(MAP_SOURCE_IDS.route) as GeoJSONSource | undefined;
+    if (!ready || !source) return;
+    source.setData(route && route.coordinates.length >= 2 ? { type: "Feature", properties: {}, geometry: route } : emptyMapFeatures());
+  }, [ready, route]);
+  const locationLongitude = location?.longitude, locationLatitude = location?.latitude;
+  useEffect(() => {
+    const source = mapRef.current?.getSource(MAP_SOURCE_IDS.accuracy) as GeoJSONSource | undefined;
+    if (!ready || !source) return;
+    source.setData(valid(location) && Number.isFinite(accuracy) && accuracy! > 0
+      ? { type: "Feature", properties: {}, geometry: accuracyCircle(location, Math.min(accuracy!, 100000)) } : emptyMapFeatures());
+  }, [ready, locationLongitude, locationLatitude, accuracy]);
 
   const map = mapRef.current;
   return <div className={css.scene}>
-    <div ref={host} className={css.viewport} onKeyDown={(event) => {
+    <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
-        event.preventDefault();
-        const center = map.getCenter().wrap();
-        latest.current.onSelect({ longitude: center.lng, latitude: center.lat });
+        event.preventDefault(); const centre = map.getCenter().wrap();
+        latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
       }
-    }} />
+    }}/>
+    {playerElement && playerContent && createPortal(playerContent, playerElement)}
     {ready && <>
       <div className={css.tools} role="group" aria-label="Geographic map controls">
-        <button type="button" title="Face north" aria-label="Face north" onClick={() => map?.easeTo({ bearing: 0, duration: duration() })}><Compass style={{ transform: `rotate(${-bearing}deg)` }} /></button>
-        <button type="button" title="Zoom in" aria-label="Zoom in on geographic map" disabled={zoom >= 20} onClick={() => map?.zoomIn({ duration: duration() })}><Plus /></button>
-        <button type="button" title="Zoom out" aria-label="Zoom out of geographic map" disabled={zoom <= 0} onClick={() => map?.zoomOut({ duration: duration() })}><Minus /></button>
-        <button type="button" title="Back to Melbourne" aria-label="Recenter geographic map on Melbourne" onClick={() => map?.easeTo({ center: ATLAS_CENTER, zoom: homeZoom, pitch: threeD ? pitch3D : 0, bearing: threeD ? bearing3D : 0, duration: duration() })}><LocateFixed /></button>
+        <button type="button" title="Face north" aria-label="Face north" onClick={() => map?.easeTo({ bearing: 0, duration: duration() })}><Compass style={{ transform: `rotate(${-bearing}deg)` }}/></button>
+        <button type="button" title="Zoom in" aria-label="Zoom in on geographic map" disabled={zoom >= 20} onClick={() => map?.zoomIn({ duration: duration() })}><Plus/></button>
+        <button type="button" title="Zoom out" aria-label="Zoom out of geographic map" disabled={zoom <= 1} onClick={() => map?.zoomOut({ duration: duration() })}><Minus/></button>
+        <button type="button" title={valid(player) ? "Find my explorer" : "Back to Melbourne"} aria-label={valid(player) ? "Recenter map on explorer" : "Recenter geographic map on Melbourne"}
+          onClick={() => map?.easeTo({ center: valid(player) ? [player.longitude, player.latitude] : ATLAS_CENTER, zoom: 16.5, duration: duration() })}><LocateFixed/></button>
       </div>
-      {!remoteActive && <div className={css.credit}>
-        <a href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">{imagery === "aerial" ? "City of Melbourne" : "City of Melbourne · Copernicus"}</a>
-      </div>}
-      {remoteActive && <a className={css.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler" /></a>}
+      {tileIssue && <p className={css.tileIssue} role="status"><RefreshCw size={13}/>Some map tiles could not load. Keep exploring or try again shortly.</p>}
+      {imagery === "satellite" && satelliteKey && !satelliteFailed.current && <a className={css.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler"/></a>}
     </>}
   </div>;
 }

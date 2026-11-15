@@ -8,6 +8,35 @@
   background: #e6e1d5;
 }
 .viewport { position: absolute; inset: 0; }
+.player {
+  width: 88px;
+  height: 112px;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  pointer-events: auto;
+  z-index: 5;
+}
+.tileIssue {
+  position: absolute;
+  bottom: 36px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: min(300px, calc(100% - 125px));
+  margin: 0;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: #fff9eef0;
+  color: #241b29;
+  font-size: 11px;
+}
+.scene :global(.maplibregl-ctrl-attrib) {
+  max-width: min(580px, calc(100vw - 48px));
+  font: 500 10px/1.4 var(--font-body);
+  background: #fff9eef0;
+}
 .scene .viewport canvas:focus-visible {
   outline: 3px solid #2459d3;
   outline-offset: -4px;
