@@ -211,12 +211,17 @@ test("callbacks only redirect to explicitly supported local destinations", () =>
 });
 test("account input cannot assign roles and password whitespace is preserved", () => {
   const valid = {
+    acknowledgementVersion: "food-go-community-2026-11-15",
+    acceptedAcknowledgement: true,
     displayName: "  Sam Lee  ",
     email: " SAM@EXAMPLE.COM ",
     password: "a quiet Sunday morning",
   };
   assert.equal(registerSchema.parse(valid).displayName, "Sam Lee");
   assert.equal(registerSchema.parse(valid).email, "sam@example.com");
+  for (const change of [{ ...valid, acceptedAcknowledgement: false }, { ...valid, acceptedAcknowledgement: "true" },
+    { ...valid, acknowledgementVersion: "old" }, { ...valid, acceptedAcknowledgement: undefined }])
+    assert.equal(registerSchema.safeParse(change).success, false);
   assert.equal(
     registerSchema.safeParse({ ...valid, role: "admin" }).success,
     false,

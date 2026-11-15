@@ -11,6 +11,10 @@ import {
   resetPasswordSchema,
   type AuthMode,
 } from "@/lib/auth/contracts";
+import { COMMUNITY_POLICY_VERSION } from "@/lib/community-policy";
+import { acknowledgementCheckbox } from "@/lib/community-policy-copy";
+import { CommunityAcknowledgement } from "./community-acknowledgement";
+import consentStyles from "./community-consent.module.css";
 
 const content = {
   "sign-in": {
@@ -51,6 +55,7 @@ export function AuthForm({
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [accountType, setAccountType] = useState<"explorer" | "partner">("explorer");
+  const [acceptedAcknowledgement, setAcceptedAcknowledgement] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -80,7 +85,7 @@ export function AuthForm({
             : signInSchema;
     const input =
       mode === "register"
-        ? { displayName, email, password, accountType }
+        ? { displayName, email, password, accountType, acceptedAcknowledgement, acknowledgementVersion: COMMUNITY_POLICY_VERSION }
         : mode === "forgot-password"
           ? { email }
           : mode === "reset-password"
@@ -319,6 +324,14 @@ export function AuthForm({
                 {showPassword ? "Hide password" : "Show password"}
               </button>
             )}
+            {mode === "register" && <div className={consentStyles.registration}>
+              <details><summary>Community acknowledgement</summary><CommunityAcknowledgement/><Link href="/acknowledgement" target="_blank" rel="noopener noreferrer">Read the full acknowledgement</Link></details>
+              <label className={consentStyles.check}><input id="auth-field-acceptedAcknowledgement" type="checkbox" checked={acceptedAcknowledgement}
+                onChange={event => setAcceptedAcknowledgement(event.target.checked)} disabled={!configured || pending} aria-invalid={Boolean(fields.acceptedAcknowledgement)}
+                aria-describedby="auth-acknowledgement-note"/><span>{acknowledgementCheckbox}</span></label>
+              <p className={consentStyles.note} id="auth-acknowledgement-note">After email confirmation, confirm the acknowledgement once for your verified account. We record its version and acceptance time.</p>
+              {fields.acceptedAcknowledgement && <p className="field-error" role="alert">{fields.acceptedAcknowledgement}</p>}
+            </div>}
             {error && (
               <p className="field-error" role="alert">
                 {error}

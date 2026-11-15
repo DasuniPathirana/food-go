@@ -80,6 +80,7 @@ function DecisionForm({ action,row,onClose,onSaved }: { action: Action;row: Oper
   const isOffer=action==="promo.create" || action==="promo.edit";
   return <form className={styles.form} onSubmit={submit}>
     <h4>{labels[action]}</h4>{guidance[action] && <p>{guidance[action]}</p>}
+    {/^(post|comment|report)\./u.test(action) && <p>Apply the <a href="/acknowledgement" target="_blank" rel="noopener noreferrer">community acknowledgement</a>. Assess harmful conduct and misleading content. Truthful, respectful criticism is allowed; a negative experience alone is not a reason for removal. Record the reason for this decision.</p>}
     {action==="venue.locate" && <div className={styles.pair}><label>Latitude<input name="latitude" type="number" step="any" min="-90" max="90" defaultValue={row.latitude ?? undefined} required/></label>
       <label>Longitude<input name="longitude" type="number" step="any" min="-180" max="180" defaultValue={row.longitude ?? undefined} required/></label></div>}
     {isOffer && <>

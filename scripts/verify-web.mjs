@@ -20,7 +20,7 @@ for (const venue of catalogue.data) {
 }
 for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/venue-dex","/quests",
   "/partner","/partner/dashboard","/partner/onboarding","/admin","/admin/security",
-  "/auth/register","/auth/sign-in","/auth/forgot-password","/auth/reset-password","/auth/phone","/help"]) {
+  "/auth/register","/auth/sign-in","/auth/forgot-password","/auth/reset-password","/auth/phone","/help","/acknowledgement"]) {
   const response = await request(path), html = await response.text();
   check(response.ok && html.includes("Food Go"), `${path} renders`);
   check(response.headers.get("x-content-type-options") === "nosniff", `${path} prevents MIME sniffing`);
@@ -44,11 +44,11 @@ for (const query of ["q=a&q=b","limit=1000","state=other","status=draft"]) {
 for (const path of ["/api/map/search?q=a","/api/map/search?q=A&q=B","/api/map/route?from=1,2&to=999,3"]) {
   check((await request(path)).status === 400, "Map services reject invalid or ambiguous input");
 }
-for (const path of ["/api/journey","/api/game","/api/partner/venues"]) {
+for (const path of ["/api/journey","/api/game","/api/partner/venues","/api/community/policy"]) {
   check((await request(path)).status === 503, `${path} is disabled when Auth is unconfigured`);
 }
 for (const path of ["/api/journey","/api/partner/manage","/api/admin","/api/admin/security",
-  "/api/community","/api/auth/register","/api/auth/sign-in","/api/auth/sign-out","/api/auth/forgot-password","/api/auth/reset-password"]) {
+  "/api/community","/api/community/policy","/api/auth/register","/api/auth/sign-in","/api/auth/sign-out","/api/auth/forgot-password","/api/auth/reset-password"]) {
   check((await request(path, { method: "POST" })).status === 403, `${path} requires the trusted origin`);
   const response = await request(path, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{}" });
   check(response.status === 503 && response.headers.get("cache-control") === "no-store", `${path} respects the closed account configuration`);

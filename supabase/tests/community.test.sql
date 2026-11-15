@@ -18,6 +18,8 @@ insert into auth.users(id,email,email_confirmed_at,phone,phone_confirmed_at,raw_
  ('81000000-0000-4000-8000-000000000004','community-unconfirmed@example.invalid',null,null,null,'{}'),
  ('81000000-0000-4000-8000-000000000005',null,null,'61412345678',now(),'{}'),
  ('81000000-0000-4000-8000-000000000006',null,null,'447123456789',now(),'{}');
+insert into private.community_policy_acceptances(user_id,policy_version)
+select id,'food-go-community-2026-11-15' from auth.users where id::text like '81000000-%';
 select set_config('food_go.actor_a',(select id::text from private.community_authors where user_id='81000000-0000-4000-8000-000000000001'),true);
 select set_config('food_go.actor_b',(select id::text from private.community_authors where user_id='81000000-0000-4000-8000-000000000002'),true);
 select set_config('food_go.actor_c',(select id::text from private.community_authors where user_id='81000000-0000-4000-8000-000000000003'),true);

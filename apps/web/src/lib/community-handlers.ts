@@ -23,7 +23,7 @@ export function communityJson(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store", Pragma: "no-cache" } });
 }
 export class CommunityProviderError extends Error {
-  constructor(public readonly code: "invalid" | "identity" | "limit" | "retry" | "missing" | "unavailable") { super(code); }
+  constructor(public readonly code: "invalid" | "identity" | "limit" | "retry" | "missing" | "acknowledgement" | "unavailable") { super(code); }
 }
 function failure(error: unknown) {
   const code = error instanceof CommunityProviderError ? error.code : "unavailable";
@@ -31,9 +31,10 @@ function failure(error: unknown) {
     invalid: [400, "Check the post or comment details."], identity: [401, "Sign in with a verified account to take part."],
     limit: [429, "You have reached today's posting limit. Try again tomorrow."],
     retry: [409, "That submission key belongs to different text. Start a new submission."],
+    acknowledgement: [403, "Review and accept the Food Go acknowledgement before posting or interacting."],
     missing: [404, "That post or profile is not available."], unavailable: [503, "The community is temporarily unavailable. Try again shortly."],
   } as const;
-  return { status: responses[code][0], error: responses[code][1] };
+  return { status: responses[code][0], error: responses[code][1], ...(code === "acknowledgement" ? { code: "acknowledgement_required" } : {}) };
 }
 export async function runBounded<T>(operation: (signal: AbortSignal) => Promise<T>, milliseconds: number): Promise<T> {
   const controller = new AbortController();
@@ -123,7 +124,7 @@ export function createCommunityHandlers(deps: Dependencies) {
         }, 9000);
       } catch (error) {
         const result = failure(error);
-        return communityJson({ error: result.error }, result.status);
+        return communityJson({ error: result.error, ...(result.code ? { code: result.code } : {}) }, result.status);
       }
     },
   };

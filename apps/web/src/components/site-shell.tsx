@@ -65,6 +65,7 @@ export function SiteShell({
         <nav aria-label="Information">
           <Link href="/partner">List your venue</Link>
           <Link href="/collect">Collect a visit</Link>
+          <Link href="/acknowledgement">Community acknowledgement</Link>
           <Link href="/help">Help and privacy</Link>
           <a
             href="https://github.com/Kalana8/Food_Go"

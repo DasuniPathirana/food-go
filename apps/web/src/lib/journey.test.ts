@@ -20,7 +20,8 @@ test("restaurant mutations cannot publish or change another organisation", () =>
     description: "", price: -100, available: true }).success);
 });
 test("signup selects an explorer or business interface and rejects privileged roles", () => {
-  const account = { displayName: "New explorer", email: "explorer@example.test", password: "a sufficiently long password" };
+  const account = { displayName: "New explorer", email: "explorer@example.test", password: "a sufficiently long password",
+    acknowledgementVersion: "food-go-community-2026-11-15", acceptedAcknowledgement: true };
   assert.ok(registerSchema.safeParse({ ...account, accountType: "partner" }).success);
   assert.ok(registerSchema.safeParse({ ...account, accountType: "explorer" }).success);
   assert.ok(!registerSchema.safeParse({ ...account, accountType: "admin" }).success);

@@ -98,7 +98,7 @@ test("reviewed fixture DDL and grants remain inside the original transaction, wi
 });
 
 test("all checked-in suites capture every planned assertion without altering their top-level fixture statements", async () => {
-  for (const [name, count, cteCount] of [["tenant_isolation", 27, 3], ["partner_drafts", 29, 0], ["community", 46, 0], ["social_xp", 83, 0], ["operator_promotions", 32, 0], ["connected_journeys", 20, 0], ["map_services", 6, 0]]) {
+  for (const [name, count, cteCount] of [["tenant_isolation", 27, 3], ["partner_drafts", 29, 0], ["community", 46, 0], ["social_xp", 83, 0], ["operator_promotions", 32, 0], ["connected_journeys", 20, 0], ["map_services", 6, 0], ["community_policy", 35, 0]]) {
     const source = await readFile(new URL(`../supabase/tests/${name}.test.sql`, import.meta.url), "utf8");
     const prepared = prepareDatabaseTest(source, name);
     assert.equal(prepared.expectedAssertions, count, name);

@@ -121,7 +121,8 @@ try {
   }
   async function signup(accountType) {
     const address = `${accountType}-${randomUUID()}@example.test`, jar = new Map();
-    const registered = await webPost("/api/auth/register", { email: address, password, displayName: "Fixture " + accountType, accountType }, jar);
+    const registered = await webPost("/api/auth/register", { email: address, password, displayName: "Fixture " + accountType, accountType,
+      acknowledgementVersion: "food-go-community-2026-11-15", acceptedAcknowledgement: true }, jar);
     assert.equal(registered.status, 200, "Register through the application");
     const before = await webPost("/api/auth/sign-in", { email: address, password }, jar);
     assert.equal(before.status, 400, "Unconfirmed account cannot sign in");
@@ -218,6 +219,19 @@ try {
   const challenge = await read("/api/journey", customer.jar);
   assert.equal(challenge.progress.xp, 350, "Three places and one dish earn the one-time challenge bonus");
   assert.equal(challenge.progress.level, 2, "Verified discoveries advance the explorer level");
+  const missingAcknowledgement = await webPost("/api/community", { action: "create", body: "Not accepted yet.", visibility: "public", requestId: randomUUID() }, customer.jar);
+  assert.equal(missingAcknowledgement.status, 403, "A verified account cannot post before acknowledging the policy");
+  assert.equal((await missingAcknowledgement.json()).code, "acknowledgement_required");
+  for (const account of [customer, owner]) {
+    const before = await read("/api/community/policy", account.jar);
+    assert.equal(before.acceptedAt, null, "Registration checkbox alone cannot forge a verified acceptance receipt");
+    const response = await webPost("/api/community/policy", { version: before.version, accepted: true }, account.jar);
+    assert.ok(response.ok, "Verified account can explicitly accept the acknowledgement");
+    const saved = await response.json();
+    assert.ok(saved.acceptedAt);
+    const repeated = await webPost("/api/community/policy", { version: before.version, accepted: true }, account.jar);
+    assert.equal((await repeated.json()).acceptedAt, saved.acceptedAt, "Acceptance retries preserve the original timestamp");
+  }
   const story = await webPost("/api/community", { action: "create", body: "A great lunch and three new places discovered.",
     visibility: "public", requestId: randomUUID() }, customer.jar);
   assert.ok(story.ok, "Customer can post a food experience");

@@ -30,7 +30,7 @@ async function getProvider(config: CommunityReadConfig, authConfig?: AuthConfig,
       if (!user || !authenticated) throw new CommunityProviderError("identity");
       const { data, error } = await authenticated.rpc(action.action === "view" ? "food_go_record_post_view" : "food_go_community_write", action.action === "view" ? { p_post: action.postId } : { p_action: action }).abortSignal(signal || AbortSignal.timeout(10000));
       if (error) {
-        const codes = { FC002: "limit", FC003: "retry", FC004: "missing", "42501": "identity", "22023": "invalid", "23514": "invalid" } as const;
+        const codes = { FC002: "limit", FC003: "retry", FC004: "missing", FC005: "acknowledgement", "42501": "identity", "22023": "invalid", "23514": "invalid" } as const;
         throw new CommunityProviderError(codes[error.code as keyof typeof codes] ?? "unavailable");
       }
       return data;

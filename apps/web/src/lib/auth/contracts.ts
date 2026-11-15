@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { australianMobile } from "../phone-number";
+import { COMMUNITY_POLICY_VERSION } from "../community-policy";
 
 const email = z
   .string()
@@ -21,6 +22,8 @@ export const signInSchema = z.strictObject({
   password: z.string().min(1, "Enter your password.").max(128),
 });
 export const registerSchema = z.strictObject({
+  acknowledgementVersion: z.literal(COMMUNITY_POLICY_VERSION, "Review the current community acknowledgement."),
+  acceptedAcknowledgement: z.literal(true, "Read and accept the community acknowledgement."),
   accountType: z.enum(["explorer", "partner"]).default("explorer"),
   displayName: z
     .string()
