@@ -38,7 +38,7 @@ export function OwnerWorkspace({ venueId }: { venueId: string }) {
     <button className="secondary-button" onClick={() => setVersion(n => n + 1)}>Try again</button></section>;
   const venue = data.venue;
   const published = venue.status === "published" && !!venue.ownership_verified_at;
-  return <div><Link className="back-link" href="/partner/dashboard">All my restaurants</Link>
+  return <div className="owner-workspace"><Link className="back-link" href="/partner/dashboard">All my restaurants</Link>
     <header className="page-intro"><div><h1>{venue.name}</h1><p>{venue.status} · {venue.ownership_verified_at ? "Ownership verified" : "Ownership review required"}</p></div>
       {published && <Link className="secondary-button" href={"/venues/" + venueId}>View public listing</Link>}</header>
     {error && <p role="alert" className="field-error">{error}</p>}
@@ -69,7 +69,7 @@ export function OwnerWorkspace({ venueId }: { venueId: string }) {
     </section>
     <section className="content-panel"><h2>Your menu</h2><p>Available menu items appear on the public listing after restaurant approval.</p>
       {data.dishes.map(dish => <MenuForm key={dish.id + dish.updated_at} dish={dish} busy={busy} save={input => void act(input)} />)}
-      <details><summary>Add a dish</summary><MenuForm busy={busy} save={input => void act(input)}/></details>
+      <details><summary>Add a dish</summary><MenuForm key={"new-" + data.dishes.length} busy={busy} save={input => void act(input)}/></details>
     </section>
     <section className="content-panel"><h2>Customer verification</h2><p>Show a fresh QR at the counter for visits. Issue a dish code only after the customer has tried that dish.</p>
       {published && venue.game_enabled ? <><button className="primary-button" disabled={busy} onClick={() => void act({ action: "issue" })}>Create visit QR</button>
@@ -81,7 +81,7 @@ export function OwnerWorkspace({ venueId }: { venueId: string }) {
     </section>
     <section className="content-panel"><h2>Promotions</h2>
       {data.promotions.map(p => <p key={p.id}>{p.title} · {p.status} · Ends {new Date(p.ends_at).toLocaleDateString("en-AU")}</p>)}
-      {published ? <PromotionForm busy={busy} save={input => void act(input)}/> : <p>Publish your listing before submitting an offer.</p>}
+      {published ? <PromotionForm key={data.promotions.length} busy={busy} save={input => void act(input)}/> : <p>Publish your listing before submitting an offer.</p>}
     </section>
   </div>;
 }

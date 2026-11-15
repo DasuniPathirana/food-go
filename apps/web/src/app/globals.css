@@ -3420,3 +3420,18 @@ h1,h2,h3 { font-optical-sizing: auto; }
   .preview-strip { font-size: 12px; gap: 6px; padding-inline: 15px; }
   .header-inner { padding-inline: 16px; }
 }
+/* Owner forms follow the same readable spacing as customer account forms. */
+.owner-workspace { max-width: 1120px; margin-inline: auto; }
+.owner-workspace > .content-panel { margin-block: 22px; }
+.owner-workspace form fieldset { display: grid; gap: 16px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.owner-workspace label { display: grid; gap: 6px; color: var(--ink); font-weight: 700; }
+.owner-workspace input:not([type="checkbox"]), .owner-workspace textarea, .owner-workspace select {
+  width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); font: inherit;
+}
+.owner-workspace input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--petrol); }
+.owner-workspace textarea { min-height: 90px; resize: vertical; }
+.owner-workspace form button { justify-self: start; }
+.owner-workspace details > summary { padding-block: 12px; font-weight: 700; cursor: pointer; }
+.owner-workspace .secondary-button { margin: 5px; }
+.owner-workspace [role="status"] > img { display: block; max-width: 100%; }
+.owner-workspace code { overflow-wrap: anywhere; }

@@ -25,8 +25,6 @@ export function SiteShell({
   const journey = useJourney();
   const ownerView = accountType === "partner" && pathname.startsWith("/partner");
   const exampleNeighbourhood = pathname === "/explore-preview";
-  const examplePage = exampleNeighbourhood || pathname.startsWith("/explore-preview/");
-  const socialPreview = pathname === "/feed-preview";
   return (
     <div className="site-shell">
       <a className="skip-link" href="#main-content">

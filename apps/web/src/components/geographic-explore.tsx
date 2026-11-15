@@ -9,7 +9,6 @@ import { ATLAS_AERIAL, ATLAS_SATELLITE, ATLAS_CORNERS, ATLAS_PLACES, ATLAS_ATTRI
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
 import type { AtlasSelection } from "./atlas-canvas";
 import { MapExpandButton, MapFrame } from "./map-frame";
-import { MapModeNav } from "./map-mode-nav";
 import styles from "./geographic-explore.module.css";
 
 const Canvas = dynamic(() => import("./atlas-canvas").then(module => module.AtlasCanvas), { ssr: false });

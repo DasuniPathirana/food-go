@@ -197,6 +197,40 @@ try {
   assert.ok(returning.ok && (await returning.json()).redirectTo === "/", "Returning explorer reaches Explore");
   assert.equal((await read("/api/journey", newSession)).progress.xp, 150, "Progress survives a new sign-in session");
   assert.equal((await read("/api/journey", owner.jar)).progress.xp, 0, "Progress is isolated between accounts");
+  for (let stop = 2; stop <= 3; stop++) {
+    const added = await webPost("/api/partner/venues", {
+      name: "Connected fixture kitchen " + stop, email: owner.address, phone: "0391234567",
+      address: stop + "23 Test Street", suburb: "Melbourne", state: "VIC", postcode: "3000", cuisine: "Italian",
+      venueType: "restaurant", description: "Additional fixture stop for the verified three-place challenge.",
+      gameEnabled: true, acceptedTerms: true,
+    }, owner.jar, { "Idempotency-Key": randomUUID() });
+    assert.equal(added.status, 201);
+    const stopId = (await added.json()).data.id;
+    for (const action of ["venue.verify","venue.publish"]) {
+      const version = localSql(`select to_json(updated_at)#>>'{}' from public.venues where id='${stopId}'`);
+      await change({ action, id: stopId, requestId: randomUUID(), version, reason: "Fixture trail stop review" });
+    }
+    const issued = await webPost("/api/partner/manage", { action: "issue", venueId: stopId }, owner.jar);
+    assert.ok(issued.ok);
+    const evidence = await issued.json();
+    assert.ok((await webPost("/api/journey", { action: "redeem", code: evidence.code }, customer.jar)).ok);
+  }
+  const challenge = await read("/api/journey", customer.jar);
+  assert.equal(challenge.progress.xp, 350, "Three places and one dish earn the one-time challenge bonus");
+  assert.equal(challenge.progress.level, 2, "Verified discoveries advance the explorer level");
+  const story = await webPost("/api/community", { action: "create", body: "A great lunch and three new places discovered.",
+    visibility: "public", requestId: randomUUID() }, customer.jar);
+  assert.ok(story.ok, "Customer can post a food experience");
+  const postId = (await story.json()).id;
+  assert.ok((await read("/api/community?wall=me", customer.jar)).posts.some(p => p.id === postId && p.status === "pending"), "Pending post stays on its personal wall");
+  await change({ action: "post.publish", id: postId, requestId: randomUUID(), version: "pending", reason: "Fixture independent post review" });
+  assert.ok((await read("/api/community", new Map())).posts.some(p => p.id === postId), "Approved story reaches the public feed");
+  assert.ok((await webPost("/api/community", { action: "like", postId, liked: true }, owner.jar)).ok);
+  assert.ok((await webPost("/api/community", { action: "view", postId }, owner.jar)).ok);
+  assert.ok((await webPost("/api/community", { action: "view", postId }, owner.jar)).ok);
+  const combined = await read("/api/journey", customer.jar);
+  assert.equal(combined.progress.xp, 378, "Social XP combines with exploration and challenge XP");
+  assert.equal(combined.progress.reachCount, 1, "Repeated signed-in views count once");
   console.log("Verified customer and owner signup, confirmation email, role routing, restaurant review, menu, QR visits, dish XP, retry handling and persistent collections.");
 } finally {
   app.kill("SIGTERM");

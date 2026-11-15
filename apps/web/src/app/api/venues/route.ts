@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   if (!search) return Response.json({ error: "Invalid or unsupported search parameters." }, { status: 400, headers });
   const catalogue = await searchPublicCatalogue(search);
   if (catalogue.status === "unavailable") return Response.json({
-    mode: catalogue.mode, status: "unavailable", data: [], total: 0,
+    mode: catalogue.mode, status: "unavailable", data: [], total: 0, hasMore: false,
     error: "The venue catalogue is temporarily unavailable.",
   }, { status: 503, headers });
   return Response.json({ mode: catalogue.mode, status: "ready", data: catalogue.venues,
