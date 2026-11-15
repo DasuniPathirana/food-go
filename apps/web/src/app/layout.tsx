@@ -29,7 +29,7 @@ export default async function RootLayout({
   return (
     <html lang="en-AU" data-scroll-behavior="smooth">
       <body>
-        <JourneyProvider signedIn={Boolean(account.user)}><SiteShell
+        <JourneyProvider key={account.user?.id || "guest"} signedIn={Boolean(account.user)}><SiteShell
           signedIn={Boolean(account.user)}
           displayName={account.user?.displayName}
           catalogueMode={getCatalogueMode()}

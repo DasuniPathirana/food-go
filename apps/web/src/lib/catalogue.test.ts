@@ -14,7 +14,7 @@ const row = {
   venue_dishes: [{ id: "22222222-2222-4222-8222-222222222222", name: "Seasonal pasta", description: "A menu item.", price_aud_cents: 2400 }],
 };
 
-test("catalogue defaults to isolated demo mode and connected mode fails closed with invalid keys or URLs", () => {
+test("catalogue requires connected configuration and rejects demo mode at runtime", () => {
   assert.deepEqual(readCatalogueConfig({}), { mode: "supabase", configured: false });
   assert.deepEqual(readCatalogueConfig({ NODE_ENV: "production" }), { mode: "supabase", configured: false });
   assert.deepEqual(readCatalogueConfig({ NODE_ENV: "production", FOOD_GO_CATALOGUE_MODE: "demo" }), { mode: "supabase", configured: false });

@@ -3435,3 +3435,9 @@ h1,h2,h3 { font-optical-sizing: auto; }
 .owner-workspace .secondary-button { margin: 5px; }
 .owner-workspace [role="status"] > img { display: block; max-width: 100%; }
 .owner-workspace code { overflow-wrap: anywhere; }
+.site-header .xp-entry { background: var(--saffron, #ffd445); color: var(--ink); border-color: var(--ink); white-space: nowrap; }
+@media (max-width: 600px) {
+  .header-actions { gap: 6px; }
+  .header-actions .account-entry { max-width: 92px; padding-inline: 9px; }
+  .header-actions .xp-entry { max-width: 86px; font-size: 12px; }
+}

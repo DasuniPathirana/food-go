@@ -124,7 +124,7 @@ jobs:
         # CLI 3 targets local by default; --local is not a supported flag.
         run: npx --yes supabase@3.1.0 test db
 
-      - name: Exercise operator sign-in, MFA and public promotions
+      - name: Exercise signup, owner approval, collections and verified XP
         timeout-minutes: 8
         run: |
           npm ci

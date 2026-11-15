@@ -37,7 +37,8 @@ export function SiteShell({
           </Link>
           <FoodNavigation pathname={pathname} owner={ownerView} />
           <div className="header-actions">
-            {signedIn && journey?.data && <Link className="account-entry" href="/profile">{journey.data.progress.xp} XP · Level {journey.data.progress.level}</Link>}
+            {signedIn && journey?.data && <Link className="account-entry xp-entry" href="/profile"
+              aria-label={`Passport, ${journey.data.progress.xp} XP, level ${journey.data.progress.level}`}><span>{journey.data.progress.xp} XP</span></Link>}
             <Link href={accountType === "partner" ? "/partner/dashboard" : "/partner"} className="venue-entry">
               {accountType === "partner" ? "My restaurants" : "For venues"} <ArrowUpRight size={14} />
             </Link>

@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { journeySchema, type Journey } from "@/lib/journey";
+import { usePathname } from "next/navigation";
 
 const JourneyContext = createContext<{
   signedIn: boolean;
@@ -8,6 +9,7 @@ const JourneyContext = createContext<{
   save: (kind: "venue" | "dish", id: string) => Promise<void>; saving: boolean;
 } | null>(null);
 export function JourneyProvider({ signedIn, children }: { signedIn: boolean; children: ReactNode }) {
+  const pathname = usePathname();
   const [data, setData] = useState<Journey | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,11 +25,12 @@ export function JourneyProvider({ signedIn, children }: { signedIn: boolean; chi
     } catch { setError("Your collection could not load. Please try again."); }
     finally { setLoading(false); }
   }, [signedIn]);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { void refresh(); }, [refresh, pathname]);
   useEffect(() => {
     const update = () => { void refresh(); };
     window.addEventListener("food-go:progress", update);
-    return () => window.removeEventListener("food-go:progress", update);
+    window.addEventListener("focus", update);
+    return () => { window.removeEventListener("food-go:progress", update); window.removeEventListener("focus", update); };
   }, [refresh]);
   async function save(kind: "venue" | "dish", id: string) {
     if (!signedIn) { window.location.assign("/auth/sign-in"); return; }
