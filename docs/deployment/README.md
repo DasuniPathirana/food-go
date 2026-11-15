@@ -62,8 +62,8 @@ The production command uses `next start`, with its standard `0.0.0.0` hostname a
 
 Do not upload only `.next/static` or the original `prototype` folder as the complete application. Keep the shared workspace package available to Next. Standalone/Docker packaging is not configured or validated in this handoff.
 
-## Connected services are a later release stage
+## Connected release
 
-The existing **Food go** Supabase project was approved for development/test use. Use a separate reviewed staging/production environment for real customers. Migrations are committed, not automatically applied by a web deployment. A database administrator must review the target and apply them through the [Supabase workflow](../../supabase/README.md); do not reset a hosted database.
+The owner selected the existing **Food go** project (`azccigsctzhbaxoajqst`) and the current Vercel site for the connected release. The deployer owns rollout. Follow the [release handoff](connected-release.md) for migrations, the first operator, environment settings and the live acceptance run. Run fixture tests only in the disposable CI stack once the project serves customers.
 
 Brevo sender/domain and SMTP credentials are still owner inputs. SMS sign-in requires Mobile Message credentials, approved sender, a public signed Supabase hook and controlled delivery tests. Keep account, production-readiness, phone and SMS flags closed until the corresponding release checks pass. The [environment manifest](environment.md), [messaging guide](../integrations/messaging.md) and [go-live checklist](../launch/go-live-checklist.md) describe the remaining work. Never enable a gate merely to make the demo appear connected.

@@ -49,6 +49,7 @@
 .foodInfo h2 a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .page .foodInfo p { margin: 7px 0 0; color: var(--ticket-ink); font-size: 1rem; line-height: 1.25; }
 .foodInfo small { display: block; color: var(--muted); margin-top: 3px; font-size: .875rem; }
+.foodInfo p, .foodInfo small, .singleLine { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .stub {
   position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 15px;
   border-top: 1px dashed var(--ticket-seam); background: #fff0cb; border-radius: 0 0 7px 7px; font-size: .8rem; line-height: 1.25;

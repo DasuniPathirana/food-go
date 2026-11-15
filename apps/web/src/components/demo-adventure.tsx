@@ -10,7 +10,9 @@ import { GeographicExplore } from "./geographic-explore";
 import { MapModeNav } from "./map-mode-nav";
 import atlasStyles from "./geographic-explore.module.css";
 import { DemoCollection, DemoRewards, DemoTrails } from "./market-collections";
-import { DemoDeals } from "./deals";
+import { DemoDeals, DemoPromoStrip } from "./deals";
+import { RestaurantDirectory } from "./restaurant-directory";
+import storefrontStyles from "./deals.module.css";
 import { CommunityFeed } from "./community-feed";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
 import { DEMO_DISH_XP, DEMO_QUESTS, demoBadges, demoDay, demoQuestProgress, useDemoGame, type DemoGameAction, type DemoGameState } from "@/lib/demo-game";
@@ -113,7 +115,7 @@ export function DemoAdventure({ screen, venueId, venues, realMap, initialWall = 
   </div>;
   const banner = <div className={styles.demoBanner}>
     <span><span className={styles.demoDot} />Demo neighbourhood</span>
-    <p>Fictional places. Your discoveries stay on this browser.</p>
+    <p>Example activity stays on this browser.</p>
     <div className={styles.guideLinks}>
       <Link href={href("quests")}><Flag size={13} />Food trails</Link>
       <Link href={href("rewards")}><Gift size={13} />Rewards</Link>
@@ -128,9 +130,9 @@ export function DemoAdventure({ screen, venueId, venues, realMap, initialWall = 
         <div className={styles.location}><MapPin size={18} /><span>Melbourne<small>{screen === "explore" && realMap ? "Victoria, Australia" : "Illustrated neighbourhood"}</small></span></div>
         <FoodNavigation pathname={path} demo />
         <div className={styles.headerActions}>
-          <Link className={styles.xpPill} href={href("passport")} aria-label={`Open Passport, ${progress.xp} demo XP`}>
+          {screen !== "food-dex" && screen !== "venue-dex" && <Link className={styles.xpPill} href={href("passport")} aria-label={`Open Passport, ${progress.xp} demo XP`}>
             <Zap size={17} fill="currentColor" aria-hidden="true" /><strong>{progress.xp}</strong><span>XP</span>
-          </Link>
+          </Link>}
           <button className={styles.bell} aria-label="Demo notifications" aria-expanded={notifications} onClick={() => setNotifications(!notifications)}><Bell size={21} /></button>
           <Link href={href("passport")} className={styles.avatar} aria-label={`Open ${state.name}'s demo passport, level ${progress.level}`}>
             <AvatarIllustration avatarId={avatarPreferences.avatarId} className={styles.avatarPortrait} /><span>{progress.level}</span>
@@ -144,13 +146,15 @@ export function DemoAdventure({ screen, venueId, venues, realMap, initialWall = 
         {screen === "explore" && !realMap && <>
           <div className={atlasStyles.adventureBar}><MapModeNav geographic={false} basePath="/demo/explore" /></div>
           <div className={styles.mapWrap}><AdventureMap selectionPanel={false} explorerName={state.name} demoVenues={filtered} selected={selected?.id} onSelect={(id) => setSelectedId(id)} overlay={overlay} routeVenueId={state.route?.venueId} routeArrived={state.route?.stage === "arrived"} venueLink={venueHref} sheet={<div className={styles.mapRecommendations}>{filtered.map((entry) => <button key={entry.id} onClick={() => setSelectedId(entry.id)}><Image src={entry.image} alt="" width={100} height={75} /><span><strong>{entry.name}</strong><small>{entry.building ? `${entry.building.name} · ${entry.building.unit}` : entry.cuisine}</small></span><ChevronRight size={17} /></button>)}</div>} resultsLabel={`${filtered.length} example places`} /></div>
-          {banner}
           {selected && <StopActions key={selected.id} venue={selected} state={state} dispatch={dispatch} compact />}
           {!filtered.length && <div className={styles.empty}><Search size={26} /><h2>No bites found yet</h2><p>Try another dish, venue or cuisine.</p><button className={styles.secondary} onClick={() => { setQuery(""); setCategory("Everything"); }}>Show every example</button></div>}
           <div className={styles.exploreBelow}><div><h2>Around the neighbourhood</h2><p>Six example places, including three shops inside Garden Arcade. Choose a stop or follow a food trail.</p></div><Link className={styles.primary} href={href("quests")}>Choose a food trail <Flag size={18} /></Link></div>
         </>}
         {screen === "venue" && venue && <div className={styles.content}><Link href={href("explore")} className={styles.back}><ArrowLeft size={17} />Back to Explore</Link><div className={styles.venueHero}><Image src={venue.image} alt={venue.imageAlt} width={1200} height={550} priority /><span className={styles.photoBadge}>Fictional example venue</span></div><div className={styles.sectionTitle}><div><h1>{venue.name}</h1><span className={styles.cuisine}>{venue.cuisine}</span><p>{venue.description}</p></div><button className={styles.secondary} onClick={() => dispatch({ type: "save-venue", venueId: venue.id })} aria-pressed={state.savedVenues.some((id) => id === venue.id)}><Bookmark size={18} fill={state.savedVenues.some((id) => id === venue.id) ? "currentColor" : "none"} />{state.savedVenues.some((id) => id === venue.id) ? "Saved" : "Save venue"}</button></div>{venue.building && <div className={styles.buildingNote}><Building2 size={23} /><div><strong>{venue.building.name}</strong><p>{venue.building.level} · {venue.building.unit}. Other shops in this building have their own check-ins and dishes.</p></div></div>}<StopActions key={venue.id} venue={venue} state={state} dispatch={dispatch} /><VenueDirections venue={venue} /><section className={styles.signature}><Image src={venue.image} alt={venue.imageAlt} width={420} height={280} /><div><h2>{venue.dish}</h2><p>Visit this example venue first, then confirm this dish separately to add it to your FoodDex.</p><span className={styles.rewardTag}><Zap size={16} />{DEMO_DISH_XP[venue.id as keyof typeof DEMO_DISH_XP]} demo XP</span><button className={styles.secondary} onClick={() => dispatch({ type: "save-dish", venueId: venue.id })} aria-pressed={state.savedDishes.some((id) => id === venue.id)}><Bookmark size={17} />{state.savedDishes.some((id) => id === venue.id) ? "Dish saved to try" : "Save dish to try"}</button></div></section><p className={styles.smallPrint}>Photography and venue details are illustrative. Exact directions are available for complete published venue listings in the connected catalogue.</p></div>}
-        {(screen === "food-dex" || screen === "venue-dex") && <DemoCollection key={screen} dishes={screen === "food-dex"} venues={venues} state={state} dispatch={dispatch} xp={progress.xp} />}
+        {screen === "explore" && <div className={storefrontStyles.storefront}>
+          <DemoPromoStrip /><RestaurantDirectory venues={venues} demo />
+        </div>}
+        {(screen === "food-dex" || screen === "venue-dex") && <DemoCollection key={screen} dishes={screen === "food-dex"} venues={venues} state={state} dispatch={dispatch} />}
         {screen === "quests" && <DemoTrails venues={venues} state={state} dispatch={dispatch} />}
         {screen === "deals" && <DemoDeals />}
         {screen === "passport" && <div className={`${styles.content} ${styles.passportPage} ${passportStyles.page}`}>
@@ -175,18 +179,16 @@ export function DemoAdventure({ screen, venueId, venues, realMap, initialWall = 
               <p>{progress.remaining} XP to level {progress.level + 1}</p>
             </div>
           </section>
+          <CommunityFeed preview previewName={state.name} basePath="/demo/feed" initialWall="me" presentation="passport" />
           <details className={passportStyles.details}>
             <summary><BookOpen size={18} /><span>Progress, badges and avatar</span><ChevronDown size={17} /></summary>
             <div className={passportStyles.detailsBody}><div className={styles.stats}><div><MapPin /><strong>{state.visited.length}</strong><span>Places discovered</span></div><div><BookOpen /><strong>{state.collected.length}</strong><span>Dishes collected</span></div><div><Flag /><strong>{state.claimedQuests.length}</strong><span>Trails completed</span></div><div><Award /><strong>{badges.filter((badge) => badge.earned).length}</strong><span>Badges earned</span></div></div><AvatarWardrobe /><Link href={href("quests")}><Flag size={18} />My food trails<ArrowRight size={16} /></Link><h2 className={styles.sectionHeading}>Your milestones</h2><div className={styles.badgeGrid}>{badges.map((badge) => <div key={badge.id} className={`${styles.badgeCard} ${badge.earned ? styles.badgeEarned : ""}`}><span>{badge.earned ? <Award size={29} /> : <LockKeyhole size={25} />}</span><strong>{badge.name}</strong><p>{badge.detail}</p><small>{badge.earned ? "Earned in this demo" : "A new adventure awaits"}</small></div>)}</div><div className={styles.sectionTitle}><h2>The discovery log</h2><Link className={styles.textButton} href={href("rewards")}>How demo XP works <ArrowRight size={15} /></Link></div><div className={styles.activity}>{state.ledger.slice(-12).reverse().map((entry) => <div key={entry.key}><span className={styles.activityIcon}>{entry.kind === "quest" ? <Flag size={19} /> : ["post", "like", "share", "comment"].includes(entry.kind) ? <MessagesSquare size={19} /> : entry.kind === "daily" ? <Gift size={19} /> : <MapPin size={19} />}</span><div><strong>{entry.kind === "visit" ? `Visited ${venues.find((item) => item.id === entry.subject)?.name}` : entry.kind === "dish" ? `Collected ${venues.find((item) => item.id === entry.subject)?.dish}` : entry.kind === "quest" ? `Completed ${DEMO_QUESTS.find((item) => item.id === entry.subject)?.title}` : entry.kind === "daily" ? "Picked up a daily boost" : entry.kind === "post" ? entry.revoked ? "Removed an example story" : "Shared an example story" : entry.kind === "like" ? "Liked a neighbour's example story" : entry.kind === "comment" ? "Added a kind example comment" : "Shared a neighbour's example story"}</strong><small>{new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", dateStyle: "medium" }).format(new Date(entry.at))}</small></div><strong className={styles.activityXp}>{entry.revoked ? "Removed" : `+${entry.amount} XP`}</strong></div>)}{!state.ledger.length && <p className={styles.smallPrint}>Your first discovery starts on Explore. Your passport begins with 320 example XP.</p>}</div><div className={styles.resetRow}><p>Ready to show the adventure again? Reset clears this browser&apos;s example game and community feed.</p><button className={styles.secondary} onClick={() => setResetting(true)}><RotateCcw size={16} />Reset demo</button></div></div>
           </details>
-          <CommunityFeed preview previewName={state.name} basePath="/demo/feed" initialWall="me" presentation="passport" />
         </div>}
         {screen === "rewards" && <DemoRewards ready={ready} claimed={dailyClaimed} onCollect={() => dispatch({ type: "daily" })} />}
         {screen === "feed" && <div className={styles.feedContent}><CommunityFeed preview previewName={state.name} basePath="/demo/feed" initialWall={initialWall} initialPost={initialPost} /></div>}
       </main>
-      {screen === "explore" && realMap
-        ? <div className={styles.demoBanner}><span>Adventure demo</span><div className={styles.guideLinks}><Link href={href("quests")}><Flag size={13} />Food trails</Link><Link href={href("rewards")}><Gift size={13} />Rewards</Link></div></div>
-        : screen !== "explore" && banner}
+      {banner}
       <footer className={styles.guideFooter}><Link href="/?view=catalogue">Browse published places <ArrowRight size={15} /></Link><Link href="/help">Help and privacy</Link></footer>
       <div className={styles.status} role="status" aria-live="polite">
         {notice && <span key={notice + progress.xp} className={notice.startsWith("+") ? styles.xpReceipt : undefined}>

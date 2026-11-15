@@ -1,4 +1,6 @@
 import { Discovery } from "@/components/discovery";
+import { Suspense } from "react";
+import { PublishedStorefront } from "@/components/published-storefront";
 import { GeographicExplore } from "@/components/geographic-explore";
 import { MapModeNav } from "@/components/map-mode-nav";
 import styles from "@/components/geographic-explore.module.css";
@@ -10,6 +12,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
   if (query.map === "adventure") return <>
     <div className={styles.adventureBar}><MapModeNav geographic={false} basePath="/" /></div>
     <Discovery catalogue={catalogue.mode === "demo" ? catalogue : await loadCatalogue({mode: "demo"})} />
+    <Suspense fallback={null}><PublishedStorefront /></Suspense>
   </>;
-  return <GeographicExplore basePath="/" venues={catalogue.venues} catalogueUnavailable={catalogue.status === "unavailable"} />;
+  return <><GeographicExplore basePath="/" venues={catalogue.venues} catalogueUnavailable={catalogue.status === "unavailable"} /><Suspense fallback={null}><PublishedStorefront /></Suspense></>;
 }

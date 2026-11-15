@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { Crosshair, Hand, MapPin, Minus, Plus } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { Crosshair, MapPin, Minus, Plus } from "lucide-react";
+import { useMapGesture } from "./use-map-gesture";
 import { ATLAS_AERIAL, ATLAS_ATTRIBUTION, ATLAS_BUILDINGS, ATLAS_CENTER, ATLAS_CORNERS, ATLAS_SATELLITE } from "@/lib/melbourne-atlas";
 import type { AtlasPlace, AtlasSelection } from "./atlas-canvas";
 import styles from "./atlas-fallback.module.css";
@@ -100,11 +101,9 @@ export function AtlasFallback({ places, selected, onSelect, imagery, threeD }: P
   const drawn = useRef(false);
   const [size, setSize] = useState({ width: 1, height: 1 });
   const [camera, setCamera] = useState({ ...home, zoom: 1 });
-  const [touchPan, setTouchPan] = useState(false);
   const [buildingError, setBuildingError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [topPad, setTopPad] = useState(0);
-  const drag = useRef<{ id: number; start: Point; initial: Point; moved: boolean } | null>(null);
   const locallySelected = useRef<AtlasSelection | null>(null);
   const squash = threeD && !buildingError ? compressed : 1;
   const scale = Math.max(size.width / width, size.height / (height * squash)) * camera.zoom;
@@ -175,28 +174,13 @@ export function AtlasFallback({ places, selected, onSelect, imagery, threeD }: P
     else return;
     event.preventDefault();
   }
-  function start(event: PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || !event.isPrimary || (event.target as Element).closest("button,a")) return;
-    drag.current = { id: event.pointerId, start: { x: event.clientX, y: event.clientY }, initial: centre, moved: false };
-    if (event.pointerType !== "touch" || touchPan) event.currentTarget.setPointerCapture(event.pointerId);
-  }
-  function move(event: PointerEvent<HTMLDivElement>) {
-    const track = drag.current;
-    if (!track || track.id !== event.pointerId) return;
-    const dx = event.clientX - track.start.x, dy = event.clientY - track.start.y;
-    if (Math.hypot(dx, dy) > 4) track.moved = true;
-    if (track.moved && (event.pointerType !== "touch" || touchPan))
-      setCamera(c => ({ ...c, x: track.initial.x - dx / scale, y: track.initial.y - dy / scale / squash }));
-  }
-  function finish(event: PointerEvent<HTMLDivElement>) {
-    const track = drag.current;
-    if (!track || track.id !== event.pointerId) return;
-    drag.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    if (track.moved) return;
-    const box = event.currentTarget.getBoundingClientRect();
-    select(unproject({ x: clamp((event.clientX - box.left - left) / scale, 0, width), y: clamp((event.clientY - box.top - top) / scale / squash, 0, height) }));
-  }
+  const gestures = useMapGesture((dx, dy) => setCamera(c => ({
+    ...c, x: clamp(c.x - dx / scale, xExtent, width - xExtent),
+    y: clamp(c.y - dy / scale / squash, yExtent, height - yExtent),
+  })), zoom, point => {
+    const box = viewport.current?.getBoundingClientRect();
+    if (box) select(unproject({ x: clamp((point.x - box.left - left) / scale, 0, width), y: clamp((point.y - box.top - top) / scale / squash, 0, height) }));
+  });
   function markerPosition(point: Coordinate): CSSProperties {
     const p = project(point);
     return { left: left + p.x * scale, top: top + p.y * scale * squash };
@@ -204,8 +188,7 @@ export function AtlasFallback({ places, selected, onSelect, imagery, threeD }: P
 
   return <div className={styles.map} ref={viewport} role="region" tabIndex={0}
     aria-label="Melbourne local map. Arrow keys pan, plus and minus zoom, Enter selects the centre, Home resets."
-    data-touch-pan={touchPan} onKeyDown={keyControl} onPointerDown={start} onPointerMove={move}
-    onPointerUp={finish} onPointerCancel={() => { drag.current = null; }} onLostPointerCapture={() => { drag.current = null; }}>
+    onKeyDown={keyControl} {...gestures}>
     <div className={styles.plane} style={{ width, left, top, transform: `scale(${scale})` }} aria-hidden="true">
       {/* Both local images use this exact georeferenced frame at their native resolutions. */}
       <img alt="" src={imagery === "aerial" ? ATLAS_AERIAL : ATLAS_SATELLITE} draggable={false}
@@ -225,9 +208,8 @@ export function AtlasFallback({ places, selected, onSelect, imagery, threeD }: P
       <button type="button" aria-label="Zoom in" title="Zoom in" disabled={camera.zoom >= 8} onClick={() => zoom(1.5)}><Plus size={18} /></button>
       <button type="button" aria-label="Zoom out" title="Zoom out" disabled={camera.zoom <= 1} onClick={() => zoom(1/1.5)}><Minus size={18} /></button>
       <button type="button" aria-label="Reset map view" title="Reset map view" onClick={() => setCamera({ ...home, zoom: 1 })}><Crosshair size={18} /></button>
-      <button type="button" className={styles.touch} aria-pressed={touchPan} aria-label={touchPan ? "Scroll page" : "Move map"} onClick={() => setTouchPan(!touchPan)}><Hand size={18} /></button>
     </div>
-    {imageError || buildingError && threeD ? <p role="status" className={styles.error}>{imageError ? "This image could not load. The place directory is available below." : "Building shapes could not load. Showing the flat map."}</p> : null}
+    {imageError || buildingError && threeD ? <p role="status" className={styles.error}>{imageError ? "Image unavailable. Search above for directions." : "Building shapes unavailable. Showing the flat map."}</p> : null}
     <a className={styles.credit} href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">{imagery === "satellite" ? "Copernicus · City of Melbourne" : "City of Melbourne"} · Sources</a>
   </div>;
 }

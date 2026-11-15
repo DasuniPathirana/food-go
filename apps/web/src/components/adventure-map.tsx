@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Bookmark, Building2, Check, ChevronDown, Compass, Footprints, Hand, LocateFixed, MapPin, Minus, Pause, PersonStanding, Play, Plus, SlidersHorizontal, Store, X } from "lucide-react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowRight, Bookmark, Building2, Check, ChevronDown, Compass, LocateFixed, MapPin, Minus, Pause, PersonStanding, Play, Plus, SlidersHorizontal, Store, X } from "lucide-react";
+import { MapExpandButton, MapFrame } from "./map-frame";
+import { useMapGesture } from "./use-map-gesture";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
 import { venueHref } from "@/lib/catalogue-contracts";
 import { illustratedMapStops } from "@/lib/explore-stops";
@@ -40,11 +42,11 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
   const id = useId();
   const frame = useRef<HTMLElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
-  const floatingContent = useRef<HTMLDivElement>(null);
+  const mapPlane = useRef<HTMLDivElement>(null);
+  const topControls = useRef<HTMLDivElement>(null);
   const detailPanel = useRef<HTMLDivElement>(null);
   const panelOpener = useRef<HTMLButtonElement | null>(null);
   const toolsToggle = useRef<HTMLButtonElement>(null);
-  const drag = useRef<{ pointerId: number; origin: Point; pan: Point } | null>(null);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [player, setPlayer] = useState<Point>(startingPlayer);
@@ -54,17 +56,13 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
   const [walking, setWalking] = useState(false);
   const actionTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const walkTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [dragging, setDragging] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [touchDrag, setTouchDrag] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [pageVisible, setPageVisible] = useState(true);
-  const [overlayBottom, setOverlayBottom] = useState(180);
   const [sceneTop, setSceneTop] = useState(142);
   const [expanded, setExpanded] = useState<"places" | "building" | "venue" | "avatar" | null>(null);
   const [buildingId, setBuildingId] = useState<string | null>(null);
-  const immersive = Boolean(overlay);
   // Fail closed: unknown IDs and connected UUIDs never receive a fictional marker.
   const stops = illustratedMapStops(demoVenues);
   const building = stops.find((stop) => stop.isBuilding && stop.id === buildingId);
@@ -87,27 +85,16 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
     if (routeArrived && routeStop) setPlayer({ x: clamp(routeStop.position.x + 3, 8, 90), y: clamp(routeStop.position.y + 7, 8, 76) });
   }, [routeArrived, routeStop?.position.x, routeStop?.position.y]);
 
-  useLayoutEffect(() => {
-    const content = floatingContent.current;
-    if (!immersive || !content) return;
-    const measure = () => {
-      if (viewport.current) setOverlayBottom(Math.ceil(content.getBoundingClientRect().bottom - viewport.current.getBoundingClientRect().top));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(content);
-    return () => observer.disconnect();
-  }, [immersive]);
-
   // Fit the complete scene below the actual page chrome, including wrapped tablet navigation.
   // Document position keeps its height stable while the user scrolls to optional place details.
   useLayoutEffect(() => {
     const measure = () => {
-      if (viewport.current) setSceneTop(Math.ceil(viewport.current.getBoundingClientRect().top + window.scrollY));
+      if (viewport.current && !viewport.current.closest("dialog:modal")) setSceneTop(Math.ceil(viewport.current.getBoundingClientRect().top + window.scrollY));
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(document.body);
+    if (topControls.current) observer.observe(topControls.current);
     window.addEventListener("resize", measure);
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
@@ -146,37 +133,32 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
       else setZoom((value) => clamp(value + (event.key === "-" ? -.15 : .15), .85, 1.75));
     }
   }
-  function beginDrag(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0 || (event.pointerType === "touch" && !touchDrag) ||
-      (event.target as Element).closest("button, a, input, select, textarea, label, form, [data-map-overlay]")) return;
-    event.currentTarget.focus({ preventScroll: true });
-    drag.current = { pointerId: event.pointerId, origin: { x: event.clientX, y: event.clientY }, pan };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragging(true);
-  }
-  function moveDrag(event: PointerEvent<HTMLDivElement>) {
-    const current = drag.current;
-    if (!current || current.pointerId !== event.pointerId) return;
-    setPan({ x: clamp(current.pan.x + event.clientX - current.origin.x, -450, 450), y: clamp(current.pan.y + event.clientY - current.origin.y, -280, 280) });
-  }
-  function endDrag(event: PointerEvent<HTMLDivElement>) {
-    if (drag.current?.pointerId !== event.pointerId) return;
-    drag.current = null; setDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-  }
+  const gestures = useMapGesture((dx, dy) => {
+    const box = viewport.current?.getBoundingClientRect();
+    if (!box) return;
+    const xLimit = box.width * .32 * zoom;
+    const yLimit = box.height * .32 * zoom;
+    setPan(current => ({ x: clamp(current.x + dx, -xLimit, xLimit), y: clamp(current.y + dy, -yLimit, yLimit) }));
+  }, ratio => setZoom(value => clamp(value * ratio, .85, 1.75)), point => {
+    const box = mapPlane.current?.getBoundingClientRect();
+    if (!box?.width || !box.height) return;
+    walk((point.x - box.left) * 100 / box.width - player.x, (point.y - box.top) * 100 / box.height - player.y);
+  });
 
-  return <section ref={frame} style={{ "--adventure-overlay-bottom": `${overlayBottom}px`, "--adventure-scene-top": `${sceneTop}px` } as CSSProperties} className={`${styles.frame} ${overlay ? styles.immersive : ""} ${touchDrag ? styles.touchDrag : ""} ${!animate ? styles.paused : ""} ${dragging ? styles.dragging : ""}`} aria-label="Illustrated exploration playground">
+  return <section ref={frame} style={{ "--adventure-scene-top": `${sceneTop}px` } as CSSProperties} className={`${styles.frame} ${overlay ? styles.immersive : ""} ${!animate ? styles.paused : ""}`} aria-label="Illustrated exploration playground">
     {!overlay && <div className={styles.sceneHeading}><div><strong>Take the neighbourhood for a walk.</strong><span>Interactive prototype preview</span></div>
       <button type="button" className={styles.motionButton} onClick={() => setPaused((value) => !value)} aria-pressed={paused}>
         {paused ? <Play size={15} /> : <Pause size={15} />}<span>{paused ? "Play ambient motion" : "Pause ambient motion"}</span>
       </button>
     </div>}
-    <div ref={viewport} className={styles.viewport} tabIndex={0} role="region" aria-label="Illustrated Melbourne playground. Drag to explore or use the walking controls."
-      aria-describedby={`${id}-instructions ${id}-boundary`} onKeyDown={keyboard} onPointerDown={beginDrag} onPointerMove={moveDrag}
-      onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={() => { drag.current = null; setDragging(false); }}>
+    <MapFrame label="Explore the illustrated neighbourhood">
+    {overlay && <div ref={topControls} className={styles.topControls}>{overlay}</div>}
+    <div ref={viewport} className={styles.viewport} tabIndex={0} role="region" aria-label="Illustrated Melbourne. Swipe to pan, tap or use arrow keys to walk, plus or minus to zoom."
+      aria-describedby={`${id}-instructions`} onKeyDown={keyboard} {...gestures}>
+      <MapExpandButton />
       <div className={styles["map-world"]} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
         <Image className={styles["map-base"]} src="/images/adventure/neighbourhood.svg" alt="" fill sizes="100vw" loading="eager" draggable={false} unoptimized />
-        <div className={styles.mapPlane}>
+        <div ref={mapPlane} className={styles.mapPlane}>
         {destination && <svg className={styles["map-route"]} viewBox="0 0 1500 1000" preserveAspectRatio="none" aria-hidden="true">
           {["#fff9ee", "#006d68"].map((stroke, index) => <path key={stroke} d={`M${player.x * 15} ${player.y * 10} L${player.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${(player.y + destination.y) * 5} L${destination.x * 15} ${destination.y * 10}`}
             fill="none" stroke={stroke} strokeWidth={index ? 5 : 10} strokeDasharray={index ? "3 13" : undefined} strokeLinecap="round" strokeLinejoin="round" />)}
@@ -203,8 +185,6 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
         </div>
         </div>
       </div>
-      {overlay && <div ref={floatingContent} className={styles.floatingContent} data-map-overlay>{overlay}</div>}
-      {!overlay && <span className={styles.previewBadge}>Melbourne illustration · Interactive preview</span>}
       <div className={`${styles.utilityControls} ${toolsOpen ? styles.toolsOpen : ""}`} data-map-overlay onKeyDown={(event) => {
         if (event.key === "Escape" && toolsOpen) { event.preventDefault(); event.stopPropagation(); setToolsOpen(false); toolsToggle.current?.focus({ preventScroll: true }); }
       }}>
@@ -214,7 +194,6 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
         <div className={styles.zoomTools}><button type="button" onClick={() => setZoom((value) => clamp(value + .15, .85, 1.75))} disabled={zoom >= 1.75} aria-label="Zoom in"><Plus size={20} /></button>
           <button type="button" onClick={() => setZoom((value) => clamp(value - .15, .85, 1.75))} disabled={zoom <= .85} aria-label="Zoom out"><Minus size={20} /></button></div>
         <button type="button" onClick={recenter} aria-label="Recenter illustrated map"><LocateFixed size={22} /></button>
-        <button type="button" className={styles.touchToggle} onClick={() => setTouchDrag((value) => !value)} aria-pressed={touchDrag} aria-label={touchDrag ? "Restore page scrolling over the map" : "Enable touch dragging of the map"}><Hand size={19} /><span>{touchDrag ? "Scroll page" : "Move map"}</span></button>
         {overlay && <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} aria-label={paused ? "Play ambient motion" : "Pause ambient motion"}>{paused ? <Play size={18} /> : <Pause size={18} />}</button>}
       </div>
       <div className={styles.mapDock} data-map-overlay aria-label="Optional map panels">
@@ -222,7 +201,6 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
         <button type="button" className={styles.avatarToggle} id={`${id}-avatar-toggle`} aria-label="Customise avatar" aria-expanded={expanded === "avatar"} aria-controls={`${id}-avatar`} onClick={(event) => { setToolsOpen(false); panelOpener.current = event.currentTarget; setExpanded(expanded === "avatar" ? null : "avatar"); }}><PersonStanding size={18} /><span>Avatar</span><ChevronDown size={16} /></button>
       </div>
       </div>
-      <WalkingControls onWalk={walk} />
     </div>
     <div ref={detailPanel} className={styles.disclosureArea} hidden={!panelOpen} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); closePanel(); } }}>
       <div id={`${id}-avatar`} className={styles.expandedPanel} role="region" aria-labelledby={`${id}-avatar-toggle`} hidden={expanded !== "avatar"}>
@@ -241,23 +219,13 @@ export function AdventureMap({ demoVenues = [], selected, onSelect, overlay, she
         </>}
       </div>
     </div>
-    <div className={styles.caption}><p id={`${id}-instructions`}>Drag to look around. Use the arrow pad to walk. On touch screens, choose Move map to drag and Scroll page when finished. Focus the map and use arrow keys to walk, + or - to zoom, and Home to reset the view.</p>
-      <p id={`${id}-boundary`}>Illustrated playground only. The explorer is not your GPS location. This scene does not show live venue positions, verify visits or award real XP.</p></div>
+    </MapFrame>
+    <div className={styles.caption}><p id={`${id}-instructions`}>Illustrated map. Swipe to explore, tap to walk.</p></div>
   </section>;
 }
 
 function PanelClose({ onClose, label }: { onClose: () => void; label: string }) {
   return <button type="button" className={styles.panelClose} onClick={onClose} aria-label={label}><X size={18} /></button>;
-}
-
-function WalkingControls({ onWalk }: { onWalk: (dx: number, dy: number) => void }) {
-  return <div className={styles.walkControls} role="group" aria-label="Move the preview explorer" data-map-overlay>
-    <span className={styles.walkLabel}><Footprints size={15} /><span>Walk</span></span>
-    <button type="button" onClick={() => onWalk(0, -4)} aria-label="Walk north"><ArrowUp size={18} /></button>
-    <button type="button" onClick={() => onWalk(-4, 0)} aria-label="Walk west"><ArrowLeft size={18} /></button>
-    <button type="button" onClick={() => onWalk(0, 4)} aria-label="Walk south"><ArrowDown size={18} /></button>
-    <button type="button" onClick={() => onWalk(4, 0)} aria-label="Walk east"><ArrowRight size={18} /></button>
-  </div>;
 }
 
 export function AdventureVenueSheet({ venues, saved, onSave, title, example = false }: {

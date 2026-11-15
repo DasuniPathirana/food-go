@@ -47,20 +47,16 @@ export function SiteShell({
           </div>
         </div>
       </header>
-      <div className="preview-strip">
-        <span className="preview-dot" />
-        <span>Development preview</span>
-        <span className="preview-detail">
-          {pathname === "/" ? "Melbourne imagery and local discovery." : socialPreview ? "Fictional community. Changes stay on this browser." : examplePage || catalogueMode === "demo" ? "Example venues. No live bookings or check-ins." : "Published venues only. No live bookings or check-ins."}
-        </span>
-        <Link href="/demo">Play the full adventure demo</Link>
-      </div>
       <main
         id="main-content"
         className={`main-content ${pathname === "/" || exampleNeighbourhood ? "discovery-main" : ""}`}
       >
         {children}
       </main>
+      {(socialPreview || examplePage || catalogueMode === "demo") && <div className="preview-strip">
+        <span className="preview-dot" /><span>{socialPreview ? "Example feed" : "Demo neighbourhood"}</span>
+        <span className="preview-detail">Example activity stays on this browser.</span>
+      </div>}
       <footer className="site-footer">
         <div>
           <strong>Food Go</strong>
@@ -68,6 +64,7 @@ export function SiteShell({
         </div>
         <nav aria-label="Information">
           <Link href="/partner">List your venue</Link>
+          <Link href="/demo">Play the full adventure demo</Link>
           <Link href="/help">Help and privacy</Link>
           <a
             href="https://github.com/DasuniPathirana/food-go"

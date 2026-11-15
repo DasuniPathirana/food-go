@@ -24,11 +24,11 @@ Use the visual language of a Melbourne food market. The saffron masthead identif
 
 | Destination | First screen | Phone adaptation |
 | --- | --- | --- |
-| Real map | City directory beside geographic imagery. Aerial, Satellite and 3D share one camera. A strip below the image carries the selected point and directions. | Place selector above the map. Controls stay compact and the readout fits above phone navigation. |
-| Adventure | The original dimensional illustrated streets, animated explorer, radar and food photo markers. An arcade storefront groups shops by floor and unit. | Slim search field, expandable tools and small walking arrows with full touch targets. Additional details open below the map. |
-| Feed | Public and personal walls, a writing area and photo-led stories with familiar social actions. | One document scroll through the composer and stories. |
+| Real map | Satellite opens first. Search sits above the imagery. An in-map button expands the same camera and selection. The readout links to directions. | Swipe to pan and pinch to zoom. The close control returns to the original section. |
+| Adventure | Illustrated streets, animated explorer, radar and food photo markers. An arcade storefront groups shops by floor and unit. | Swipe to pan, pinch to zoom and tap to walk. Additional details open below the map. |
+| Feed | A public timeline, composer and social actions. Passport holds the personal wall. | One document scroll through the composer and stories. |
 | FoodDex, VenueDex and trails | Food photos, concise collection status, numbered itineraries and perforated reward stubs. | Short horizontal collection rows and stacked trail photographs. |
-| Deals | Venue offers retain the owner's summary, local details and expiry labels. | Deals remains the fifth navigation item. |
+| Deals | Active, published offers show their venue and expiry. Explore includes promotions and a three-column restaurant directory. | The directory adapts to the available width. The offer highlight respects reduced motion. |
 | Passport | Petrol explorer pass, saffron progress stub and personal wall. Game detail and avatar customisation expand on request. | Identity and progress stay close to the composer. The avatar and XP ticket provide entry in the demo. |
 
 ## Map behaviour

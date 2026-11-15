@@ -16,6 +16,8 @@ const row = {
 
 test("catalogue defaults to isolated demo mode and connected mode fails closed with invalid keys or URLs", () => {
   assert.deepEqual(readCatalogueConfig({}), { mode: "demo" });
+  assert.deepEqual(readCatalogueConfig({ NODE_ENV: "production" }), { mode: "supabase", configured: false });
+  assert.deepEqual(readCatalogueConfig({ NODE_ENV: "production", FOOD_GO_CATALOGUE_MODE: "demo" }), { mode: "demo" });
   const env = { FOOD_GO_CATALOGUE_MODE: "supabase", SUPABASE_URL: config.url, SUPABASE_PUBLISHABLE_KEY: config.key };
   assert.deepEqual(readCatalogueConfig({ ...env, FOOD_GO_AUTH_ENABLED: "false" }), config);
   for (const value of ["https://example.com", `${config.url}/auth/v1`, `${config.url}?key=value`, "http://abcdefghijklmnopqrst.supabase.co"]) {

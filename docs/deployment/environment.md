@@ -45,7 +45,7 @@ Set `APP_ORIGIN` to the exact stable HTTPS origin once the domain is chosen, for
 | `MOBILE_MESSAGE_SENDER_ID` | Approved sender identity | Provider-approved value, no OTP or personal phone number in source |
 | `PORT` | Listening port for ordinary Node.js hosting | Host process environment; Vercel manages its own serving runtime |
 
-Only literal `true` enables the flags. Supplying keys alone does not open a feature. The existing development Supabase project is not the production target by implication. Do not put a privileged service key, provider password or cookie secret in a public variable or commit one to Git.
+Only literal `true` enables a feature flag. The owner explicitly selected the existing Food go project for the connected release. Use the [release handoff](connected-release.md) for its target origin, setup and checks. Store server secrets in the host environment.
 
 ## Settings outside this application's environment
 

@@ -124,6 +124,12 @@ jobs:
         # CLI 3 targets local by default; --local is not a supported flag.
         run: npx --yes supabase@3.1.0 test db
 
+      - name: Exercise operator sign-in, MFA and public promotions
+        timeout-minutes: 8
+        run: |
+          npm ci
+          node scripts/check-operator-local.mjs
+
       - name: Stop the disposable local stack
         if: always()
         timeout-minutes: 3

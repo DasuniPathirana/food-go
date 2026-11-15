@@ -12,8 +12,8 @@ const check = (condition, message) => {
 };
 const health = await request("/api/health");
 check(
-  health.ok && (await health.json()).mode === "foundation-preview",
-  "Correct Food Go preview is running",
+  health.ok && ["supabase", "demo"].includes((await health.json()).mode),
+  "Food Go server reports a recognised catalogue mode",
 );
 // Establish closed account services before exercising any blocked POST routes.
 // These checks never submit an email address, phone number, venue, or test account.
@@ -34,6 +34,9 @@ for (const path of [
   "/",
   "/explore-preview",
   "/feed",
+  "/deals",
+  "/admin",
+  "/admin/security",
   "/feed-preview",
   "/demo",
   "/demo/explore",
@@ -83,6 +86,9 @@ const communityResponse = await request("/api/community");
 const gameResponse = await request("/api/game");
 check(gameResponse.status === 503 && (await gameResponse.json()).status === "disabled", "Connected progression remains closed while accounts are disabled");
 check(gameResponse.headers.get("cache-control") === "no-store", "Progression responses are never cached");
+check((await request("/api/admin/security", { method: "POST" })).status === 403, "Operator MFA requires the trusted origin");
+const mfa = await request("/api/admin/security", { method: "POST", headers: { origin, "Content-Type": "application/json" }, body: JSON.stringify({ action: "enrol" }) });
+check(mfa.status === 503 && mfa.headers.get("cache-control") === "no-store", "Disabled account services cannot start operator MFA");
 check((await request("/demo/venue/not-a-demo-venue")).status === 404, "Unknown demo venues do not receive invented fixtures");
 check((await request("/demo/unknown")).status === 404, "Unknown demo screens fail closed");
 const community = await communityResponse.json();

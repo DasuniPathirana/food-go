@@ -106,7 +106,7 @@ export function AtlasCanvas(props: Props) {
         container, style: style(initial.imagery, initial.threeD), center: ATLAS_CENTER,
         zoom: homeZoom, maxZoom: 20, maxPitch: 62, maxBounds: sampleBounds,
         pitch: initial.threeD ? pitch3D : 0, bearing: initial.threeD ? bearing3D : 0,
-        cooperativeGestures: true, renderWorldCopies: false, attributionControl: false,
+        cooperativeGestures: false, scrollZoom: false, renderWorldCopies: false, attributionControl: false,
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       });
       mapRef.current = map;

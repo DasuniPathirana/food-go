@@ -4,6 +4,8 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
+The [connected release handoff](docs/deployment/connected-release.md) covers the operator portal, authenticator sign-in, restaurant and promotion publication, Feed, Passport and the revised Explore controls. It includes the deployment order and acceptance checks for the existing Vercel site.
+
 Explore opens with real Melbourne aerial photography, satellite imagery and 3D buildings. Select any point for directions. Choose Adventure to play the illustrated map. Feed, collections, Deals and Passport share the market-signage design. [Map coverage and demo walkthrough](docs/progress/14-melbourne-geography.md).
 
 ## Earlier milestones

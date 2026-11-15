@@ -39,6 +39,10 @@ enable_confirmations = true
 secure_password_change = true
 max_frequency = "1m"
 
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 [local_smtp]
 enabled = true
 port = 54324

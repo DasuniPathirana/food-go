@@ -15,17 +15,13 @@
 .previewNotice > a, .previewNotice > button { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 6px; background: none; color: var(--ink); font-size: 12px; font-weight: 650; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 28%); gap: clamp(28px, 4vw, 58px); align-items: start; }
 .feedColumn { min-width: 0; }
-.mobileTabs { display: block; margin-bottom: 17px; }
-.wallTabs { display: inline-flex; align-items: center; gap: 3px; padding: 3px; border: 1px solid var(--line-strong); border-radius: 99px; background: #fffaf1; }
-.community .wallTabs button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 6px 15px; border: 0; border-radius: 99px; color: var(--ink); background: transparent; font-size: 15px; font-weight: 700; }
-.wallTabs button > svg:last-child { display: none; }
-.community .wallTabs button[aria-pressed="true"] { color: white; background: #006d68; }
-.community .wallTabs button:hover:not([aria-pressed="true"]) { background: #f0eadf; }
 .composer { background: #fffdf7; border: 1px solid #b6a68e; border-radius: 13px; padding: 14px 18px; margin-bottom: 25px; }
 .composer:focus-within { border-color: #006d68; }
 .composerTop { display: flex; align-items: center; gap: 11px; }
 .composerTop > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: 1; min-width: 0; }
-.composerTop strong { font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+.composerTop strong, .profileLink { font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+.profileLink { display: inline-flex; align-items: center; min-height: 44px; }
+.profileLink:hover { text-decoration: underline; text-underline-offset: 3px; }
 .avatar { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; font: 800 21px/1 var(--font-display); color: var(--ink); border: 1px solid currentColor; }
 .tone0 { background: #ffd445; color: #4f340b; }
 .tone1 { background: #b9e7d9; color: #174838; }
@@ -150,9 +146,6 @@
   .community .pageHeading p { font-size: 14px; }
   .exploreLink { display: none; }
   .layout { display: block; }
-  .wallTabs { gap: 3px; }
-  .community .wallTabs button { font-size: 15px; min-height: 44px; }
-  .mobileTabs { margin-bottom: 15px; }
   .previewNotice { display: grid; grid-template-columns: 18px minmax(0, 1fr) 44px; gap: 8px; padding: 7px 0; margin-bottom: 14px; }
   .previewNotice > svg { align-self: start; margin-top: 6px; }
   .previewNotice > button { width: 44px; height: 44px; padding: 0; justify-content: center; font-size: 0; }
@@ -160,7 +153,7 @@
   .composer { padding: 11px 13px; margin-bottom: 19px; }
   .composerTop { gap: 9px; }
   .composerTop > div { gap: 7px; }
-  .composerTop strong { font-size: 14px; }
+  .composerTop strong, .profileLink { font-size: 14px; }
   .visibility select { font-size: 12px; }
   .community .composer textarea { height: 60px; min-height: 60px; font-size: 16px; padding: 9px 0; }
   .composerFooter { gap: 9px; padding-top: 9px; }

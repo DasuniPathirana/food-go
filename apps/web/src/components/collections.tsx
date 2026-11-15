@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, Bookmark, BookOpen, CheckCircle2, Compass, MapPin, Store } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Bookmark, BookOpen, CheckCircle2, MapPin, Store } from "lucide-react";
 import { venueHref, type CatalogueState } from "@/lib/catalogue-contracts";
 import { useSavedDishes, useSavedVenues } from "@/lib/preferences";
 import { useSavedCatalogue } from "@/lib/saved-catalogue";
@@ -21,8 +21,7 @@ export function FoodDex({ catalogue }: { catalogue: CatalogueState }) {
   const visible = view === "saved" ? savedDishes : dishes;
   return <div className={market.connected}>
     <div className="page-intro"><div>
-      <h1>FoodDex</h1><p>Save a dish for your next meal. Verified discoveries will appear when dish confirmation is connected.</p></div>
-      <Link className="secondary-button" href="/"><Compass size={17} /> Explore places <ArrowUpRight size={16} /></Link>
+      <h1>FoodDex</h1><p>Your dishes to try.</p></div>
     </div>
     <CatalogueStatus catalogue={activeCatalogue} />
     {loading && <p role="status">Loading your available saved dishes…</p>}
@@ -55,7 +54,7 @@ export function FoodDex({ catalogue }: { catalogue: CatalogueState }) {
           <div className="venue-body"><div className="venue-type">{venue.cuisine}</div><h3><Link href={venueHref(venue)}>{dish.name}<ArrowUpRight size={18} /></Link></h3>
             <p className="venue-location"><MapPin size={13} />{venue.name}, {venue.suburb}</p>
             {dish.priceAudCents !== null && <p>{new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(dish.priceAudCents / 100)}</p>}
-            <p>{dish.description}</p>
+            <p className={market.singleLine} title={dish.description}>{dish.description}</p>
           </div>
         </article>)}</div> : <div className="empty-state"><Bookmark size={32} />
           <h3>{view === "saved" ? "Your food list is empty" : "No available dishes yet"}</h3>
@@ -76,8 +75,7 @@ export function VenueDex({ catalogue }: { catalogue: CatalogueState }) {
   const savedVenues = savedCatalogue.venues;
   return <div className={market.connected}>
     <div className="page-intro"><div><h1>VenueDex</h1>
-      <p>Keep a list of places to visit. Verified visits will be recorded separately.</p></div>
-      <Link className="secondary-button" href="/"><Compass size={17} />Explore places<ArrowUpRight size={16} /></Link>
+      <p>Your places to visit.</p></div>
     </div>
     <CatalogueStatus catalogue={activeCatalogue} />
     {loading && <p role="status">Loading your available saved places…</p>}
@@ -95,12 +93,10 @@ export function VenueDex({ catalogue }: { catalogue: CatalogueState }) {
         </div></div>
         {view === "visited" ? <div className="empty-state"><Store size={32} /><h3>No verified visits yet</h3>
           <p>Verified visits will appear when secure check-ins are connected. Saving a place does not record a visit.</p>
-          <Link className="primary-button" href="/">Find a place <ArrowRight size={16} /></Link>
         </div> : loading ? null : savedVenues.length ? <div className="venue-grid">{savedVenues.map((venue) =>
           <VenueCard key={venue.id} venue={venue} saved onSave={() => toggle(venue.id)} />,
         )}</div> : <div className="empty-state"><Bookmark size={32} /><h3>Save your first place</h3>
           <p>Tap the bookmark on a place that catches your eye. Available saved places will appear here.</p>
-          <Link className="primary-button" href="/">Find your first favourite <ArrowRight size={16} /></Link>
         </div>}
       </section>
       {view === "saved" && !loading && !savedVenues.length && catalogue.venues.length > 0 && <section aria-label="Places to start with">

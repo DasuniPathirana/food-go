@@ -88,8 +88,8 @@ export default function HelpPage() {
         <section className="help-card">
           <MessagesSquare size={25} />
           <h2>Share around the table</h2>
-          <p>The Feed has a public wall and personal walls for food stories, thoughts, likes, comments and shares. Public submissions wait for review. Only you can see your private and pending posts on your wall.</p>
-          <p>Post options include reporting and blocking. The separate community preview uses fictional people and stories; its changes stay on this browser and can be reset.</p>
+          <p>Share food stories in Feed and find your posts and shared discoveries in Passport. Only you can see your private posts and posts awaiting review.</p>
+          <p>Use the post menu to report a story or block someone. The Feed preview uses fictional people and stories. You can reset it on this browser.</p>
           <Link className="text-button" href="/feed">Open the Feed <ArrowRight size={16} /></Link>
         </section>
         <section className="help-card">

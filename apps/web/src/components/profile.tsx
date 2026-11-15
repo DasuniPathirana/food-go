@@ -20,7 +20,6 @@ import {
 import type { CatalogueState } from "@/lib/catalogue-contracts";
 import { useSavedVenues } from "@/lib/preferences";
 import { SignOutButton } from "./auth-form";
-import { CatalogueStatus } from "./catalogue-status";
 import { GameProgress } from "./game-progress";
 import { AvatarWardrobe } from "./avatar-customizer";
 import { CommunityFeed } from "./community-feed";
@@ -75,9 +74,7 @@ export function ExplorerProfile({
           <ArrowRight size={16} />
         </Link>
       </div>
-      <CatalogueStatus catalogue={catalogue} />
-      <div className="profile-grid">
-        <section className={`profile-card ${passportStyles.connectedCover}`} aria-labelledby="guest-profile-title">
+      <section className={`profile-card ${passportStyles.connectedCover}`} aria-labelledby="guest-profile-title">
           <span className="avatar">
             <UserRound size={28} />
           </span>
@@ -89,11 +86,11 @@ export function ExplorerProfile({
           </h2>
           <p>
             {account
-              ? "Your verified account is recognised by the account service. Bookmarks stay on this browser while account collection sync is being built."
-              : "You can explore and save places on this browser. Account access will open when the account service is ready."}
+              ? "Your posts and shared discoveries appear below."
+              : "Sign in to post and share food discoveries."}
           </p>
           <Link className="text-button" href="/help">
-            How this preview works
+            Help and privacy
             <ArrowRight size={16} />
           </Link>
           {account ? (
@@ -103,7 +100,11 @@ export function ExplorerProfile({
               Sign in <ArrowRight size={16} />
             </Link>
           )}
-        </section>
+      </section>
+      {account ? <section className={passportStyles.connectedWall} aria-label="Your posts"><CommunityFeed initialWall="me" presentation="passport" basePath="/feed" /></section> : <section className={passportStyles.guestWall} aria-labelledby="personal-wall-title"><h2 id="personal-wall-title"><MessagesSquare size={22} />Your posts</h2><p>Sign in to keep your food stories and shared discoveries here.</p><div><Link href="/auth/sign-in" className="primary-button">Sign in<ArrowRight size={16} /></Link><Link href="/demo/passport" className="secondary-button">Try the example passport<ArrowRight size={16} /></Link></div></section>}
+      <details className={passportStyles.details}>
+        <summary><BookOpen size={18} /><span>Avatar, progress and browser preferences</span><ChevronDown size={17} /></summary>
+        <div className={passportStyles.detailsBody}>
         <section
           className="content-panel"
           aria-labelledby="passport-summary-title"
@@ -136,11 +137,6 @@ export function ExplorerProfile({
             an explorer level, or a public profile.
           </p>
         </section>
-      </div>
-      {account ? <section className={passportStyles.connectedWall} aria-label="My personal wall"><CommunityFeed initialWall="me" presentation="passport" basePath="/feed" /></section> : <section className={passportStyles.guestWall} aria-labelledby="personal-wall-title"><h2 id="personal-wall-title"><MessagesSquare size={22} />My wall</h2><p>Sign in to keep your food stories and shared discoveries together. Private thoughts stay visible only to you.</p><div><Link href="/auth/sign-in" className="primary-button">Sign in<ArrowRight size={16} /></Link><Link href="/demo/passport" className="secondary-button">Try the example passport<ArrowRight size={16} /></Link></div></section>}
-      <details className={passportStyles.details}>
-        <summary><BookOpen size={18} /><span>Avatar, progress and browser preferences</span><ChevronDown size={17} /></summary>
-        <div className={passportStyles.detailsBody}>
       <AvatarWardrobe />
       {account && <GameProgress />}
       <section aria-labelledby="achievements-title">

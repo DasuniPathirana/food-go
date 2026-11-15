@@ -9,13 +9,14 @@ export default async function SignInPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const state = await getAuthState();
-  if (state.user) redirect("/profile");
   const query = await searchParams;
+  const destination = query.next === "/admin" ? "/admin" : "/profile";
+  if (state.user) redirect(destination);
   const notice =
     query.notice === "link-expired" || query.notice === "password-updated"
       ? query.notice
       : undefined;
   return (
-    <AuthForm mode="sign-in" configured={state.configured} notice={notice} />
+    <AuthForm mode="sign-in" configured={state.configured} notice={notice} destination={destination} />
   );
 }

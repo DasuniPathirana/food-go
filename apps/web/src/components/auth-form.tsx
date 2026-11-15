@@ -41,10 +41,12 @@ export function AuthForm({
   mode,
   configured,
   notice,
+  destination = "/profile",
 }: {
   mode: AuthMode;
   configured: boolean;
   notice?: "link-expired" | "password-updated";
+  destination?: "/profile" | "/admin";
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
@@ -123,7 +125,7 @@ export function AuthForm({
       setPassword("");
       setConfirmation("");
       if (mode === "sign-in") {
-        router.replace("/profile");
+        router.replace(destination);
         router.refresh();
       } else if (mode === "reset-password") {
         router.replace("/auth/sign-in?notice=password-updated");

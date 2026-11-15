@@ -584,3 +584,17 @@
 }
 @media (max-width: 360px) and (min-height: 501px) { .utilityControls { grid-template-columns: repeat(2, 44px); } }
 @media (max-width: 360px) and (max-height: 500px) { .utilityControls { left: 4px; } .walkControls { right: 4px; } }
+
+.topControls { position: relative; z-index: 13; flex: none; padding: 0 0 7px; }
+.topControls :global(.discovery-intro) { margin: 0 0 6px; padding: 0; }
+.topControls :global(.discovery-controls) { margin: 0; }
+.topControls :global(.discovery-intro .edition-label) { display: none; }
+.topControls :global(.discovery-intro h1) { font-size: clamp(24px, 3vw, 36px); }
+.frame .viewport { touch-action: none; flex: none; }
+.frame .viewport:active { cursor: grabbing; }
+.frame .map-world { transition: none; }
+.frame .mapPlane { top: clamp(35px, 8%, 70px); bottom: clamp(45px, 9%, 90px); }
+.frame dialog:modal .viewport { flex: 1 0 45%; height: auto; min-height: 150px; border-radius: 0; }
+.frame dialog:modal .topControls { padding: 5px; }
+.frame .disclosureArea { flex: none; }
+.frame .caption p { margin: 0; }

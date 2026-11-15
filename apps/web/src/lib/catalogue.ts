@@ -20,8 +20,9 @@ function publicKey(value: string) {
 
 /** Catalogue access deliberately does not depend on the account release flag. */
 export function readCatalogueConfig(env: Environment): CatalogueConfig {
-  if (!env.FOOD_GO_CATALOGUE_MODE || env.FOOD_GO_CATALOGUE_MODE === "demo") return { mode: "demo" };
-  if (env.FOOD_GO_CATALOGUE_MODE !== "supabase") return { mode: "supabase", configured: false };
+  const mode = env.FOOD_GO_CATALOGUE_MODE || (env.NODE_ENV === "production" ? "supabase" : "demo");
+  if (mode === "demo") return { mode: "demo" };
+  if (mode !== "supabase") return { mode: "supabase", configured: false };
   try {
     const url = new URL(env.SUPABASE_URL || "");
     const local = env.NODE_ENV !== "production" && url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
@@ -117,7 +118,14 @@ export function parseCatalogueSearch(url: URL) {
   return result.success ? result.data : null;
 }
 
-/** Read-only anonymous client. No cookies, user session, or privileged key is attached. */
+/** Shared by public catalogue and promotion reads. No account cookies or privileged credentials. */
+export function publicCatalogueClient(config: Extract<CatalogueConfig, { configured: true }>, fetcher: typeof fetch = fetch) {
+  return createClient(config.url, config.key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: (input, init) => fetcher(input, { ...init, cache: "no-store" }) },
+  });
+}
+
 export async function loadCatalogue(
   config: CatalogueConfig,
   search: VenueSearch = { query: "", limit: DEFAULT_CATALOGUE_LIMIT },
@@ -136,10 +144,7 @@ export async function loadCatalogue(
   if (!config.configured) return unavailable;
   if (options.saved && (!options.saved.ids.length || !z.array(z.uuid()).max(50).safeParse(options.saved.ids).success)) return unavailable;
   try {
-    const client = createClient(config.url, config.key, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-      global: { fetch: (input, init) => (options.fetch || fetch)(input, { ...init, cache: "no-store" }) },
-    });
+    const client = publicCatalogueClient(config, options.fetch);
     let query = client.from("venues").select(options.saved?.kind === "dish" ? publicColumns.replace("venue_dishes(", "venue_dishes!inner(") : publicColumns)
       .eq("status", "published").not("ownership_verified_at", "is", null)
       .eq("venue_dishes.is_available", true).order("name").limit(search.limit + 1)

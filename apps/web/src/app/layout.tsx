@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | Food Go",
   },
   description:
-    "Discover local flavours, share food stories and explore neighbourhood food trails across Australia. Food Go development preview.",
+    "Explore Melbourne, find restaurants and promotions, and share your food discoveries.",
   robots: { index: false, follow: false },
 };
 export const viewport: Viewport = {
