@@ -11,7 +11,7 @@ export function CatalogueStatus({ catalogue }: { catalogue: CatalogueState }) {
     <div className="empty-state" role="status">
       <ShieldCheck size={28} />
       <h2>Places are temporarily unavailable</h2>
-      <p>We could not load the venue catalogue. Your saved places are still kept on this browser. Please try again shortly.</p>
+      <p>We could not load the venue catalogue. Your saved collection has not changed. Please try again shortly.</p>
       <button className="primary-button" disabled={pending} onClick={() => startTransition(() => router.refresh())}>
         <RotateCcw size={16} /> {pending ? "Trying again…" : "Try again"}
       </button>

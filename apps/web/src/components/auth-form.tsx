@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, Check, LoaderCircle } from "lucide-react";
+import { ArrowRight, Check, Coffee, LoaderCircle, MapPin, Utensils } from "lucide-react";
 import {
   signInSchema,
   registerSchema,
@@ -158,9 +159,10 @@ export function AuthForm({
         <Link href="/" className="back-link">
           Back to exploring
         </Link>
-        <p className="eyebrow">Your Food Go account</p>
         <h1>{copy.title}</h1>
         <p>{copy.description}</p>
+        {(mode === "register" || mode === "sign-in") && <div className="auth-art" aria-hidden="true"><span className="auth-art-plate"/><Image src="/images/adventure/explorer.svg" alt="" width={122} height={168} unoptimized/>
+          <span className="auth-art-food"><Utensils size={28}/></span><span className="auth-art-coffee"><Coffee size={27}/></span><span className="auth-art-pin"><MapPin size={25}/></span></div>}
         <p>You can keep browsing without an account.</p>
       </div>
       <div className="auth-panel">

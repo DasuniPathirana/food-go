@@ -9,6 +9,8 @@ This documentation explains what exists, what has been checked, and what will be
 - [World map operations](deployment/world-map.md) covers provider keys, public-service rate limits, the shared database migration, location privacy and actual-device checks.
 - [Community acknowledgement](security/community-acknowledgement.md) explains the client wording changes, explicit consent, versioned receipts, contribution enforcement and moderation boundaries.
 - [Acknowledgement delivery evidence](progress/16-community-acknowledgement.md) records the implemented user journey, verification and screenshots.
+- [Connected UI research](research/17-ui-refinement.md) explains the official-source findings, hierarchy, map readability and visual choices for the latest refinement.
+- [Connected UI delivery](progress/17-connected-ui-refinement.md) records the refined screens, screenshots, browser checks and verification limits.
 
 - [Geographic Explore and the market-signage UI](progress/14-melbourne-geography.md) covers the Melbourne data, 3D buildings, phone controls and demo presentation.
 - [Compact phone map controls](progress/13-compact-map-controls.md): smaller search and control groups, on-demand filters/tools and preserved tap targets.

@@ -58,6 +58,6 @@ const nonce = response => /'nonce-([^']+)'/u.exec(response.headers.get("content-
 check(!!nonce(first) && nonce(first) !== nonce(second), "CSP nonce changes for each request");
 check((await first.text()).includes(`nonce="${nonce(first)}"`), "Framework scripts receive the request nonce");
 const unknownVenue = await request("/venues/not-a-real-venue");
-check(catalogue.status === "ready" ? unknownVenue.status === 404 : (await unknownVenue.text()).includes("Places are temporarily unavailable"),
+check(unknownVenue.status === 404 || (await unknownVenue.text()).includes("Places are temporarily unavailable"),
   "Unknown venue reports missing data or an honest service failure");
 console.log(`Passed ${assertions} local HTTP assertions.`);

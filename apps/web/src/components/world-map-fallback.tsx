@@ -15,9 +15,12 @@ const position = (point: { latitude: number; longitude: number }): Leaflet.LatLn
 export function WorldMapFallback(props: AtlasCanvasProps) {
   const latest = useRef(props), host = useRef<HTMLDivElement>(null);
   const map = useRef<Leaflet.Map | null>(null), api = useRef<typeof Leaflet | null>(null);
+  const streetTiles = useRef<Leaflet.TileLayer | null>(null);
+  const tileDeadline = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const player = useRef<Leaflet.Marker | null>(null), accuracy = useRef<Leaflet.Circle | null>(null);
   const route = useRef<Leaflet.Polyline | null>(null), focus = useRef<number | undefined>(undefined);
   const [ready, setReady] = useState(false), [error, setError] = useState("");
+  const [tilesReady, setTilesReady] = useState(false);
   const [satelliteFailed, setSatelliteFailed] = useState(false);
   const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   useEffect(() => { latest.current = props; }, [props]);
@@ -36,11 +39,13 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       });
       map.current = active;
       L.control.zoom({ position: "topright" }).addTo(active);
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      streetTiles.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 20, maxNativeZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         keepBuffer: 1,
-      }).on("tileerror", () => { if (!disposed) setError("Some street tiles could not load. Places and directions remain available."); }).addTo(active);
+      }).on("tileload", () => { if (!disposed) { clearTimeout(tileDeadline.current); setTilesReady(true); setError(""); } })
+        .on("tileerror", () => { if (!disposed) { clearTimeout(tileDeadline.current); setError("Some street tiles could not load. Places and directions remain available."); } }).addTo(active);
+      tileDeadline.current = setTimeout(() => { if (!disposed) setError("Street tiles are taking longer to arrive. Check your connection or try again."); }, 15000);
       active.on("click", event => latest.current.onSelect({ longitude: event.latlng.wrap().lng, latitude: event.latlng.lat }));
       active.on("dragstart", () => latest.current.onCameraInteraction?.());
       active.on("zoomstart", event => { if ("originalEvent" in event) latest.current.onCameraInteraction?.(); });
@@ -49,7 +54,7 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       setReady(true); latest.current.onReady();
     }
     initialise().catch(() => { if (!disposed) { setError("The 2D map could not start. Use place search and directions."); latest.current.onReady(); } });
-    return () => { disposed = true; observer?.disconnect(); map.current?.remove(); map.current = null; api.current = null; };
+    return () => { disposed = true; clearTimeout(tileDeadline.current); observer?.disconnect(); map.current?.remove(); map.current = null; api.current = null; streetTiles.current = null; };
   }, []);
   useEffect(() => {
     const L = api.current, active = map.current;
@@ -150,6 +155,11 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       }}/>
     {playerElement && props.playerContent && createPortal(props.playerContent, playerElement)}
     {props.imagery === "satellite" && satelliteKey && !satelliteFailed && <a className={styles.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler"/></a>}
-    {error && <p className={styles.error} role="status">{error}</p>}
+    {!tilesReady && !error && <p className={styles.tileStatus} role="status">Loading street tiles…</p>}
+    {error && <div className={styles.error} role="status"><p>{error}</p>{streetTiles.current && <button type="button" onClick={() => {
+      setError(""); setTilesReady(false); clearTimeout(tileDeadline.current);
+      tileDeadline.current = setTimeout(() => setError("Street tiles are taking longer to arrive. Check your connection or try again."), 15000);
+      streetTiles.current?.redraw();
+    }}>Retry street tiles</button>}</div>}
   </div>;
 }

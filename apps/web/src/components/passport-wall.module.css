@@ -155,6 +155,73 @@
 .guestWall p { max-width: 58ch; margin: 0 0 12px; color: var(--muted); }
 .guestWall > div { display: flex; flex-wrap: wrap; gap: 10px; }
 
+.profileHeading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.page .profileHeading h1 { margin: 0; color: var(--ink); font: 800 54px/.98 var(--font-display); letter-spacing: -.025em; }
+.page .profileHeading p { margin: 7px 0 0; font-size: 16px; color: var(--muted); }
+.collectLink { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 15px; border: 1px solid #b7b9a7; border-radius: 10px; background: #fffdf6; color: var(--petrol); font: 700 15px/1.2 var(--font-body); }
+.collectLink:hover { background: #e9f3e9; border-color: var(--petrol); }
+.personalCover { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 27px 30px; border-radius: 20px; background: #00615d; color: #fff9ee; box-shadow: 0 7px 20px #073e3314; }
+.personalIdentity { display: flex; align-items: center; gap: 22px; min-width: 0; }
+.personalPortrait { display: grid; place-items: center; flex-shrink: 0; width: 92px; height: 112px; background: #ffe1ad; border: 3px solid #fff9ee; border-radius: 46px 46px 16px 16px; overflow: hidden; }
+.personalPortrait > :first-child { width: 74px; height: 100px; }
+.page .personalIdentity h2 { margin: 0; font: 800 40px/1.03 var(--font-display); color: #fff9ee; letter-spacing: -.015em; overflow-wrap: anywhere; }
+.page .personalIdentity p { max-width: 40ch; margin: 7px 0 0; color: #e0f2e5; font-size: 15px; line-height: 1.5; }
+.identityActions, .guestActions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 20px; margin-top: 13px; }
+.identityActions a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 700; color: #fff9ee; }
+.identityActions :global(.text-button) { color: #e0f2e5; font-size: 14px; }
+.identityActions a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.guestActions a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 14px; font-size: 14px; font-weight: 700; border-radius: 9px; color: #fff9ee; border: 1px solid #9ccec1; }
+.guestActions a:first-child { color: var(--ink); background: #ffd445; border-color: #ffd445; }
+.guestActions a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.personalProgress { min-width: 216px; padding-left: 25px; border-left: 1px solid #6da79b; }
+.personalProgress > div { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.personalProgress span { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #e3f3d5; }
+.personalProgress strong { font: 800 29px/1 var(--font-display); color: #ffd445; font-variant-numeric: tabular-nums; }
+.personalProgress strong small { font: 700 13px/1 var(--font-body); }
+.personalProgress progress { display: block; width: 100%; height: 7px; margin: 12px 0 0; overflow: hidden; border: 0; border-radius: 7px; background: #3a8981; color: #ffd445; }
+.personalProgress progress::-webkit-progress-bar { background: #3a8981; border-radius: 7px; }
+.personalProgress progress::-webkit-progress-value { background: #ffd445; border-radius: 7px; }
+.personalProgress progress::-moz-progress-bar { background: #ffd445; border-radius: 7px; }
+.page .personalProgress p { margin: 8px 0 0; color: #e0f2e5; font-size: 13px; line-height: 1.4; }
+.discoveryLinks { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); margin-top: 15px; border-bottom: 1px solid var(--line); }
+.discoveryLinks a { display: flex; align-items: center; gap: 9px; min-height: 60px; padding: 10px 14px; color: var(--ink); font-size: 14px; font-weight: 650; }
+.discoveryLinks a + a { border-left: 1px solid var(--line); }
+.discoveryLinks a:hover { background: #edf3e9; }
+.discoveryLinks a > svg:first-child { color: var(--petrol); }
+.discoveryLinks a > svg:last-child { margin-left: auto; }
+.discoveryLinks strong { font-size: 19px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.guestIntroduction { max-width: 620px; padding: 36px 0 20px; }
+.page .guestIntroduction h2 { margin: 0 0 10px; color: var(--ink); font: 800 33px/1.1 var(--font-display); }
+.page .guestIntroduction p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.65; }
+.guestIntroduction a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 16px; color: var(--petrol); font-size: 15px; font-weight: 750; }
+.page :is(a,button,summary):focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+
+@media (max-width: 700px) {
+  .profileHeading { align-items: flex-start; gap: 10px; margin-bottom: 17px; }
+  .page .profileHeading h1 { font-size: 42px; }
+  .page .profileHeading p { font-size: 14px; }
+  .collectLink { max-width: 142px; gap: 6px; padding: 9px 10px; font-size: 13px; }
+  .collectLink > svg:last-child { display: none; }
+  .personalCover { display: block; padding: 20px 18px; border-radius: 15px; }
+  .personalIdentity { gap: 14px; }
+  .personalPortrait { width: 69px; height: 90px; border-width: 2px; }
+  .personalPortrait > :first-child { width: 58px; height: 82px; }
+  .page .personalIdentity h2 { font-size: 31px; }
+  .page .personalIdentity p { font-size: 14px; }
+  .identityActions, .guestActions { gap: 6px 13px; margin-top: 9px; }
+  .guestActions a { padding: 8px 10px; font-size: 13px; }
+  .personalProgress { min-width: 0; margin-top: 16px; padding: 13px 0 0; border-left: 0; border-top: 1px solid #6da79b; }
+  .personalProgress > div { gap: 12px; }
+  .personalProgress strong { font-size: 26px; }
+  .discoveryLinks { margin-top: 9px; }
+  .discoveryLinks a { min-height: 78px; flex-wrap: wrap; justify-content: center; gap: 4px 7px; padding: 9px 7px; font-size: 12px; text-align: center; }
+  .discoveryLinks a span { flex: 1 0 100%; order: 2; }
+  .discoveryLinks a > svg:last-child { display: none; }
+  .discoveryLinks strong { font-size: 17px; }
+  .connectedWall { margin-top: 20px; }
+  .guestIntroduction { padding-top: 27px; }
+}
+
 @media (max-width: 650px) {
   .page .title { margin-bottom: 14px; }
   .page .title > button { min-height: 44px; padding: 8px 12px; }

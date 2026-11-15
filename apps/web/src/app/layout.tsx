@@ -7,6 +7,7 @@ import { CommunityConsentProvider } from "@/components/community-consent";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
 import "./globals.css";
+import "./ui-refinement.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {

@@ -112,25 +112,66 @@
 .rules dd { margin: 6px 0 0; font-size: .94rem; line-height: 1.45; color: var(--muted); }
 .page .note { margin: 20px 0 0; font-size: .875rem; color: var(--muted); }
 
-.connected :global(.stat-card) { padding: 0; border: 0; background: transparent; }
+.connected { width: min(1160px, 100%); padding: 28px clamp(16px, 4vw, 44px) 40px; margin-inline: auto; }
+.collectionHeader { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 0 0 22px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+.connected .collectionHeader h1 { font: 800 3.75rem/.98 var(--font-display); letter-spacing: -.025em; color: var(--petrol); margin: 0; }
+.connected .collectionHeader p { margin: 8px 0 0; font: 600 1.05rem/1.4 var(--font-body); color: var(--muted); }
+.collectionSeal { display: grid; place-items: center; position: relative; width: 72px; height: 72px; flex: none; background: var(--sunny); border: 1px solid #d2ad35; border-radius: 20px; color: var(--ink); }
+.collectionSeal > svg + svg { position: absolute; bottom: -6px; right: -5px; padding: 5px; box-sizing: content-box; color: white; background: var(--petrol); border: 3px solid var(--canvas); border-radius: 10px; }
+.venueSeal { color: var(--petrol); background: var(--sage-light); border-color: #b9d8ca; }
+.connected :global(.stat-grid) { gap: 10px 30px; padding: 16px 0; border: 0; border-bottom: 1px solid var(--line); margin: 0; }
+.connected :global(.stat-card) { padding: 0; border: 0; background: transparent; gap: 7px; }
 .connected :global(.stat-card) > * { margin: 0; }
-.connected :global(.stat-card) span { flex: none; font-size: .9rem; color: var(--ticket-ink); }
-.connected :global(.view-toggle) { flex-wrap: wrap; gap: 4px; border: 0; padding: 0; background: transparent; }
-.connected :global(.empty-state) { border: 1px dashed var(--ticket-seam); background: var(--ticket-paper); border-radius: 5px; }
+.connected :global(.stat-card) > svg { position: static; display: block; flex: none; }
+.connected :global(.stat-card) strong { font: 750 1.4rem/1 var(--font-body); }
+.connected :global(.stat-card) span { flex: none; font-size: .875rem; color: var(--muted); }
+.collectionHint { display: flex; align-items: center; gap: 7px; font: 500 .875rem/1.5 var(--font-body); color: var(--muted); margin: 12px 0 22px; }
+.collectionHint > svg { color: var(--petrol); flex: none; }
+.connected :global(.view-toggle) { display: flex; flex-wrap: wrap; gap: 3px; border: 1px solid var(--line); border-radius: 10px; padding: 4px; background: #f4eedf; }
+.connected :global(.view-toggle) button { border: 0; border-radius: 7px; background: transparent; font: 700 .9rem/1.2 var(--font-body); padding: 10px 16px; }
+.connected :global(.view-toggle) button[aria-pressed="true"] { color: white; background: var(--petrol); box-shadow: 0 2px 4px #006d681a; }
+.connected :global(.empty-state) { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; padding: 34px 20px; border: 1px solid #d7d9c8; background: #f5f5e9; border-radius: 18px; text-align: center; }
+.connected :global(.empty-state) h2, .connected :global(.empty-state) h3 { margin: 16px 0 7px; font: 800 2rem/1.1 var(--font-display); color: var(--ink); }
+.connected :global(.empty-state) p { max-width: 44ch; margin: 0 auto 14px; font: 500 .95rem/1.5 var(--font-body); }
+.connected :global(.empty-state) :global(.primary-button) { margin: 4px; min-height: 44px; font-family: var(--font-body); font-size: .9rem; border-radius: 9px; }
+.emptyMark { display: grid; place-items: center; position: relative; width: 82px; height: 74px; color: var(--petrol); background: #dcebdc; border: 1px solid #bed4bc; border-radius: 16px; }
+.emptyMark > svg + svg { position: absolute; right: -10px; bottom: -5px; padding: 5px; color: var(--ink); background: var(--sunny); border: 3px solid #f5f5e9; border-radius: 9px; box-sizing: content-box; }
+.verifiedEntry { position: relative; padding: 20px; border: 1px solid #b7d3c6; background: #eef5ed; border-radius: 13px; }
+.verifiedEntry > svg { color: var(--petrol); }
+.verifiedEntry h3 { font: 750 1.25rem/1.25 var(--font-body); margin: 12px 0 5px; }
+.verifiedEntry p { color: var(--muted); margin: 0 0 12px; font-size: .95rem; }
+.verifiedEntry small { display: block; padding-top: 11px; border-top: 1px dashed #b3c6b9; font-size: .8rem; color: #315b4b; }
 .connected :global(.empty-state) > svg { color: var(--ticket-teal); }
-.connected :global(.venue-card), .connected :global(.quest-card) { border: 1px solid var(--ticket-ink); border-radius: 8px; overflow: hidden; background: var(--ticket-paper); }
+.connected :global(.venue-card), .connected :global(.quest-card) { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--paper); box-shadow: 0 4px 14px #30231a08; }
 .connected :global(.venue-type) { font-size: .84rem; color: var(--ticket-teal); font-weight: 700; }
-.connected :global(.venue-body) h3, .connected :global(.quest-body) h3 { margin: 6px 0; font: 800 clamp(1.75rem,3vw,2.45rem)/1.04 var(--font-display); }
+.connected :global(.venue-body) h3, .connected :global(.quest-body) h3 { margin: 7px 0; font: 750 1.5rem/1.12 var(--font-body); }
 .connected :global(.quest-meta) { border-block: 1px dashed var(--ticket-seam); padding-block: 10px; }
 .connected :global(.venue-dish) { border-top: 1px dashed var(--ticket-seam); background: #fff0cb; }
 .connected :global(.collection-card) :global(.venue-body) { padding-bottom: 16px; }
 .connected :global(.photo-label) { background: #ffd445; color: var(--ticket-ink); }
 .connected :global(.section-heading) { gap: 12px; flex-wrap: wrap; }
+.connected :global(.section-heading) h2 { font: 800 2rem/1.1 var(--font-display); }
+.connected :is(a,button):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.connected :global(.photo-label) { font-family: var(--font-body); font-size: .75rem; font-weight: 700; }
+.connected :global(.venue-location) { font-family: var(--font-body); }
+@media (prefers-reduced-motion: no-preference) { .connected :global(.venue-card) { transition: border-color 180ms ease, box-shadow 180ms ease; } .connected :global(.venue-card):hover { border-color: #8daf9c; box-shadow: 0 7px 20px #30231a12; } }
 
 @media (max-width: 900px) {
   .collection { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 680px) {
+  .connected { padding: 20px 16px 28px; }
+  .collectionHeader { margin-bottom: 16px; padding-bottom: 17px; }
+  .connected .collectionHeader h1 { font-size: 3rem; }
+  .collectionSeal { width: 58px; height: 58px; border-radius: 16px; }
+  .connected :global(.stat-grid) { column-gap: 16px; row-gap: 11px; }
+  .connected :global(.stat-card) { flex-wrap: wrap; gap: 4px; }
+  .connected :global(.stat-card) span { font-size: .8rem; }
+  .connected :global(.section-heading) { align-items: flex-start; gap: 12px; }
+  .connected :global(.section-heading) h2 { font-size: 1.8rem; }
+  .connected :global(.view-toggle) { width: 100%; }
+  .connected :global(.view-toggle) button { flex: 1; padding-inline: 9px; font-size: .84rem; }
+  .connected :global(.empty-state) { min-height: 260px; padding: 28px 16px; }
   .heading, .connected :global(.page-intro) { align-items: flex-start; flex-wrap: wrap; gap: 2px 12px; margin-bottom: 10px; }
   .page .heading h1, .connected :global(.page-intro) h1 { font-size: clamp(2.9rem,14vw,4.3rem); max-width: none; }
   .page .heading p, .connected :global(.page-intro) p { font-size: .95rem; margin-top: 6px; }

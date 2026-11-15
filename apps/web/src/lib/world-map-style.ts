@@ -21,7 +21,16 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
   const corners: Coordinates = [ATLAS_CORNERS[0], ATLAS_CORNERS[1], ATLAS_CORNERS[2], ATLAS_CORNERS[3]];
   const survey = { type: "Polygon" as const, coordinates: [[...ATLAS_CORNERS, ATLAS_CORNERS[0]]] };
   const building = base.layers.find(layer => layer.id === "building-3d");
-  const streets = base.layers.filter(layer => layer.type !== "fill-extrusion");
+  const streets = base.layers.filter(layer => layer.type !== "fill-extrusion").map(layer => {
+    if (layer.type === "fill" && layer.id === "water") return { ...layer, paint: { ...layer.paint, "fill-color": "#9fd9e6" } };
+    if (layer.type === "fill" && layer.id === "park") return { ...layer, paint: { ...layer.paint, "fill-color": "#c3e5bb" } };
+    if (layer.type === "symbol" && layer.id === "poi_transit") return { ...layer, minzoom: Math.max(layer.minzoom ?? 0, 17) };
+    if (layer.type === "symbol" && layer.id === "poi_r1") return { ...layer, minzoom: Math.max(layer.minzoom ?? 0, 16.2) };
+    if (layer.type === "symbol" && layer["source-layer"] === "transportation_name") return { ...layer, paint: {
+      ...layer.paint, "text-color": "#3d574d", "text-halo-color": "#fffaf4", "text-halo-width": 1.5,
+    } };
+    return layer;
+  });
   const firstLabel = streets.findIndex(layer => layer.type === "symbol");
   const before = firstLabel < 0 ? streets.length : firstLabel;
   const additions: StyleSpecification["layers"] = [
@@ -43,8 +52,8 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     filter: ["all", ["!", ["has", "hide_3d"]], ["!", ["within", survey]]],
     paint: {
       ...building.paint,
-      "fill-extrusion-color": "#d5d2bd",
-      "fill-extrusion-opacity": 0.87,
+      "fill-extrusion-color": "#e9e7da",
+      "fill-extrusion-opacity": 0.9,
       "fill-extrusion-vertical-gradient": true,
     },
   });
@@ -52,8 +61,8 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     id: MAP_SOURCE_IDS.buildings, source: MAP_SOURCE_IDS.buildings, type: "fill-extrusion", minzoom: 14,
     paint: {
       "fill-extrusion-height": ["get", "height"], "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
-      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "height"], 0, "#eaddc1", 40, "#dad0b4", 120, "#afbcaf", 250, "#98b1ad"],
-      "fill-extrusion-opacity": 0.86, "fill-extrusion-vertical-gradient": true,
+      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "height"], 0, "#f4ead6", 40, "#ebe9dc", 120, "#c9d7cb", 250, "#b5cec5"],
+      "fill-extrusion-opacity": 0.9, "fill-extrusion-vertical-gradient": true,
     },
   }, {
     id: "food-go-accuracy-fill", source: MAP_SOURCE_IDS.accuracy, type: "fill",
@@ -82,7 +91,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     streetLayers: streets.map(layer => ({ id: layer.id, visibility: layer.layout?.visibility === "none" ? "none" : "visible", symbol: layer.type === "symbol" })),
     style: {
       ...base,
-      light: { anchor: "map", position: [1.4, 195, 37], color: "#fff3d5", intensity: 0.5 },
+      light: { anchor: "map", position: [1.4, 195, 45], color: "#fffaf0", intensity: 0.42 },
       sources: {
         ...base.sources,
         [MAP_SOURCE_IDS.aerial]: { type: "image", url: ATLAS_AERIAL, coordinates: corners },

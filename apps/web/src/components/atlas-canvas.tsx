@@ -88,7 +88,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       active = new gl.Map({
         container, style: composed.style, center: valid(initial.player) ? [initial.player.longitude, initial.player.latitude] : ATLAS_CENTER,
         zoom: homeZoom, minZoom: 1, maxZoom: 20, maxPitch: 65,
-        pitch: initial.threeD ? 52 : 0, bearing: initial.threeD ? -18 : 0,
+        pitch: initial.threeD ? 44 : 0, bearing: initial.threeD ? -18 : 0,
         cooperativeGestures: false, scrollZoom: true, renderWorldCopies: true, attributionControl: false,
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       });
@@ -166,7 +166,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     for (const layer of ["food-go-world-buildings", MAP_SOURCE_IDS.buildings])
       if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", threeD ? "visible" : "none");
     map.setMaxPitch(threeD ? 65 : 0);
-    map.easeTo({ pitch: threeD ? 52 : 0, duration: duration() });
+    map.easeTo({ pitch: threeD ? 44 : 0, duration: duration() });
   }, [ready, threeD]);
 
   useEffect(() => {
@@ -210,7 +210,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (followPlayer) {
       const refocus = focusRevision.current !== focusPlayerNonce;
       focusRevision.current = focusPlayerNonce;
-      map.jumpTo({ center: [player.longitude, player.latitude], ...(refocus ? { zoom: Math.max(map.getZoom(), 16.5) } : {}) });
+      map.jumpTo({ center: [player.longitude, player.latitude], ...(refocus ? { zoom: Math.max(map.getZoom(), 15.8) } : {}) });
     }
   }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce]);
 

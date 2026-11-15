@@ -2,7 +2,7 @@
 name: Food Go
 description: Food discovery, a worldwide geographic explorer and a social food passport.
 colors:
-  canvas: "#fff9ee"
+  canvas: "#fffaf4"
   surface: "#ffffff"
   ink: "#241b29"
   muted: "#594c51"
@@ -19,6 +19,10 @@ typography:
 ## Visual direction
 
 Use the visual language of a Melbourne food market. The saffron masthead identifies Food Go across screens. Petrol signs identify destinations, mandarin marks actions, and dark ink on warm paper carries the reading. Barlow Condensed gives short names the scale of shop signs. Source Sans 3 keeps long stories, directions and controls legible. Keep the original fork-and-pin wordmark.
+
+The connected UI refinement uses Barlow for section headings and Source Sans 3 for controls and reading. Petrol carries selected navigation and primary actions; saffron identifies the brand and collection/progression moments. Warm white and restrained mint/apricot surfaces separate content without a heavy outline around every group. The following supporting tones are deliberate ramps of the existing palette: warm surfaces `#f5f0e6`, `#fffdf6` and `#fff6cf`; mint surfaces `#e4f2e8`, `#edf5ef` and `#e2eee0`; apricot `#ffe2ce`; petrol hover `#00544f`; lines `#dfd7ca` and `#9a8e80`. Map water `#9fd9e6`, parks `#c3e5bb` and pale building materials are geographic styling, with all original coordinates and measured heights retained.
+
+Use compact hierarchy for Explore, conversational typography for Feed, a clear identity cover above Passport's wall, collection emblems and segmented views for the two Dex pages, and ticket seams/expiry for offers. Hover/press feedback should take around 160–180 ms and respect reduced motion. Keep a phone footer clear of the fixed navigation; the signed-in Passport entry can use its labelled person icon on narrow screens.
 
 ## Browser routes
 

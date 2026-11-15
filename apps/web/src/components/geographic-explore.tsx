@@ -129,7 +129,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   return <section className={styles.atlas} aria-label="Geographic exploration">
     <MapFrame label="Explore the world">
       <div ref={controls} className={styles.controls}><div className={styles.placeBar}>
-        <h1>Explore</h1><form className={styles.search} role="search" onSubmit={search}
+        <h1><Compass size={24} aria-hidden="true"/>Explore</h1><form className={styles.search} role="search" onSubmit={search}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}
           onKeyDown={event => { if (event.key === "Escape" && searchOpen) { event.preventDefault(); event.stopPropagation(); setSearchOpen(false); } }}>
           <div className={styles.field}><Search size={17}/><input ref={field} type="search" aria-label="Search map places" maxLength={120} autoComplete="off"
@@ -148,7 +148,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           <button type="button" className={styles.depth} aria-label="3D buildings" aria-pressed={renderer === "webgl" && threeD} disabled={renderer === "fallback"} onClick={() => setThreeD(v => !v)}><Box size={16}/>3D</button>
         </div></div>
       </div>
-      <div ref={frame} className={styles.stage}><div className={styles.scene}><MapExpandButton/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)}><div className={styles.scene}><MapExpandButton/>
         {renderer === "webgl" ? <Canvas {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <div className={styles.locationTools}>
@@ -163,7 +163,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           <small>{directions ? directions.coordinate : "Search a place or select a point on the map."}</small></div></div>
           {directions && <div className={styles.directions}><a href={directions.google} target="_blank" rel="noopener noreferrer">Google Maps<ArrowUpRight size={14}/></a><a href={directions.apple} target="_blank" rel="noopener noreferrer">Apple Maps<ArrowUpRight size={14}/></a></div>}
         </div>
-        <div className={styles.gameBar} aria-label="Explorer controls">
+        {(selected || walk.route) && <div className={styles.gameBar} aria-label="Explorer controls">
           {selected && <><button type="button" onClick={() => { location.place(selected); walk.place(selected); setFollow(true); setFocus(n => n + 1); }}>Place explorer here</button>
             <button type="button" className={styles.walkButton} disabled={walk.phase === "routing" || (location.mode === "live" && location.status !== "live")} onClick={() => {
               if (location.mode === "live") void walk.planTo(selected); else void walk.walkTo(selected);
@@ -172,9 +172,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           {walking && <button type="button" onClick={walk.pause}><Pause size={15}/>Pause walk</button>}
           {walk.phase === "paused" && location.mode === "manual" && <button type="button" onClick={walk.resume}><Play size={15}/>Resume walk</button>}
           {walk.route && <button type="button" onClick={walk.cancel}><X size={15}/>End route</button>}
-          <button type="button" aria-pressed={paused} onClick={() => { setPaused(v => !v); if (walking) walk.pause(); }}>{paused ? "Enable avatar motion" : "Pause avatar motion"}</button>
           <span className={styles.walkDistance}>{walk.totalDistance > 0 ? `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m` : "Tap your explorer to wave"}</span>
-        </div>
+        </div>}
       </div>
       {avatarOpen && <div className={styles.avatarPanel}><AvatarCustomizer onClose={() => setAvatarOpen(false)} onAction={perform} motionPaused={paused}/></div>}
     </MapFrame>
@@ -183,6 +182,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       <div className={styles.actionRow}><button type="button" disabled={paused} onClick={() => perform("wave")}><Hand size={16}/>Wave</button>
         <button type="button" disabled={paused} onClick={() => perform("cheer")}><Sparkles size={16}/>Celebrate</button>
         <button type="button" disabled={paused} onClick={() => perform("look")}><Compass size={16}/>Look around</button></div>
+      <button type="button" className={styles.motionButton} aria-pressed={paused} onClick={() => { setPaused(v => !v); if (walking) walk.pause(); }}><Pause size={15}/>{paused ? "Enable avatar motion" : "Pause avatar motion"}</button>
       <p>Allow live location to move with your device, or place your explorer manually and follow a real pedestrian route. Virtual walks track this session's movement. Collect verified XP using a restaurant's code.</p>
       <p>GPS fixes stay in this page. Map tiles reveal the viewed area to the map provider. Searches and requested route endpoints go to their providers. Location turns off when you leave or hide Explore.</p>
       <p>{Math.round(walk.sessionMetres)} metres explored this session.</p><Link href="/collect">Collect a verified discovery</Link>

@@ -136,22 +136,22 @@ export function DemoDeals() {
 const expiry = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Australia/Melbourne" });
 
 export function PromotionList({ result, limit }: { result: PromotionResult; limit?: number }) {
-  if (result.status === "unavailable") return <p role="status" className={styles.availability}>Promotions are temporarily unavailable. Please try again shortly.</p>;
-  if (!result.promotions.length) return <p className={styles.availability}>There are no active promotions at the moment.</p>;
+  if (result.status === "unavailable") return <div role="status" className={styles.offerEmpty} data-compact={limit !== undefined}><span className={styles.emptyTicket} aria-hidden="true"><Ticket size={32}/></span><div><h3>Promotions are temporarily unavailable</h3><p>Please try again shortly. You can keep exploring the map.</p>{limit === undefined && <Link href="/">Browse the map <ArrowRight size={15}/></Link>}</div></div>;
+  if (!result.promotions.length) return <div className={styles.offerEmpty} data-compact={limit !== undefined}><span className={styles.emptyTicket} aria-hidden="true"><Ticket size={32}/></span><div><h3>A little room for a good deal.</h3><p>There are no active promotions at the moment. New offers appear here after approval.</p>{limit === undefined && <Link href="/">Find your next place <ArrowRight size={15}/></Link>}</div></div>;
   return <div className={styles.promotionGrid}>{result.promotions.slice(0, limit).map(promo =>
     <article className={styles.promotion} key={promo.id}>
       <div className={styles.ticketIcon}><Ticket size={21} aria-hidden="true" /></div>
-      <div><h3>{promo.title}</h3><p>{promo.description}</p>
+      <div className={styles.promotionBody}><h3>{promo.title}</h3><p>{promo.description}</p>
         <Link href={`/venues/${encodeURIComponent(promo.venueSlug)}`}>{promo.venueName}<ArrowRight size={14} /></Link>
-        <small>{promo.suburb} · Ends <time dateTime={promo.endsAt}>{expiry.format(new Date(promo.endsAt))}</time> Melbourne time</small>
+        <small className={styles.offerExpiry}><Clock size={13}/><span>{promo.suburb} · Ends <time dateTime={promo.endsAt}>{expiry.format(new Date(promo.endsAt))}</time> Melbourne time</span></small>
       </div>
     </article>)}</div>;
 }
 
 export function ConnectedDeals({ result }: { result: PromotionResult }) {
   return <div className={styles.page}>
-    <header className={styles.heading}><div><h1>Deals</h1><p>Current offers from local venues.</p></div></header>
-    <h2 className={styles.sectionTitle}>Active promotions</h2>
+    <header className={`${styles.heading} ${styles.connectedHeading}`}><div><h1>Deals</h1><p>Current offers from local venues.</p></div><span className={styles.dealSeal} aria-hidden="true"><Ticket size={36}/><Percent size={17}/></span></header>
+    <div className={styles.sectionHeading}><h2 className={styles.sectionTitle}>Active promotions</h2>{result.status === "ready" && result.promotions.length > 0 && <span className={styles.offerCount}>{result.promotions.length} {result.promotions.length === 1 ? "offer" : "offers"}</span>}</div>
     <PromotionList result={result} />
   </div>;
 }

@@ -1,17 +1,19 @@
 .atlas { width: 100%; color: var(--ink); }
 .controls {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  margin: 0; padding: 6px clamp(10px, 2vw, 30px);
+  margin: 0; padding: 10px clamp(14px, 2vw, 30px);
 }
 .placeBar, .bar, .adventureBar, .modeNav, .layers { display: flex; align-items: center; }
 .placeBar { gap: 14px; min-width: 0; flex: 1; }
-.atlas .placeBar h1 { margin: 0; color: #174440; font: 800 clamp(26px, 2.6vw, 42px)/1 var(--font-display); }
-.search { position: relative; width: min(100%, 372px); min-width: 0; }
-.field { display: flex; align-items: center; gap: 7px; padding-left: 12px; border: 1px solid #796d62; border-radius: 9px; background: #fffdf6; color: var(--petrol); }
+.atlas .placeBar h1 { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--petrol); font: 800 34px/1 var(--font-display); letter-spacing: -.015em; }
+.search { position: relative; width: min(100%, 440px); min-width: 0; }
+.field { display: flex; align-items: center; gap: 7px; padding-left: 14px; border: 1px solid #b0aca0; border-radius: 13px; background: white; color: var(--petrol); box-shadow: var(--shadow-control); }
 .field:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
-.field input { width: 100%; min-width: 0; padding: 9px 0; border: 0; outline: 0; color: var(--ink); background: transparent; font: 600 16px/1.2 var(--font-body); }
+.field input { width: 100%; min-width: 0; padding: 11px 0; border: 0; outline: 0; color: var(--ink); background: transparent; font: 600 16px/1.2 var(--font-body); }
 .field input::-webkit-search-cancel-button { display: none; }
 .field button { display: grid; place-items: center; flex: none; width: 44px; height: 44px; background: transparent; border: 0; color: var(--petrol); }
+.field button[type=submit] { background: var(--petrol); color: white; width: 38px; height: 36px; margin: 4px; border-radius: 9px; }
+.field button[type=submit]:hover { background: #00544f; }
 .results { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 22; overflow: auto; max-height: min(42dvh, 330px); padding: 3px; background: #fffdf6; border: 1px solid var(--line-strong); border-radius: 9px; box-shadow: var(--shadow-panel); }
 .results button { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 8px; padding: 6px; background: transparent; border: 0; border-radius: 6px; color: var(--ink); text-align: left; }
 .results button:hover, .results button:focus-visible { background: #e7f0e3; }
@@ -28,28 +30,32 @@
   font: 700 15px/1.1 var(--font-body); white-space: nowrap;
 }
 .modeNav a[aria-current] { background: var(--petrol); color: white; }
-.layers button[aria-pressed=true] { background: #e2efde; color: #124e46; }
+.layers { gap: 3px; padding: 3px; border-radius: 12px; background: #eeeade; }
+.layers button { min-height: 38px; font-size: 13px; border-radius: 9px; padding-inline: 12px; }
+.layers button[aria-pressed=true] { background: white; color: var(--petrol); box-shadow: var(--shadow-control); }
 .layers .depth { border: 1px solid var(--line); margin-left: 4px; }
-.layers .depth[aria-pressed=true] { color: var(--canvas); border-color: var(--ink); background: var(--ink); }
+.layers .depth[aria-pressed=true] { color: white; border-color: var(--petrol); background: var(--petrol); }
 .modeNav a:hover, .layers button:hover { text-decoration: underline; text-underline-offset: 3px; }
 .stage {
   display: flex; flex-direction: column;
   height: max(175px, calc(100dvh - var(--atlas-top, 146px) - 10px));
-  border: 1px solid #65574d; border-radius: 12px;
+  border: 1px solid #b4c2b8; border-radius: 18px;
   margin-inline: clamp(10px, 2vw, 30px); overflow: clip; background: var(--canvas);
 }
 .atlas dialog:modal .stage { flex: 1; min-height: 140px; height: auto; margin: 0; border: 0; border-radius: 0; }
 .atlas dialog:modal .modeNav { display: none; }
 .scene { flex: 1; min-height: 0; position: relative; isolation: isolate; overflow: hidden; background-color: #cfddd4; background-size: cover; background-position: center; }
 .loading { position: absolute; bottom: 40px; left: 12px; padding: 5px 12px; border-radius: 5px; background: var(--canvas); color: var(--ink); pointer-events: none; }
-.readout { display: flex; justify-content: space-between; align-items: center; padding: 5px 12px; gap: 8px; min-height: 48px; background: var(--paper); border-top: 1px solid var(--line); }
+.readout { display: flex; justify-content: space-between; align-items: center; padding: 9px 14px; gap: 8px; min-height: 60px; background: var(--paper); border-top: 1px solid #dce6de; }
 .readoutName { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.readoutName > svg { color: var(--petrol); flex-shrink: 0; }
+.readoutName > svg { color: var(--petrol); flex-shrink: 0; box-sizing: content-box; padding: 9px; border-radius: 11px; background: #e4f2e8; }
 .readoutName strong, .readoutName small { display: block; }
 .readoutName strong { font: 700 17px/1.1 var(--font-body); }
 .readoutName small { font: 500 13px/1.3 var(--font-body); color: var(--muted); font-variant-numeric: tabular-nums; }
 .directions { display: flex; align-items: center; gap: 3px; }
-.atlas .directions a, .members a { display: inline-flex; align-items: center; gap: 3px; min-height: 44px; padding-inline: 6px; font: 700 14px/1.2 var(--font-body); color: var(--link); }
+.atlas .directions a, .members a { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding-inline: 9px; font: 700 14px/1.2 var(--font-body); color: var(--link); }
+.directions a { border: 1px solid #cadacf; border-radius: 9px; background: #f4f8f1; }
+.directions a:hover { background: #e6f2e8; }
 .credits, .members { margin: 6px clamp(12px, 2.5vw, 36px); }
 .credits { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 14px; font: 600 13px/1.3 var(--font-body); }
 .atlas .credits p { font: inherit; color: var(--muted); margin: 0; }
@@ -65,28 +71,32 @@
   .atlas dialog:modal .bar { justify-content: flex-end; }
 }
 @media (max-width: 760px) {
-  .controls { padding: 3px 7px; }
+  .controls { padding: 7px 10px; }
   .placeBar { gap: 9px; }
   .layers button > svg { display: none; }
   .layers .depth > svg { display: block; width: 15px; }
-  .stage { margin-inline: 6px; height: max(145px, calc(100dvh - var(--atlas-top, 120px) - 69px - env(safe-area-inset-bottom))); border-radius: 9px; }
-  .readout { padding: 3px 7px; min-height: 44px; flex-wrap: wrap; gap: 0 5px; }
+  .stage { margin-inline: 8px; height: max(145px, calc(100dvh - var(--atlas-top, 120px) - 69px - env(safe-area-inset-bottom))); border-radius: 14px; }
+  .readout { padding: 6px 9px; min-height: 54px; flex-wrap: wrap; gap: 4px 7px; }
   .readoutName { flex: 1 1 125px; }
-  .atlas .directions a { padding-inline: 3px; font-size: 13px; }
+  .atlas .directions a { padding-inline: 7px; font-size: 12px; min-height: 36px; }
   .readoutName small { font-size: 11px; }
+  .atlas .placeBar h1 { font-size: 28px; }
+  .placeBar h1 svg { display: none; }
 }
 @media (max-width: 370px) {
   .placeBar h1 { font-size: 23px; }
   .modeNav a, .layers button { padding-inline: 5px; }
+  .layers button { font-size: 11px; padding-inline: 3px; }
+  .layers .depth { margin-left: 0; padding-inline: 6px; }
   .modeNav a svg { width: 14px; }
   .readout .directions a svg { display: none; }
 }
 .locationTools { position: absolute; top: 12px; right: 60px; z-index: 14; display: flex; gap: 5px; }
-.locationTools button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #85796c; border-radius: 10px; background: #fffdf5; color: var(--petrol); box-shadow: 0 2px 7px #193a3024; }
+.locationTools button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #9db7a9; border-radius: 12px; background: #fffef9; color: var(--petrol); box-shadow: 0 3px 10px #193a3020; }
 .locationTools button[aria-pressed=true] { color: var(--canvas); background: var(--petrol); border-color: var(--petrol); }
-.modeStatus { position: absolute; left: 12px; bottom: 12px; z-index: 3; padding: 5px 9px; border-radius: 6px; background: #fffdf0e8; color: #27463e; font: 700 12px/1.2 var(--font-body); pointer-events: none; }
+.modeStatus { position: absolute; left: 12px; bottom: 14px; z-index: 3; padding: 7px 10px; border-radius: 8px; background: #fffdf0f0; color: #27463e; font: 700 12px/1.2 var(--font-body); pointer-events: none; box-shadow: 0 2px 8px #193a3014; }
 .gameBar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; min-height: 46px; padding: 4px 10px; background: var(--paper); border-top: 1px solid var(--line); }
-.gameBar button, .actionRow button { display: inline-flex; gap: 5px; align-items: center; justify-content: center; min-height: 38px; padding: 5px 10px; background: #f2ede1; color: #23473e; border: 1px solid #c0b8a6; border-radius: 7px; font: 700 13px/1.2 var(--font-body); }
+.gameBar button, .actionRow button, .motionButton { display: inline-flex; gap: 5px; align-items: center; justify-content: center; min-height: 40px; padding: 6px 12px; background: #f1f5ee; color: #23473e; border: 1px solid #cad8ca; border-radius: 9px; font: 700 13px/1.2 var(--font-body); }
 .gameBar .walkButton { background: var(--petrol); border-color: var(--petrol); color: white; }
 .gameBar button:focus-visible, .locationTools button:focus-visible, .actionRow button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .gameBar button:disabled { opacity: .6; cursor: wait; }
@@ -103,6 +113,8 @@
 .avatarPanel { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); padding: 10px; }
 .atlas dialog:modal .avatarPanel { position: absolute; z-index: 40; right: 10px; top: 70px; width: min(820px, calc(100% - 20px)); max-height: calc(100dvh - 90px); overflow: auto; margin: 0; box-shadow: var(--shadow-panel); }
 .layers button:disabled { opacity: .5; }
+.motionButton { margin-block: 4px 8px; }
+@media (prefers-reduced-motion: no-preference) { .field button, .locationTools button, .gameBar button { transition: background-color 160ms ease-out, box-shadow 160ms ease-out; } }
 @media (max-width: 600px) {
   .locationTools { top: 8px; right: 56px; gap: 4px; }
   .locationTools button { width: 40px; height: 40px; }
@@ -114,3 +126,4 @@
   .explorerStatus { flex-wrap: wrap; }
   .modeStatus { font-size: 11px; left: 7px; }
 }
+@media (max-width: 370px) { .layers button { font-size: 11px; padding-inline: 3px; } .layers .depth { margin-left: 0; padding-inline: 6px; } }

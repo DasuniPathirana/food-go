@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, UserRound, Zap } from "lucide-react";
 import { Brand } from "./brand";
 import { FoodNavigation } from "./food-navigation";
 import type { CatalogueMode } from "@/lib/catalogue-contracts";
@@ -38,14 +38,16 @@ export function SiteShell({
           <FoodNavigation pathname={pathname} owner={ownerView} />
           <div className="header-actions">
             {signedIn && journey?.data && <Link className="account-entry xp-entry" href="/profile"
-              aria-label={`Passport, ${journey.data.progress.xp} XP, level ${journey.data.progress.level}`}><span>{journey.data.progress.xp} XP</span></Link>}
+              aria-label={`Passport, ${journey.data.progress.xp} XP, level ${journey.data.progress.level}`}><Zap size={15} aria-hidden="true"/><span>{journey.data.progress.xp} XP</span></Link>}
             <Link href={accountType === "partner" ? "/partner/dashboard" : "/partner"} className="venue-entry">
               {accountType === "partner" ? "My restaurants" : "For venues"} <ArrowUpRight size={14} />
             </Link>
             <Link
               href={signedIn ? "/profile" : "/auth/sign-in"}
-              className="account-entry"
+              className={`account-entry${signedIn ? " account-personal" : ""}`}
+              aria-label={signedIn ? "Open your Passport" : undefined}
             >
+              <UserRound size={16} aria-hidden="true"/>
               <span>{signedIn ? displayName || "My account" : "Sign in"}</span>
             </Link>
           </div>
