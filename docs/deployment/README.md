@@ -4,6 +4,8 @@ Updated 14 November 2026 for [Kalana8/Food_Go](https://github.com/Kalana8/Food_G
 
 The configured path below is Vercel. No hosting project, domain, provider secret or public deployment has been created by adding these files. The repository branch and PR are for review into `develop`; `main` is not the delivery target.
 
+Start with [setup required now](setup-now.md) for the 16 November hosted audit, exact owner/deployer inputs and provider configuration. It lists the pending database migrations and public-launch blockers; this handoff is not a readiness certificate.
+
 ## 1. Reproduce the build from a clean checkout
 
 Check out the review branch, or `develop` after its PR has been reviewed and merged. Use Node.js **24.x** and the repository-root `package-lock.json`:

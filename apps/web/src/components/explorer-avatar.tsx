@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AVATARS, type AvatarId } from "@food-go/domain/avatar";
 import type { AvatarAction } from "./explorer-avatar-scene";
 import styles from "./explorer-avatar.module.css";
@@ -10,6 +10,7 @@ export type { AvatarAction } from "./explorer-avatar-scene";
 type Props = {
   avatarId?: AvatarId; action?: AvatarAction; actionToken?: number; animate?: boolean;
   mode?: "map" | "preview" | "portrait"; walking?: boolean; onActivate?: () => void;
+  heading?: number; mapBearing?: number; distanceMetres?: number; distanceTransitionMs?: number;
 };
 
 /** Static chooser/HUD artwork: deliberately does not create a WebGL context. */
@@ -56,11 +57,11 @@ function OriginalExplorer() {
   </svg>;
 }
 
-export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionToken = 0, animate = true, mode = "map", walking = false, onActivate }: Props) {
+export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionToken = 0, animate = true, mode = "map", walking = false, heading, mapBearing, distanceMetres, distanceTransitionMs, onActivate }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const engine = useRef<ReturnType<typeof import("./explorer-avatar-scene").createAvatarScene> | null>(null);
-  const latest = useRef({ animate, action, actionToken, walking });
+  const latest = useRef({ animate, action, actionToken, walking, heading, mapBearing, distanceMetres, distanceTransitionMs });
   const synchronise = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -70,9 +71,9 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
   const uses3D = avatar.id !== "explorer" && mode !== "portrait";
 
   useEffect(() => {
-    latest.current = { animate, action, actionToken, walking };
+    latest.current = { animate, action, actionToken, walking, heading, mapBearing, distanceMetres, distanceTransitionMs };
     synchronise.current();
-  }, [animate, action, actionToken, walking]);
+  }, [animate, action, actionToken, walking, heading, mapBearing, distanceMetres, distanceTransitionMs]);
 
   useEffect(() => {
     const node = container.current;
@@ -112,7 +113,8 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
     };
   }, [avatar.id, mode, uses3D]);
 
-  const art = <div ref={container} className={`${styles.avatar} ${styles[mode]} ${motionAllowed ? styles.moving : ""} ${walking ? styles.walking : ""} ${reduced ? styles.reduced : ""}`} data-avatar={avatar.id} data-renderer={uses3D ? ready && !failed ? "3d" : "illustration" : "illustration"} data-action={action}>
+  const facingLeft = Number.isFinite(heading) && Math.sin((heading! - (mapBearing || 0)) * Math.PI / 180) < -0.2;
+  const art = <div ref={container} className={`${styles.avatar} ${styles[mode]} ${motionAllowed ? styles.moving : ""} ${walking ? styles.walking : ""} ${reduced ? styles.reduced : ""}`} data-avatar={avatar.id} data-renderer={uses3D ? ready && !failed ? "3d" : "illustration" : "illustration"} data-action={action} style={{ "--avatar-direction": facingLeft ? -1 : 1 } as CSSProperties}>
     {uses3D && <canvas ref={canvas} className={`${styles.canvas} ${ready && !failed ? styles.canvasReady : ""}`} aria-hidden="true" />}
     <span key={`${avatar.id}-${action}-${actionToken}`} className={`${styles.artwork} ${uses3D && ready && !failed ? styles.artworkHidden : ""}`} aria-hidden="true">{avatar.id === "explorer" && mode !== "portrait" ? <OriginalExplorer /> : <AvatarIllustration avatarId={avatar.id} />}</span>
     {failed && <span className={styles.srOnly}>3D is unavailable. Showing the illustrated avatar.</span>}

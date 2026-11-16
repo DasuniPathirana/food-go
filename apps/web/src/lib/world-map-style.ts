@@ -1,4 +1,4 @@
-import type { Coordinates, StyleSpecification } from "maplibre-gl";
+import type { AllPaintProperties, Coordinates, ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
   ATLAS_AERIAL, ATLAS_BUILDINGS, ATLAS_CORNERS, ATLAS_SATELLITE,
 } from "./melbourne-atlas";
@@ -14,9 +14,113 @@ export const MAP_SOURCE_IDS = {
 } as const;
 export const emptyMapFeatures = () => ({ type: "FeatureCollection" as const, features: [] });
 
+type PaintValue = AllPaintProperties[keyof AllPaintProperties];
+export type GameMapPaintOverride = {
+  id: string; property: keyof AllPaintProperties; normal: PaintValue; game: PaintValue;
+};
+
+/** Preserve camera expressions at the top level, as required by the style spec. */
+function widerRoad(value: AllPaintProperties["line-width"], factor: number): AllPaintProperties["line-width"] {
+  if (typeof value === "number") return value * factor;
+  if (Array.isArray(value)) {
+    const result = [...value];
+    const firstOutput = value[0] === "interpolate" ? 4 : value[0] === "step" ? 2 : -1;
+    if (firstOutput !== -1) {
+      for (let index = firstOutput; index < result.length; index += 2) {
+        if (typeof result[index] === "number") result[index] = (result[index] as number) * factor;
+      }
+      return result as ExpressionSpecification;
+    }
+  }
+  if (value && typeof value === "object" && "stops" in value) {
+    return { ...value, stops: value.stops.map(([stop, width]) => [stop, width * factor]) } as AllPaintProperties["line-width"];
+  }
+  return value ?? 1;
+}
+
+/** A reversible material pass over real geometry, never a second map style.
+ * Compact Game buildings are deliberately stylised. Streets and imagery retain
+ * their source heights and bases when the normal values are restored.
+ */
+function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
+  const overrides: GameMapPaintOverride[] = [];
+  const add = (layer: LayerSpecification, property: keyof AllPaintProperties, game: PaintValue, fallback: PaintValue) => {
+    const paint = layer.paint as Partial<AllPaintProperties> | undefined;
+    overrides.push({ id: layer.id, property, normal: paint?.[property] ?? fallback, game });
+  };
+  for (const layer of layers) {
+    const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+    if (layer.type === "background") add(layer, "background-color", "#e9edf2", "#000000");
+    if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
+    if (layer.type === "fill") {
+      const landColour = sourceLayer === "water" || layer.id === "water" ? "#8fc9f4"
+        : sourceLayer === "park" || layer.id === "park" ? "#b7e3b9"
+          : layer.id.includes("wood") ? "#acd6b2"
+            : /grass|cemetery|pitch/u.test(layer.id) ? "#c7e8c5"
+              : layer.id.includes("wetland") ? "#c6e5d9"
+                : layer.id.includes("sand") ? "#f5ecd2"
+                  : /ice|glacier/u.test(layer.id) ? "#f6fbff"
+                    : layer.id.includes("hospital") ? "#f1e3e8"
+                      : /school|track/u.test(layer.id) ? "#eee8d7"
+                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e7ebef"
+                          : sourceLayer === "building" ? "#e5e5df" : null;
+      if (landColour) add(layer, "fill-color", landColour, "#000000");
+      if (sourceLayer === "park" || /wood|grass|cemetery|pitch/u.test(layer.id)) add(layer, "fill-opacity", 0.95, 1);
+      if (sourceLayer === "building") add(layer, "fill-outline-color", "#f9fbfc", layer.paint?.["fill-color"] ?? "#000000");
+      if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
+    }
+    if (layer.type === "line") {
+      if (sourceLayer === "waterway") add(layer, "line-color", "#8fc9f4", "#000000");
+      if (sourceLayer === "park") add(layer, "line-color", "#abd6b1", "#000000");
+      if (sourceLayer === "boundary") {
+        add(layer, "line-color", "#a3b3c1", "#000000"); add(layer, "line-opacity", 0.35, 1);
+      }
+      if (sourceLayer === "transportation" && /^(road|bridge|tunnel)_/u.test(layer.id)) {
+        const rail = layer.id.includes("rail"), casing = layer.id.endsWith("casing");
+        add(layer, "line-color", rail ? "#a6b6c3" : casing ? "#cad3df" : "#ffffff", "#000000");
+        if (rail) add(layer, "line-opacity", 0.28, 1);
+        else {
+          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], casing ? 1.28 : 1.24), 1);
+          if (casing) add(layer, "line-blur", 0.35, 0);
+        }
+      }
+    }
+    if (layer.type === "symbol") {
+      if (sourceLayer === "transportation_name" || sourceLayer === "place") {
+        add(layer, "text-color", sourceLayer === "place" ? "#536b80" : "#64748b", "#000000");
+        add(layer, "text-halo-color", "#f9fcff", "rgba(0,0,0,0)");
+        add(layer, "text-halo-width", 1.5, 0);
+      }
+      if (sourceLayer === "water_name" || sourceLayer === "waterway") add(layer, "text-color", "#5687ae", "#000000");
+      if (sourceLayer === "poi") {
+        // Published Food Go markers stay distinct. Provider POIs reappear softly
+        // at close zoom while real street and suburb names stay available.
+        const opacity: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 16.5, 0, 18, 0.65];
+        add(layer, "text-opacity", opacity, 1); add(layer, "icon-opacity", opacity, 1);
+      }
+      if (/one_way_arrow|shield/u.test(layer.id)) {
+        add(layer, "text-opacity", 0, 1); add(layer, "icon-opacity", 0, 1);
+      }
+    }
+    if (layer.type === "fill-extrusion") {
+      const local = layer.id === MAP_SOURCE_IDS.buildings;
+      const height: ExpressionSpecification = ["coalesce", ["get", local ? "height" : "render_height"], 4];
+      const base: ExpressionSpecification = ["coalesce", ["get", local ? "min_height" : "render_min_height"], 0];
+      add(layer, "fill-extrusion-height", ["min", 22, ["max", 3.5, ["*", height, 0.42]]], 0);
+      add(layer, "fill-extrusion-base", ["min", 20, ["max", 0, ["*", base, 0.42]]], 0);
+      add(layer, "fill-extrusion-color", ["interpolate", ["linear"], height,
+        0, "#faf4e8", 15, "#f3e7d4", 40, "#e1eaf1", 100, "#c6ded9", 250, "#c1d5e9"], "#000000");
+      add(layer, "fill-extrusion-opacity", 1, 1);
+      add(layer, "fill-extrusion-vertical-gradient", true, true);
+    }
+  }
+  return overrides;
+}
+
 /** Keep one style and renderer so imagery changes retain the camera and player. */
 export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): {
   style: StyleSpecification; streetLayers: { id: string; visibility: "visible" | "none"; symbol: boolean }[];
+  gamePaint: GameMapPaintOverride[];
 } {
   const corners: Coordinates = [ATLAS_CORNERS[0], ATLAS_CORNERS[1], ATLAS_CORNERS[2], ATLAS_CORNERS[3]];
   const survey = { type: "Polygon" as const, coordinates: [[...ATLAS_CORNERS, ATLAS_CORNERS[0]]] };
@@ -87,7 +191,9 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     url: `https://api.maptiler.com/tiles/satellite-v2/tiles.json?key=${encodeURIComponent(satelliteKey)}`,
   } : { type: "geojson", data: emptyMapFeatures() };
   const availableAdditions = satelliteKey ? additions : additions.filter(layer => layer.id !== MAP_SOURCE_IDS.globalSatellite);
+  const layers = [...streets.slice(0, before), ...availableAdditions, ...streets.slice(before)];
   return {
+    gamePaint: gameMapPaint(layers),
     streetLayers: streets.map(layer => ({ id: layer.id, visibility: layer.layout?.visibility === "none" ? "none" : "visible", symbol: layer.type === "symbol" })),
     style: {
       ...base,
@@ -101,7 +207,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
         [MAP_SOURCE_IDS.route]: { type: "geojson", data: emptyMapFeatures() },
         [MAP_SOURCE_IDS.accuracy]: { type: "geojson", data: emptyMapFeatures() },
       },
-      layers: [...streets.slice(0, before), ...availableAdditions, ...streets.slice(before)],
+      layers,
     },
   };
 }

@@ -24,16 +24,18 @@ The connected UI refinement uses Barlow for section headings and Source Sans 3 f
 
 Use compact hierarchy for Explore, conversational typography for Feed, a clear identity cover above Passport's wall, collection emblems and segmented views for the two Dex pages, and ticket seams/expiry for offers. Hover/press feedback should take around 160–180 ms and respect reduced motion. Keep a phone footer clear of the fixed navigation; the signed-in Passport entry can use its labelled person icon on narrow screens.
 
+Game map materials add cool grey land `#e9edf2`, blue water `#8fc9f4`, mint parks `#b7e3b9`, white roads and grey casing `#cad3df`. Compact pastel buildings provide depth while keeping the explorer readable. These are reversible presentation choices over real geometry: Game heights are deliberately stylised, while Streets and Satellite restore the source heights. The first manual view is Federation Square, with the actual river and parks providing colour rather than fabricated geography. Approved venue photo pins and named mall markers carry food identity; unavailable shops are never fabricated to decorate the map.
+
 ## Browser routes
 
 | Destination | First screen | Phone adaptation |
 | --- | --- | --- |
-| Explore | Worldwide streets, an animated explorer and optional licensed satellite imagery. Search sits above the map. An in-map button expands the same camera and selection. | Swipe to pan and pinch to zoom. Compact location, follow and avatar controls preserve the view. |
+| Explore | A playful Game view of worldwide real streets, an animated explorer and optional licensed satellite imagery. Search sits above the map. An in-map button expands the same camera and selection. | Swipe to pan and pinch to zoom. Compact location, follow and avatar controls preserve the view. |
 | Explorer controls | Choose a point and place the explorer or follow a real pedestrian route. Live location is optional. Group co-located approved restaurants into a directory below the map. | Route actions sit beneath the scene. Avatar customisation expands only when requested. |
 | Feed | A public timeline, composer and social actions. Passport holds the personal wall. | One document scroll through the composer and stories. |
 | FoodDex, VenueDex and trails | Food photos, concise collection status, numbered itineraries and perforated reward stubs. | Short horizontal collection rows and stacked trail photographs. |
 | Deals | Active, published offers show their venue and expiry. Explore includes promotions and a three-column restaurant directory. | The directory adapts to the available width. The offer highlight respects reduced motion. |
-| Passport | Petrol explorer pass, saffron progress stub and personal wall. Game detail and avatar customisation expand on request. | Identity and progress stay close to the composer. The avatar and XP ticket provide entry in the demo. |
+| Passport | Petrol explorer pass, saffron progress stub and personal wall. Game detail and avatar customisation expand on request. | Identity, selected avatar and verified progress stay above the personal wall. |
 
 ## Map behaviour
 

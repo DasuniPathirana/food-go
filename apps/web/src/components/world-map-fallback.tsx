@@ -5,6 +5,9 @@ import { createPortal } from "react-dom";
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ATLAS_AERIAL, ATLAS_CENTER, ATLAS_CORNERS, ATLAS_SATELLITE, ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
+import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
+import type { MapPoint } from "@/lib/map-game";
+import { createMapPlaceMarker } from "./map-place-marker";
 import type { AtlasCanvasProps } from "./atlas-canvas";
 import styles from "./world-map-fallback.module.css";
 
@@ -19,6 +22,8 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
   const tileDeadline = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const player = useRef<Leaflet.Marker | null>(null), accuracy = useRef<Leaflet.Circle | null>(null);
   const route = useRef<Leaflet.Polyline | null>(null), focus = useRef<number | undefined>(undefined);
+  const displayedPlayer = useRef<MapPoint | null>(null);
+  const placeMarkers = useRef(new Map<string, Leaflet.Marker>());
   const [ready, setReady] = useState(false), [error, setError] = useState("");
   const [tilesReady, setTilesReady] = useState(false);
   const [satelliteFailed, setSatelliteFailed] = useState(false);
@@ -27,6 +32,14 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
   useEffect(() => {
     let disposed = false;
     let observer: ResizeObserver | undefined;
+    const container = host.current;
+    const interacting = () => latest.current.onCameraInteraction?.();
+    const keyInteracting = (event: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "-", "="].includes(event.key)) interacting();
+    };
+    container?.addEventListener("pointerdown", interacting, true);
+    container?.addEventListener("touchstart", interacting, { passive: true, capture: true });
+    container?.addEventListener("keydown", keyInteracting, true);
     async function initialise() {
       const L = await import("leaflet");
       if (disposed || !host.current) return;
@@ -37,7 +50,7 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
         zoom: 16, minZoom: 1, maxZoom: 20, zoomControl: false, scrollWheelZoom: false,
         worldCopyJump: true, keyboard: true, attributionControl: true,
       });
-      map.current = active;
+      map.current = active; latest.current.onBearingChange?.(0);
       L.control.zoom({ position: "topright" }).addTo(active);
       streetTiles.current = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 20, maxNativeZoom: 19,
@@ -48,17 +61,22 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       tileDeadline.current = setTimeout(() => { if (!disposed) setError("Street tiles are taking longer to arrive. Check your connection or try again."); }, 15000);
       active.on("click", event => latest.current.onSelect({ longitude: event.latlng.wrap().lng, latitude: event.latlng.lat }));
       active.on("dragstart", () => latest.current.onCameraInteraction?.());
-      active.on("zoomstart", event => { if ("originalEvent" in event) latest.current.onCameraInteraction?.(); });
       observer = new ResizeObserver(() => active.invalidateSize({ animate: false }));
       observer.observe(host.current);
       setReady(true); latest.current.onReady();
     }
     initialise().catch(() => { if (!disposed) { setError("The 2D map could not start. Use place search and directions."); latest.current.onReady(); } });
-    return () => { disposed = true; clearTimeout(tileDeadline.current); observer?.disconnect(); map.current?.remove(); map.current = null; api.current = null; streetTiles.current = null; };
+    return () => {
+      disposed = true; clearTimeout(tileDeadline.current); observer?.disconnect();
+      container?.removeEventListener("pointerdown", interacting, true);
+      container?.removeEventListener("touchstart", interacting, true);
+      container?.removeEventListener("keydown", keyInteracting, true);
+      map.current?.remove(); map.current = null; api.current = null; streetTiles.current = null;
+    };
   }, []);
   useEffect(() => {
     const L = api.current, active = map.current;
-    if (!ready || !L || !active || props.imagery === "street") return;
+    if (!ready || !L || !active || props.imagery === "street" || props.imagery === "game") return;
     let overlay: Leaflet.ImageOverlay | Leaflet.TileLayer | undefined;
     const request = new AbortController();
     function unavailable() {
@@ -91,15 +109,20 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
     const L = api.current, active = map.current;
     if (!ready || !L || !active) return;
     const markers = props.places.map(place => {
-      const button = document.createElement("button");
-      button.type = "button"; button.className = styles.place; button.textContent = place.name;
-      button.setAttribute("aria-label", "Select " + place.name);
+      const button = createMapPlaceMarker(place);
+      button.style.transform = "translate(-50%, -100%)";
       L.DomEvent.disableClickPropagation(button);
       button.onclick = () => latest.current.onSelect(place);
-      return L.marker(position(place), { keyboard: false, icon: L.divIcon({ html: button, className: styles.pinContainer, iconSize: [140, 40], iconAnchor: [70, 40] }) }).addTo(active);
+      const marker = L.marker(position(place), { keyboard: false, icon: L.divIcon({ html: button, className: styles.pinContainer, iconSize: [0, 0], iconAnchor: [0, 0] }) }).addTo(active);
+      placeMarkers.current.set(place.id, marker);
+      return marker;
     });
-    return () => markers.forEach(marker => marker.remove());
+    return () => { markers.forEach(marker => marker.remove()); placeMarkers.current.clear(); };
   }, [ready, props.places]);
+  useEffect(() => {
+    for (const [id, marker] of placeMarkers.current)
+      marker.getElement()?.querySelector("button")?.setAttribute("aria-pressed", String(id === props.selected?.id));
+  }, [ready, props.places, props.selected?.id]);
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active || !props.player) return;
@@ -115,14 +138,28 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
   useEffect(() => {
     const active = map.current;
     if (!ready || !active || !props.player) return;
-    const point = position(props.player);
-    player.current?.setLatLng(point);
-    if (props.followPlayer) {
-      if (focus.current !== props.focusPlayerNonce) active.setView(point, Math.max(16, active.getZoom()), { animate: false });
-      else active.panTo(point, { animate: false });
-      focus.current = props.focusPlayerNonce;
-    }
-  }, [ready, props.player?.longitude, props.player?.latitude, props.followPlayer, props.focusPlayerNonce]);
+    const target = { longitude: props.player.longitude, latitude: props.player.latitude };
+    const from = displayedPlayer.current ?? target;
+    const milliseconds = markerTransitionDuration(displayedPlayer.current, target, props.playerTransitionMs ?? 80,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const refocus = props.followPlayer && focus.current !== props.focusPlayerNonce;
+    if (props.followPlayer) focus.current = props.focusPlayerNonce;
+    const started = performance.now();
+    let animation = 0;
+    const render = (now: number) => {
+      const progress = milliseconds ? Math.min(1, (now - started) / milliseconds) : 1;
+      const point = interpolateMarker(from, target, progress);
+      displayedPlayer.current = point;
+      player.current?.setLatLng(position(point));
+      if (props.followPlayer) {
+        if (refocus) active.setView(position(point), Math.max(16, active.getZoom()), { animate: false });
+        else active.panTo(position(point), { animate: false });
+      }
+      if (progress < 1) animation = requestAnimationFrame(render);
+    };
+    render(started);
+    return () => cancelAnimationFrame(animation);
+  }, [ready, props.player?.longitude, props.player?.latitude, props.followPlayer, props.focusPlayerNonce, props.playerTransitionMs]);
   useEffect(() => {
     const L = api.current, active = map.current, selected = props.selected;
     if (!ready || !L || !active || !selected) return;

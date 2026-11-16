@@ -8,14 +8,17 @@ import type { LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
 import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
+import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
+import { createMapPlaceMarker } from "./map-place-marker";
 import css from "./atlas-canvas.module.css";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
-export type AtlasPlace = AtlasSelection & { id: string; name: string };
-export type AtlasImagery = "street" | "aerial" | "satellite";
+export type AtlasPlace = AtlasSelection & { id: string; name: string; image?: string; kind?: "cafe" | "restaurant" | "market" | "building"; shopCount?: number };
+export type AtlasImagery = "game" | "street" | "aerial" | "satellite";
 export type AtlasCanvasProps = {
   places: readonly AtlasPlace[]; selected: AtlasSelection | null; threeD: boolean; imagery: AtlasImagery;
   player?: AtlasSelection | null; playerContent?: ReactNode; followPlayer?: boolean; focusPlayerNonce?: number;
+  playerTransitionMs?: number; onBearingChange?: (bearing: number) => void;
   location?: AtlasSelection | null; accuracy?: number; heading?: number; route?: LineString | null;
   onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
   onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
@@ -48,10 +51,12 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const pinClass = useRef<typeof Marker | null>(null);
   const creditClass = useRef<typeof AttributionControl | null>(null);
   const streetLayers = useRef<ReturnType<typeof worldMapStyle>["streetLayers"]>([]);
+  const gamePaint = useRef<ReturnType<typeof worldMapStyle>["gamePaint"]>([]);
   const placeMarkers = useRef(new Map<string, Marker>());
   const playerMarker = useRef<Marker | null>(null);
   const satelliteFailed = useRef(false);
   const focusRevision = useRef<number | undefined>(undefined);
+  const displayedPlayer = useRef<AtlasSelection | null>(null);
   const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(homeZoom);
@@ -83,6 +88,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       if (disposed || failed || !container) return;
       const composed = worldMapStyle(base, satelliteKey);
       streetLayers.current = composed.streetLayers;
+      gamePaint.current = composed.gamePaint;
       gl.setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).toString());
       const initial = latest.current;
       active = new gl.Map({
@@ -100,7 +106,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
       });
       map.on("zoomend", () => setZoom(map.getZoom()));
-      map.on("rotate", () => setBearing(map.getBearing()));
+      map.on("rotate", () => { setBearing(map.getBearing()); latest.current.onBearingChange?.(map.getBearing()); });
       for (const event of ["dragstart", "rotatestart", "zoomstart"] as const) map.on(event, movement => {
         if (movement.originalEvent) latest.current.onCameraInteraction?.();
       });
@@ -124,7 +130,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         element.className = css.player;
         element.addEventListener("click", event => event.stopPropagation());
         element.addEventListener("pointerdown", event => event.stopPropagation());
-        setPlayerElement(element); setReady(true); latest.current.onReady();
+        setPlayerElement(element); setReady(true); latest.current.onReady(); latest.current.onBearingChange?.(map.getBearing());
       });
       observer = new ResizeObserver(() => map.resize());
       observer.observe(container);
@@ -143,7 +149,9 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     // Without a global imagery account, the labelled Melbourne snapshot remains
     // an overlay on the worldwide street map. The camera is never constrained.
     for (const layer of streetLayers.current) map.setLayoutProperty(layer.id, "visibility",
-      imagery === "street" || !globalSatellite || layer.symbol ? layer.visibility : "none");
+      imagery === "street" || imagery === "game" || !globalSatellite || layer.symbol ? layer.visibility : "none");
+    for (const paint of gamePaint.current) if (map.getLayer(paint.id))
+      map.setPaintProperty(paint.id, paint.property, imagery === "game" ? paint.game : paint.normal);
     map.setLayoutProperty(MAP_SOURCE_IDS.aerial, "visibility", imagery === "aerial" ? "visible" : "none");
     map.setLayoutProperty(MAP_SOURCE_IDS.satellite, "visibility", imagery === "satellite" && !globalSatellite ? "visible" : "none");
     if (map.getLayer(MAP_SOURCE_IDS.globalSatellite)) map.setLayoutProperty(MAP_SOURCE_IDS.globalSatellite, "visibility", globalSatellite ? "visible" : "none");
@@ -174,10 +182,8 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!ready || !map || !Pin) return;
     const pins = placeMarkers.current;
     for (const place of places.filter(valid)) {
-      const button = document.createElement("button");
-      button.type = "button"; button.className = css.place; button.title = place.name;
-      button.setAttribute("aria-label", `Select ${place.name}`);
-      const label = document.createElement("span"); label.textContent = place.name; button.append(label);
+      const button = createMapPlaceMarker(place);
+      button.style.position = "absolute";
       button.onclick = event => { event.stopPropagation(); latest.current.onSelect({ longitude: place.longitude, latitude: place.latitude, id: place.id }); };
       pins.set(place.id, new Pin({ element: button, anchor: "bottom", subpixelPositioning: true })
         .setLngLat([place.longitude, place.latitude]).addTo(map));
@@ -203,16 +209,28 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   useEffect(() => {
     const map = mapRef.current, Pin = pinClass.current;
     if (!ready || !map || !Pin || !playerElement) return;
-    if (!valid(player)) { playerMarker.current?.remove(); playerMarker.current = null; return; }
+    if (!valid(player)) { playerMarker.current?.remove(); playerMarker.current = null; displayedPlayer.current = null; return; }
+    const target = { longitude: player.longitude, latitude: player.latitude };
+    const from = displayedPlayer.current ?? target;
+    const milliseconds = markerTransitionDuration(displayedPlayer.current, target, props.playerTransitionMs ?? 80,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     if (!playerMarker.current) playerMarker.current = new Pin({ element: playerElement, anchor: "bottom", subpixelPositioning: true })
-      .setLngLat([player.longitude, player.latitude]).addTo(map);
-    else playerMarker.current.setLngLat([player.longitude, player.latitude]);
-    if (followPlayer) {
-      const refocus = focusRevision.current !== focusPlayerNonce;
-      focusRevision.current = focusPlayerNonce;
-      map.jumpTo({ center: [player.longitude, player.latitude], ...(refocus ? { zoom: Math.max(map.getZoom(), 15.8) } : {}) });
-    }
-  }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce]);
+      .setLngLat([from.longitude, from.latitude]).addTo(map);
+    const refocus = followPlayer && focusRevision.current !== focusPlayerNonce;
+    if (followPlayer) focusRevision.current = focusPlayerNonce;
+    const started = performance.now();
+    let animation = 0;
+    const render = (now: number) => {
+      const progress = milliseconds ? Math.min(1, (now - started) / milliseconds) : 1;
+      const point = interpolateMarker(from, target, progress);
+      displayedPlayer.current = point;
+      playerMarker.current?.setLngLat([point.longitude, point.latitude]);
+      if (followPlayer) map.jumpTo({ center: [point.longitude, point.latitude], ...(refocus ? { zoom: Math.max(map.getZoom(), 15.8) } : {}) });
+      if (progress < 1) animation = requestAnimationFrame(render);
+    };
+    render(started);
+    return () => cancelAnimationFrame(animation);
+  }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce, props.playerTransitionMs]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource(MAP_SOURCE_IDS.route) as GeoJSONSource | undefined;
