@@ -95,7 +95,9 @@ test("Game roads widen at actual zoom while compact buildings restore measured h
   for (const [id, heightProperty] of [["food-go-world-buildings", "render_height"], [MAP_SOURCE_IDS.buildings, "height"]]) {
     const height = override(id, "fill-extrusion-height");
     assert.equal(evaluate(height.normal, 16, { [heightProperty]: 300 }), 300);
-    assert.equal(evaluate(height.game, 16, { [heightProperty]: 300 }), 22);
+    const tall = evaluate(height.game, 16, { [heightProperty]: 300 }) as number;
+    assert.ok(tall > 18 && tall < 22);
+    assert.ok((evaluate(height.game, 16, { [heightProperty]: 301 }) as number) > tall, "Different roof sections must not collapse onto the same plane");
     assert.ok(evaluate(height.game, 16, { [heightProperty]: 6 }) >= 3);
   }
   const poi = override("poi_r1", "text-opacity");

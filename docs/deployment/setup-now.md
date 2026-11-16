@@ -1,6 +1,8 @@
 # Setup required before public launch
 
-Updated 16 November 2026. This is the immediate handoff for the website at `https://food-go-three.vercel.app` and Supabase **Food go**, project `azccigsctzhbaxoajqst`. The owner selected this existing project for the release. The final custom domain has not been chosen.
+Updated 17 November 2026. This is the immediate handoff for the website at `https://food-go-three.vercel.app` and Supabase **Food go**, project `azccigsctzhbaxoajqst`. The owner selected this existing project for the release. The final custom domain has not been chosen.
+
+Latest: the private 16+ Feed age gate is also installed as `20261116234618_food_go_feed_age_gate.sql`, bringing history to twelve entries after passing real Supabase CI. The reported signup was rejected with `signup_disabled` (422), with no account created; the app now reports that failure honestly. Enable hosted signup and configure the deployed signed email hook using [the exact repair steps](email-signup-repair.md). Database migrations cannot change Auth service settings.
 
 Delivery remains a branch and PR into `develop`. The owner separately authorised hosted migration application; the hosting team owns merge and deployment. Do not change `main`, reset the hosted database or deploy an unreviewed branch. This document records required setup; it does not certify that the service is ready.
 

@@ -4,6 +4,8 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
+The [17 November update](docs/progress/20-clean-ui-and-feed-age.md) removes decorative icon badges, colours real map buildings, adds private signup age capture and enforces 16+ access to Feed and personal walls. It also fixes the false inbox success after Supabase rejected signup. Follow [the missing-email repair](docs/deployment/email-signup-repair.md) for the required hosted signup and Brevo hook settings.
+
 The latest [five-section delivery](docs/progress/19-five-sections-and-outback.md) adds Feed, Quests, Explore, Deals and Outback, a brighter real-world Game map, two offer categories, genuine reviewed partner quests, a 250-level server-derived ladder and an original playable Australian village. Passport retains the personal wall. The original standalone prototype is unchanged.
 
 All eleven migrations are installed on the owner-selected Supabase project, including adventure at `20261116181558`. Real disposable Supabase CI passed 360 SQL assertions, a deterministic concurrent-manager test and 47 adventure API assertions alongside the existing customer/owner/operator journeys. The current website still needs the deployer to install this PR, configure the two signed messaging hooks and verify real delivery. The hosted catalogue has no published restaurants yet. Start with [setup required now](docs/deployment/setup-now.md); these results do not certify public readiness.

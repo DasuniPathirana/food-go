@@ -26,6 +26,12 @@ function gameBuildingColour(height: ExpressionSpecification): ExpressionSpecific
     3, GAME_BUILDING_PALETTE[3], 4, GAME_BUILDING_PALETTE[4], 5, GAME_BUILDING_PALETTE[5], GAME_BUILDING_PALETTE[6]];
 }
 
+/** Keep roof parts ordered instead of flattening several heights onto one plane. */
+function gameBuildingHeight(height: ExpressionSpecification): ExpressionSpecification {
+  const positive: ExpressionSpecification = ["max", height, 0];
+  return ["+", 3.5, ["*", 18.5, ["/", positive, ["+", positive, 44]]]];
+}
+
 type PaintValue = AllPaintProperties[keyof AllPaintProperties];
 export type GameMapPaintOverride = {
   id: string; property: keyof AllPaintProperties; normal: PaintValue; game: PaintValue;
@@ -119,8 +125,8 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       const local = layer.id === MAP_SOURCE_IDS.buildings;
       const height: ExpressionSpecification = ["coalesce", ["get", local ? "height" : "render_height"], 4];
       const base: ExpressionSpecification = ["coalesce", ["get", local ? "min_height" : "render_min_height"], 0];
-      add(layer, "fill-extrusion-height", ["min", 22, ["max", 3.5, ["*", height, 0.42]]], 0);
-      add(layer, "fill-extrusion-base", ["min", 20, ["max", 0, ["*", base, 0.42]]], 0);
+      add(layer, "fill-extrusion-height", gameBuildingHeight(height), 0);
+      add(layer, "fill-extrusion-base", ["case", [">", base, 0], gameBuildingHeight(base), 0], 0);
       add(layer, "fill-extrusion-color", gameBuildingColour(height), "#000000");
       add(layer, "fill-extrusion-opacity", 1, 1);
       add(layer, "fill-extrusion-vertical-gradient", true, true);

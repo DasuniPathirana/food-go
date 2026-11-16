@@ -18,6 +18,10 @@ The database connection cannot change Auth service settings and browser controls
 
 ## Verification
 
-Workspace checks, production build, database and browser evidence are recorded with the completed PR. Supplementary PostgreSQL-WASM checks cover age, community, consent, reach and adventure; the real disposable Supabase CI is required before hosted application. Browser age-state checks use actual components with explicitly labelled account fixtures, not real users.
+Workspace types, 177 application tests, eight security checks and the production build pass. [Real Supabase CI 43981251257](https://github.com/Kalana8/Food_Go/actions/runs/43981251257) passed **395 SQL assertions across ten suites**, the concurrent-manager quota test, nine existing-account/young-account age API checks, and the existing 47 adventure API assertions. Signup and confirmation used only the disposable local inbox. Supplementary PostgreSQL-WASM checks also passed age, community, consent, reach and adventure suites.
+
+Actual Chrome passed 24 age/UI checks and 17 strict Game-map checks, with no runtime errors. Production HTTP smoke passed 165 assertions. Browser age-state checks use actual components with explicitly labelled account fixtures, not real users. The one-time age form fits 320 px and desktop widths. A purely local router shim exercises the refresh transition; the CI API tests independently establish server authorisation.
+
+After CI passed, the age migration was applied to Food go as `20261116234618_food_go_feed_age_gate.sql`, bringing hosted history to twelve entries. The repository filename matches that actual installed version; the reviewed SQL was unchanged and hosted history was not rewritten. Do not reapply its former `20261116184952` version. Read-only receipts confirmed the private table's RLS, no direct client grants, the signup capture trigger, denied anonymous access to both Feed RPCs, and zero hosted users/birth records. No hosted fixture identities were created.
 
 The original prototype remains unchanged. Delivery continues through the feature branch into `develop`; main and the public website are not deployed by this work.
