@@ -2,7 +2,7 @@
 
 Use `apps/web/.env.example` for local names and safe defaults. In hosting, set variables on the **web project**, scoped separately to Preview and Production. The web code reads these on the server; it does not require browser-visible Supabase variables. Do not copy a developer's ignored `.env.local` into the repository.
 
-The [setup required now](setup-now.md) records the 16 November read-only findings, immediate provider inputs, pending migrations and acceptance checks.
+The [setup required now](setup-now.md) records the 16 November findings, installed migrations through `20261116181558`, provider inputs and remaining acceptance checks.
 
 ## Maps and connected accounts
 
@@ -12,7 +12,7 @@ For worldwide satellite imagery, create an origin-restricted public MapTiler bro
 
 The selected setup uses the account's existing single `NEXT_PUBLIC_MAPTILER_KEY` for satellite tiles and direct browser place search. Allow `food-go-three.vercel.app`, `localhost` and `127.0.0.1`, one hostname per line, with the user-agent field blank. The owner accepts combined development/deployed use; remove local entries when testing ends. Do not copy this public key into `MAPTILER_SERVER_KEY`, which is an optional separate backend-only key, not required here. Confirm commercial-use entitlement before public commercial operation; the Free plan permits development/testing, not commercial launch. See [setup required now](setup-now.md).
 
-Apply `20261116055307_food_go_map_service_limits.sql` before using public Photon fallback search or default public foot routing. It provides a shared database lease across server instances, independently limiting each public service to one request per 1.1 seconds. It stores service names and timestamps only. A missing lease returns an unavailable response rather than bypassing provider limits. Direct browser MapTiler search follows the selected account's quota. See [world map operations](world-map.md) for provider setup, privacy and acceptance checks.
+`20261116055307_food_go_map_service_limits.sql` is installed on the selected project. It provides a shared database lease across server instances, independently limiting public Photon fallback search and default public foot routing to one request per 1.1 seconds. It stores service names and timestamps only. A missing lease returns an unavailable response rather than bypassing provider limits. Direct browser MapTiler search follows the selected account's quota. See [world map operations](world-map.md) for provider setup, privacy and acceptance checks.
 
 Use these values after supplying the server settings below and configuring the intended Auth provider:
 
