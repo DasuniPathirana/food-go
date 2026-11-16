@@ -20,14 +20,17 @@ The first Outback release is an original peaceful farm, not a licensed Clash of 
 
 An independent source review found and corrected reusable quest proof, missing live-session checks on canonical progress, former-manager self-review, a quota race between managers and withdrawn campaigns retaining active quest slots. Completion atomically consumes its code. Retry receipts cannot duplicate spending or XP. Shared venue locks protect campaign limits; daily quest rewards are capped on the Sydney calendar. New game tables are private, RLS-enabled and not directly writable by clients.
 
-The owner-authorised four previously pending migrations are already installed on Food go (`azccigsctzhbaxoajqst`). Repository filenames match the actual hosted records: `20261116055108`, `20261116055203`, `20261116055307`, `20261116055317`. SQL content was preserved; hosted history was not rewritten. The adventure migration requires the separately recorded CI and hosted rollout receipt before it can be described as installed.
+The owner-authorised four previously pending migrations are installed on Food go (`azccigsctzhbaxoajqst`). Repository filenames match the actual hosted records: `20261116055108`, `20261116055203`, `20261116055307`, `20261116055317`. After CI passed, adventure was applied as `20261116181558_food_go_adventure.sql`, bringing history to eleven entries. Supabase generated that installed timestamp; the repository file was renamed to match it without altering the reviewed SQL or rewriting hosted history. Do not reapply its former `20261116060148` filename.
+
+Post-application metadata checks confirmed eight adventure/Outback tables with RLS, no client table grants, an authenticated-only checked adventure RPC, and zero hosted users/venues. Security advisories identify intentional deny-by-default private tables and the pre-existing checked community/draft RPCs; no new anonymous adventure access was introduced. Hosted fixtures were not created.
 
 ## Verification
 
 - Workspace types, 168 application tests, eight repository security checks and the production Next.js build pass.
 - Local PostgreSQL WASM checks pass all 82 adventure and 83 social assertions. This harness stubs Supabase Auth/Storage, PostGIS point and pgTAP helpers, so it is supplementary evidence, not the real-platform result.
 - Actual Chrome: 44 adventure interaction checks, 14 village artwork/motion checks and 28 independent Deals/auth-return checks pass, with zero runtime errors. Mobile checks include 320 px and 390 px widths, keyboard access, reduced motion and one document scroll. Populated UI evidence uses explicitly labelled browser fixtures; intercepted sign-in tests create no accounts or outbound messages.
-- Disposable Supabase CI now includes the SQL suites, a two-connection campaign-quota test that requires observed lock contention, and genuine-session API assertions for village spending and the complete owner/operator/customer quest lifecycle. Record the actual CI outcome below after it completes.
+- [GitHub Actions run 43921077219](https://github.com/Kalana8/Food_Go/actions/runs/43921077219) passed both jobs at commit `464ee9b`. Real disposable Supabase/PostgreSQL passed **360 assertions across nine SQL suites**, including all 82 adventure and 83 social cases. The two-connection quota test observed a blocked contender before commit and confirmed exactly one success and one quota refusal. **47 genuine-session adventure API assertions** passed alongside existing signup, confirmation, owner review, moderation, collections and XP checks. No hosted credentials were used.
+- Production Chrome additionally passed 38 world-map and 17 strict Game/WebGL checks. Real browser geocoding and sixteen satellite tiles returned HTTP 200; the application returned a real 887 m pedestrian route with 49 points. Production loopback checks passed 163 HTTP assertions, including unsigned-hook rejection and closed account gates. One brittle selected-pin assertion was corrected to await the actual renderer's marker. A transient fallback in an earlier run did not reproduce; strict vector-renderer checks remained in place and passed with diagnostics.
 
 ## Deployment inputs
 
@@ -40,6 +43,12 @@ The [immediate setup guide](../deployment/setup-now.md) is the operational sourc
 ## Screenshots
 
 All pictured village/quest records are labelled browser fixtures, not hosted account data.
+
+Actual real-geography Explore view, with no fixture venues:
+
+![Brighter real-world Game map](../screenshots/19-game-desktop.png)
+
+[Phone map](../screenshots/19-game-mobile.png)
 
 ![Original Outback artwork, browser fixture](../screenshots/19-outback-fixture-desktop.png)
 

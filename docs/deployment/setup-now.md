@@ -6,7 +6,7 @@ Delivery remains a branch and PR into `develop`. The owner separately authorised
 
 ## What the read-only audit found
 
-On 16 November 2026 the owner authorised and completed application of the four connection migrations to this same project. Hosted history contains ten entries through `20261116055317`; the new private tables have RLS enabled and no direct client write grants. Policy wrappers and private-original revocation were verified. Accounts, venues and policy receipts remained at zero. The new adventure migration is a separate pending release, subject to disposable database and CI checks before hosted application. Web deployment and email/SMS hook settings remain outstanding.
+With the owner's authorisation, the four connection migrations and the reviewed adventure migration were applied to this project on 16 November 2026. Hosted history contains eleven entries through `20261116181558`. The eight adventure/Outback tables have RLS enabled and no direct client table grants; anonymous adventure RPC access is denied and authenticated access requires the checked live session. Accounts and venues remained at zero. Both jobs in [CI run 43921077219](https://github.com/Kalana8/Food_Go/actions/runs/43921077219) passed, including real PostgreSQL adventure/social regressions, deterministic lock contention and the connected API journey. Web deployment and email/SMS hook settings remain outstanding.
 
 | Check on 16 November | Observed result | Meaning |
 | --- | --- | --- |
@@ -14,9 +14,9 @@ On 16 November 2026 the owner authorised and completed application of the four c
 | Public `/api/auth/session` | HTTP 503, `configured:false` | The current deployment has account services closed or incompletely configured. |
 | Public `/api/venues?limit=1` | HTTP 200, ready, zero records | No public restaurant is available in the deployed catalogue. |
 | Aggregate hosted database count | Zero venues, zero published venues | Genuine approved restaurant content is required. |
-| Hosted migration history | Ten applied, latest `20261116055317` | The four connection migrations below are installed; do not rerun their former versions. |
+| Hosted migration history | Eleven applied, latest `20261116181558` | Connection and adventure migrations below are installed; do not rerun their former versions. |
 | Operator, journey, map lease and policy receipt tables | Present, RLS enabled and direct client writes revoked | Database installation is complete for these features; deployed flow acceptance is still required. |
-| Adventure migration | `20261116060148_food_go_adventure.sql` pending release | Require disposable PostgreSQL/CI acceptance and a separate hosted history check before application. |
+| Adventure migration | Installed as `20261116181558_food_go_adventure.sql` after CI acceptance | The earlier `20261116060148` filename was aligned to the installed version; do not apply it again. |
 | Provider credentials and senders | Read-only checks accepted the configured providers; TaskRoof sender and Mobile Message sender/credit were checked | Credentials are available in the private handoff. No email/SMS delivery is established by these checks. |
 | Supabase email/SMS hook signing secrets | Missing from the private deployment environment | Create/configure each intended HTTP hook and copy its own generated signing secret before enabling delivery. |
 
@@ -74,7 +74,7 @@ Store the supplied routing key as `OPENROUTESERVICE_API_KEY` on the server. The 
 
 GPS needs HTTPS and the user's permission, not another API key. A user who declines may choose coordinates/search manually. Manual avatar travel is route preview and must not award real location or visit XP. Google Maps/external navigation links target the chosen coordinates and do not require a Google Maps API key in this implementation.
 
-## 2. Confirm installed migrations and validate the pending adventure release
+## 2. Confirm the installed connection and adventure migrations
 
 **These four migrations are applied on Food go.** Do not run their former filenames again. The connector recorded the versions listed below, and repository filenames were aligned to those versions while preserving SQL contents and hosted history. Recheck history before future database pushes.
 
@@ -85,7 +85,7 @@ The installed connection migrations, applied on 16 November, are:
 3. `20261116055307_food_go_map_service_limits.sql`: shared public geocoding/routing leases.
 4. `20261116055317_food_go_community_acknowledgement.sql`: versioned, account-bound acknowledgement receipts and contribution checks.
 
-`20261116060148_food_go_adventure.sql` adds quest verification, Outback state, the 250-level progression curve and the two promotion categories. It remains pending CI acceptance and hosted application in this handoff. Require successful disposable PostgreSQL tests, including the security/economy regressions, before applying that reviewed migration. Record its eventual installed version separately rather than implying it is covered by the four completed migrations.
+`20261116181558_food_go_adventure.sql` is also installed. It adds quest verification, Outback state, the 250-level progression curve and the two promotion categories. CI passed 82 adventure and 83 social PostgreSQL assertions, the deterministic two-connection quota test and 47 connected adventure API assertions before hosted application. The repository filename was aligned from `20261116060148` to the actual hosted version; do not apply the former file or repeat the installed migration.
 
 Recheck history immediately before applying, since another authorised deployer may have progressed it. Preserve existing records and grants. Never reset this hosted project. Run fixture suites in the disposable CI/local Supabase stack; do not run destructive fixtures against a customer-serving database. Review the [database runbook](../../supabase/README.md) and [preflight SQL](../../supabase/preflight.sql) before executing migrations.
 
@@ -187,7 +187,7 @@ Use a real authorised owner/customer pair for the final visit/dish code check. M
 
 Record the deployed commit, origin, date, reviewer and outcome. Keep identities, tokens, codes and credentials in private operational records.
 
-- [ ] Confirm the four installed connection versions above; require CI/database acceptance and record hosted application of the new adventure migration before enabling its flows.
+- [x] Connection and adventure migrations are recorded through `20261116181558`; PostgreSQL, concurrency and connected API CI checks passed before hosted application.
 - [ ] `/api/health` succeeds; `/api/auth/session` reports configured with no leaked session token; public catalogue shows an approved real restaurant.
 - [ ] Explorer and owner signup, email confirmation, returning login, refresh, sign-out and password reset work on the exact deployed origin.
 - [ ] Streets and satellite load on desktop/mobile with correct attribution; world search works; a real pedestrian route follows streets; full-map open/close preserves state.

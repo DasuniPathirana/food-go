@@ -4,7 +4,7 @@ Updated 16 November 2026 for [Kalana8/Food_Go](https://github.com/Kalana8/Food_G
 
 The configured path below is Vercel. No hosting project, domain, provider secret or public deployment has been created by adding these files. The repository branch and PR are for review into `develop`; `main` is not the delivery target.
 
-Start with [setup required now](setup-now.md) for the 16 November hosted audit, exact owner/deployer inputs and provider configuration. The four connection migrations are installed through `20261116055317`. The new adventure migration remains pending PostgreSQL/CI acceptance and hosted application. Provider credentials passed read-only checks, but hook setup, delivery tests and public account enablement remain outstanding; the deployed account endpoint still returned 503 and the catalogue was empty. This handoff is not a readiness certificate.
+Start with [setup required now](setup-now.md) for the 16 November hosted audit, exact owner/deployer inputs and provider configuration. The connection and adventure migrations are installed through `20261116181558`, with eleven hosted history entries. Both jobs in [CI run 43921077219](https://github.com/Kalana8/Food_Go/actions/runs/43921077219) passed, including real PostgreSQL adventure/social checks, deterministic concurrency and 47 connected adventure API assertions. Do not reapply the old adventure filename or installed connection migrations. Provider credentials passed read-only checks, but hook setup, delivery tests and public account enablement remain outstanding; the deployed account endpoint still returned 503 and the catalogue was empty. This handoff is not a readiness certificate.
 
 ## 1. Reproduce the build from a clean checkout
 
