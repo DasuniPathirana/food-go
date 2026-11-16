@@ -4,9 +4,9 @@ import { createGameProfileHandler } from "./game-profile";
 
 const env = { NODE_ENV: "test", APP_ORIGIN: "http://localhost:3000", FOOD_GO_AUTH_ENABLED: "true", FOOD_GO_COMMUNITY_ENABLED: "true", FOOD_GO_AUTH_COOKIE_SECRET: "a".repeat(48), SUPABASE_URL: "https://abcdefghijklmnopqrst.supabase.co", SUPABASE_PUBLISHABLE_KEY: "sb_publishable_example_public_key_for_tests" };
 const profile = { xp: 28, level: 1, nextLevelXp: 250, reachCount: 3, activity: [{ kind: "reach", points: 1, at: "2026-11-13T12:00:00+00:00" }] };
-test("game profile stays closed until identity and community release gates are ready", async () => {
+test("game profile requires configured identity and a verified account", async () => {
   let calls = 0;
-  for (const environment of [{ ...env, FOOD_GO_AUTH_ENABLED: "false" }, { ...env, FOOD_GO_COMMUNITY_ENABLED: "false" }, { ...env, NODE_ENV: "production", APP_ORIGIN: "https://food.example" }]) {
+  for (const environment of [{ ...env, FOOD_GO_AUTH_ENABLED: "false" }, { ...env, NODE_ENV: "production", APP_ORIGIN: "https://food.example" }]) {
     const handler = createGameProfileHandler({ env: environment, async read() { calls++; return { verified: true, profile }; } });
     assert.equal((await handler()).status, 503);
   }

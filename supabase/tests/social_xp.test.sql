@@ -22,6 +22,8 @@ insert into auth.users(id,email,email_confirmed_at,phone,phone_confirmed_at,raw_
  ('91000000-0000-4000-8000-000000000006',null,null,'447234567890',now(),'{}'),
  ('91000000-0000-4000-8000-000000000007','xp-cap-owner@example.invalid',now(),null,null,'{}'),
  ('91000000-0000-4000-8000-000000000008','xp-cap-commenter@example.invalid',now(),null,null,'{}');
+insert into private.community_policy_acceptances(user_id,policy_version)
+select id,'food-go-community-2026-11-15' from auth.users where id::text like '91000000-%';
 select set_config('food_go.xp_a',(select id::text from private.community_authors where user_id='91000000-0000-4000-8000-000000000001'),true);
 select set_config('food_go.xp_b',(select id::text from private.community_authors where user_id='91000000-0000-4000-8000-000000000002'),true);
 select set_config('food_go.xp_c',(select id::text from private.community_authors where user_id='91000000-0000-4000-8000-000000000003'),true);
@@ -186,6 +188,8 @@ select is((select count(*)::integer from private.community_xp_events where benef
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_cap_commenter')::uuid)),50,'twelve approved replies earn only 50 comment XP');
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
 select ('96000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'xp-cap-viewer-'||i||'@example.invalid',now(),'{}'::jsonb from generate_series(1,60) i;
+insert into private.community_policy_acceptances(user_id,policy_version)
+select id,'food-go-community-2026-11-15' from auth.users where id::text like '96000000-%';
 set local role authenticated;
 do $cap_calls$ declare i integer; begin
   for i in 1..60 loop

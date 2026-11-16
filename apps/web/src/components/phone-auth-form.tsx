@@ -107,9 +107,9 @@ export function PhoneAuthForm({ configured }: { configured: boolean }) {
         setError("error" in data && typeof data.error === "string" ? data.error : fallbackError);
         return;
       }
-      if (!("redirectTo" in data) || data.redirectTo !== "/profile") throw new Error("Invalid response");
+      if (!("redirectTo" in data) || !["/","/partner/dashboard"].includes(String(data.redirectTo))) throw new Error("Invalid response");
       setToken("");
-      router.replace("/profile");
+      router.replace(String(data.redirectTo));
       router.refresh();
     } catch {
       if (!controller.signal.aborted) setError(fallbackError);

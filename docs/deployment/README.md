@@ -16,7 +16,7 @@ npm run build:web
 npm run start:web:local
 ```
 
-Open `http://127.0.0.1:3000/demo/explore`. The `/demo` presentation needs no Supabase, email, SMS, GPS or paid map credentials. Fictional progress stays in the browser. Keep local account and delivery flags disabled. In another terminal, `npm run check:web` runs loopback-only HTTP checks. It must be used only with closed account services; it intentionally exercises rejected requests.
+Open `http://127.0.0.1:3000/`. Explore uses the bundled geographic map and the connected public catalogue. Configure Supabase and Auth for the customer and owner journeys described in the [connected release guide](connected-release.md). In another terminal, `npm run check:web` verifies the production server with account services disabled. The CI database job separately exercises enabled signup, confirmation, owner management and customer XP against a disposable Supabase stack.
 
 The repository includes `.nvmrc` with `24`. `npm ci` must run at the repository root, since `@food-go/domain` is a local workspace and the only lockfile lives at the root. Do not install the web workspace as an unrelated project or replace its workspace dependency with a registry package.
 
@@ -38,7 +38,7 @@ Use the client's account and import the GitHub repository. Start with a **Previe
 
 After review, the owner may choose `develop` as the deployment branch for the demonstration project. Set that in the Vercel project's Git settings. Do not merge to or configure a deployment from `main` as a shortcut. Promoting a public production release is a separate decision from accepting a preview build.
 
-Use the [demo environment values](environment.md) first, scoped to this project's Preview environment. No server secret belongs in a `NEXT_PUBLIC_` variable. Keep personal `.env.local`, `.vercel` linkage files and provider credentials out of source control. Provide actual secrets through the hosting/provider dashboards.
+Use the [environment manifest](environment.md), scoped to the intended Preview or Production environment. No server secret belongs in a `NEXT_PUBLIC_` variable. Keep personal `.env.local`, `.vercel` linkage files and provider credentials out of source control. Provide actual secrets through the hosting/provider dashboards. Apply the shared map-service lease migration and follow [world map operations](world-map.md) for worldwide search, satellite and pedestrian routing.
 
 This configuration follows Vercel's [monorepo workflow](https://vercel.com/docs/monorepos), [build settings](https://vercel.com/docs/builds/configure-a-build) and [Node version settings](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions). Confirm the final settings shown in the deployment log before sharing the URL. The Vercel adapter deployment itself has not been exercised in this environment.
 
@@ -62,8 +62,8 @@ The production command uses `next start`, with its standard `0.0.0.0` hostname a
 
 Do not upload only `.next/static` or the original `prototype` folder as the complete application. Keep the shared workspace package available to Next. Standalone/Docker packaging is not configured or validated in this handoff.
 
-## Connected services are a later release stage
+## Connected release
 
-The existing **Food go** Supabase project was approved for development/test use. Use a separate reviewed staging/production environment for real customers. Migrations are committed, not automatically applied by a web deployment. A database administrator must review the target and apply them through the [Supabase workflow](../../supabase/README.md); do not reset a hosted database.
+The owner selected the existing **Food go** project (`azccigsctzhbaxoajqst`) and the current Vercel site for the connected release. The deployer owns rollout. Follow the [release handoff](connected-release.md) for migrations, the first operator, environment settings and the live acceptance run. Run fixture tests only in the disposable CI stack once the project serves customers.
 
 Brevo sender/domain and SMTP credentials are still owner inputs. SMS sign-in requires Mobile Message credentials, approved sender, a public signed Supabase hook and controlled delivery tests. Keep account, production-readiness, phone and SMS flags closed until the corresponding release checks pass. The [environment manifest](environment.md), [messaging guide](../integrations/messaging.md) and [go-live checklist](../launch/go-live-checklist.md) describe the remaining work. Never enable a gate merely to make the demo appear connected.

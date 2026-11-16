@@ -14,6 +14,8 @@ export type CatalogueVenue = Venue & {
   state: string;
   postcode: string;
   dishes: CatalogueDish[];
+  /** Geographic position on the published listing, when supplied by the operator. */
+  coordinates?: { latitude: number; longitude: number };
   building?: { id: string; name: string; level: string; unit: string };
 };
 export type CatalogueState = {

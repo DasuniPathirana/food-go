@@ -4,6 +4,20 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
+The website now uses connected signup, customer collections, venue-issued verification and server-derived XP. Explorers land on Explore and restaurant owners land on their dashboard. Owners can manage listing details and menus, submit promotions and issue discovery codes after approval. The website's demo and preview routes have been retired. See the [connected release handoff](docs/deployment/connected-release.md) for rollout and verification.
+
+The [connected release handoff](docs/deployment/connected-release.md) covers the operator portal, authenticator sign-in, restaurant and promotion publication, Feed, Passport and the revised Explore controls. It includes the deployment order and acceptance checks for the existing Vercel site.
+
+Community participation now requires an explicit, versioned acknowledgement recorded for the verified account. Reporting, blocking and browsing remain available without acceptance. See [the consent flow and verification](docs/progress/16-community-acknowledgement.md) and [the wording and enforcement policy](docs/security/community-acknowledgement.md).
+
+The latest [connected UI refinement](docs/progress/17-connected-ui-refinement.md) improves the map's visual hierarchy, navigation, Feed, Passport, collections, offers and signup. [Research and design decisions](docs/research/17-ui-refinement.md) document the direction and measured checks.
+
+Explore now has worldwide streets, available 3D buildings and an interactive avatar. Search a place or type coordinates, position the explorer manually, follow a real pedestrian route, or enable live location. Worldwide satellite requires an origin-restricted provider key; bundled Melbourne imagery stays clearly labelled. A 2D world map preserves interactions without WebGL. Feed, collections, Deals and Passport share the light market-signage design. [World explorer delivery](docs/progress/15-world-explorer.md) and [map deployment requirements](docs/deployment/world-map.md).
+
+## Earlier milestones
+
+The following records describe their delivery dates. Their old demo entry points are retired in the connected website; use `/` for the current Explore experience.
+
 Milestone 11 fits the complete Explore scene within the available browser section, replaces the separate Walk panel with an inline arrow pad, and exposes selected-place external map links. Fictional venues open an explicitly labelled real area; complete published addresses retain exact directions. See [map behaviour and verification](docs/progress/11-map-fit-and-navigation.md).
 
 Milestone 10 refreshes the browser experience as a neighbourhood food guide: a white canvas, dark ink, tomato actions, butter-yellow XP, Bricolage Grotesque headings and Source Sans 3 reading text. A horizontal desktop masthead gives the approved map more space. Feed shows stories sooner; photographic trails, open collections and the Passport cover have distinct layouts. The game, social and optional avatar flows remain available. See [the design system](DESIGN.md), [primary-source UI research](docs/research/10-distinctive-ui-research.md) and [delivery verification](docs/progress/10-neighbourhood-guide.md). Start the local browser demo at **`/demo/explore`**. This is a browser UI refresh, not a production release or native redesign.
@@ -28,7 +42,7 @@ Milestone 02 revised the website and React Native interface with a warm paper pa
 
 The website now includes sign-in, registration and recovery screens with server-side Supabase account integration. Account services remain disabled until sender configuration, controlled delivery tests and connected account release checks pass. Public release also requires the remaining account safeguards and connected tests described in [the identity guide](docs/security/identity.md).
 
-With partner accounts disabled, the venue form remains an in-memory preview. With configured verified accounts and `FOOD_GO_PARTNER_ENABLED=true`, it saves private drafts atomically and lists them in the partner dashboard. Saving does not verify ownership or publish a venue. Venue and dish bookmarks have separate browser stores and do not sync between devices. Restaurant ownership review, saved-draft editing, payments, live maps, uploads, rewards and administration workflows remain unfinished.
+With partner accounts disabled, the venue form remains an in-memory preview. With configured verified accounts and `FOOD_GO_PARTNER_ENABLED=true`, it saves private drafts atomically and lists them in the partner dashboard. Saving does not verify ownership or publish a venue. Venue and dish bookmarks have separate browser stores and do not sync between devices. Restaurant ownership review, saved-draft editing, payments, nationwide venue coverage, uploads, rewards and administration workflows remain unfinished.
 
 ## Run locally
 
@@ -90,10 +104,10 @@ For a configured local Supabase project, run `npm run check:supabase`. This load
 
 ## Design rules
 
-Fresh white surfaces, dark ink, tomato actions and yellow progression. Bricolage Grotesque for short headings, Source Sans 3 for reading. Preserve the approved illustrated map and use distinct, content-led layouts for Feed, trails, collections and Passport. Accessible labels, visible focus and responsive spacing. One main vertical page scroll with fixed mobile navigation, rather than nested scrolling panels. No emojis or em dashes in application copy or project documentation. See [DESIGN.md](DESIGN.md).
+Use dark ink on warm paper, a saffron masthead, petrol place signs and mandarin actions. Barlow Condensed sets short headings, Source Sans 3 sets reading text, and Bricolage Grotesque sets the wordmark. Keep the geographic map and illustrated Adventure within one viewport, with visible focus and a single page scroll for the surrounding content. See [DESIGN.md](DESIGN.md).
 
 ## Documentation
 
-Start at [the current UI delivery](docs/progress/10-neighbourhood-guide.md), [UI research](docs/research/10-distinctive-ui-research.md), [go-live requirements](docs/launch/go-live-checklist.md) and [email and SMS setup](docs/integrations/messaging.md). The earlier [complete project analysis](docs/progress/04-project-analysis.md) and [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explain the foundation, subscriptions and client actions at their delivery dates. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
+Start with the [geographic map and UI delivery](docs/progress/14-melbourne-geography.md), [UI research](docs/research/10-distinctive-ui-research.md), [go-live requirements](docs/launch/go-live-checklist.md) and [email and SMS setup](docs/integrations/messaging.md). The earlier [complete project analysis](docs/progress/04-project-analysis.md) and [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explain the foundation, subscriptions and client actions at their delivery dates. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
 
 Next, complete the Mobile Message hook and sender setup for controlled SMS sign-in testing. Configure Brevo when the verified sender is ready. Complete account safeguards and operator ownership review before opening registration or publishing real venues. See the latest analysis for the tested state and remaining national marketplace, game and native-app work.

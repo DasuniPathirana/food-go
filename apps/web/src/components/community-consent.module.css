@@ -1,0 +1,27 @@
+.dialog { width: min(680px, calc(100% - 24px)); max-height: calc(100dvh - 32px); margin: auto; padding: 0; border: 1px solid #5d4d40; border-radius: 18px; background: var(--paper, #fff9ee); color: var(--ink); box-shadow: 0 20px 80px #241b2940; }
+.dialog::backdrop { background: #241b2980; }
+.content { padding: clamp(18px, 4vw, 30px); }
+.heading { display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+.heading > svg { flex-shrink: 0; padding: 9px; width: 44px; height: 44px; border-radius: 12px; background: var(--saffron, #ffd445); color: var(--petrol); }
+.heading h2 { font: 800 clamp(30px, 5vw, 38px)/1 var(--font-display); margin: 0 0 6px; }
+.heading p, .wording p { font: 500 15px/1.55 var(--font-body); margin: 5px 0 0; }
+.wording section { margin-block: 16px; }
+.wording h3 { font: 700 17px/1.2 var(--font-body); margin: 0; }
+.check { display: flex; align-items: flex-start; gap: 10px; font: 700 15px/1.5 var(--font-body); margin: 16px 0 10px; cursor: pointer; }
+.check input { flex-shrink: 0; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--petrol); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.actions button, .review { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line-strong); border-radius: 8px; background: #fffdf6; color: var(--ink); font: 700 15px/1.2 var(--font-body); }
+.actions .accept { background: var(--petrol); color: white; border-color: var(--petrol); }
+.actions button:disabled { opacity: .55; cursor: not-allowed; }
+.content :is(button,a,input):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.note { font: 500 13px/1.5 var(--font-body); color: var(--muted); margin: 10px 0 0; }
+.error { font-size: 14px; color: #9a2716; }
+.link { color: var(--link); text-decoration: underline; text-underline-offset: 3px; }
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid #bdcbbd; border-radius: 10px; background: #f0f4e9; padding: 12px; margin-block: 12px; }
+.banner p { margin: 0; font: 600 14px/1.4 var(--font-body); }
+.registration { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-block: 16px; }
+.registration summary { min-height: 32px; font-weight: 700; cursor: pointer; }
+.page { max-width: 800px; margin: 0 auto; padding: 20px clamp(12px, 3vw, 30px) 36px; }
+.page h1 { font: 800 clamp(36px, 6vw, 58px)/1 var(--font-display); margin-bottom: 12px; }
+.receipt { padding: 12px; margin-top: 22px; border-radius: 8px; background: #f0f4e9; }
+@media (max-width: 600px) { .dialog { max-height: calc(100dvh - 20px); border-radius: 12px; } .content { padding: 18px; } }

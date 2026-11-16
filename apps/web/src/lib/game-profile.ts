@@ -15,7 +15,7 @@ export function createGameProfileHandler(deps: {
   return async function GET() {
     const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store", Pragma: "no-cache" } });
     const config = readAuthConfig(deps.env);
-    if (!config.configured || deps.env.FOOD_GO_COMMUNITY_ENABLED !== "true") return json({ status: "disabled" }, 503);
+    if (!config.configured) return json({ status: "disabled" }, 503);
     try {
       return await runBounded(async signal => {
         const result = await deps.read(config, signal);

@@ -2,9 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { SiteShell } from "@/components/site-shell";
 import { getAuthState } from "@/lib/auth/server";
 import { getCatalogueMode } from "@/lib/catalogue-server";
+import { JourneyProvider } from "@/components/journey-provider";
+import { CommunityConsentProvider } from "@/components/community-consent";
 import "@fontsource/barlow-condensed/latin-700.css";
 import "@fontsource/barlow-condensed/latin-800.css";
 import "./globals.css";
+import "./ui-refinement.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -13,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s | Food Go",
   },
   description:
-    "Discover local flavours, share food stories and explore neighbourhood food trails across Australia. Food Go development preview.",
+    "Explore Melbourne, find restaurants and promotions, and share your food discoveries.",
   robots: { index: false, follow: false },
 };
 export const viewport: Viewport = {
@@ -28,13 +31,14 @@ export default async function RootLayout({
   return (
     <html lang="en-AU" data-scroll-behavior="smooth">
       <body>
-        <SiteShell
+        <CommunityConsentProvider key={account.user?.id || "guest"} signedIn={Boolean(account.user)}><JourneyProvider signedIn={Boolean(account.user)}><SiteShell
           signedIn={Boolean(account.user)}
           displayName={account.user?.displayName}
           catalogueMode={getCatalogueMode()}
+          accountType={account.user?.accountType}
         >
           {children}
-        </SiteShell>
+        </SiteShell></JourneyProvider></CommunityConsentProvider>
       </body>
     </html>
   );

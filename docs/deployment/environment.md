@@ -2,25 +2,31 @@
 
 Use `apps/web/.env.example` for local names and safe defaults. In hosting, set variables on the **web project**, scoped separately to Preview and Production. The web code reads these on the server; it does not require browser-visible Supabase variables. Do not copy a developer's ignored `.env.local` into the repository.
 
-## Credential-free demonstration
+## Maps and connected accounts
 
-These values make the deployed site an explicit demo with live account services closed:
+Worldwide streets and available building footprints use OpenFreeMap, OpenMapTiles and OpenStreetMap. The keyless browser style has no Melbourne boundary. The bundled Melbourne survey supplies more detailed local building heights, aerial photography and a dated satellite image. A raster OpenStreetMap fallback preserves map selection, avatar positioning and routes if WebGL is unavailable.
+
+For worldwide satellite imagery, create an origin-restricted public MapTiler browser key on a suitable plan. Set `NEXT_PUBLIC_MAPTILER_KEY` for the intended hosting environment and rebuild. This value is public in the browser bundle. Verify satellite tiles, attribution, usage limits and allowed deployment origins. Without it, Streets opens first and the Melbourne satellite/aerial choices remain explicitly local overlays. The world street map remains interactive outside those overlays. [Satellite dataset](https://docs.maptiler.com/schema-raster/satellite/)
+
+Apply `20261115150442_food_go_map_service_limits.sql` before enabling worldwide place search or default public foot routing. It provides a shared database lease across server instances, independently limiting each public service to one request per 1.1 seconds. It stores service names and timestamps only. A missing lease returns an unavailable response rather than bypassing provider limits. See [world map operations](world-map.md) for provider setup, privacy and acceptance checks.
+
+Use these values after supplying the server settings below and configuring the intended Auth provider:
 
 ```dotenv
-FOOD_GO_CATALOGUE_MODE=demo
-FOOD_GO_COMMUNITY_ENABLED=false
-FOOD_GO_AUTH_ENABLED=false
-FOOD_GO_AUTH_PRODUCTION_READY=false
-FOOD_GO_PARTNER_ENABLED=false
+FOOD_GO_CATALOGUE_MODE=supabase
+FOOD_GO_COMMUNITY_ENABLED=true
+FOOD_GO_AUTH_ENABLED=true
+FOOD_GO_AUTH_PRODUCTION_READY=true
+FOOD_GO_PARTNER_ENABLED=true
 FOOD_GO_PHONE_AUTH_ENABLED=false
 FOOD_GO_SMS_ENABLED=false
 ```
 
-The `/demo` map, social examples, XP and avatars use browser-local fictional data. Leave Supabase, cookie-signing and SMS secrets unset for this mode. The normal connected routes may show disabled/empty states as designed. Use `/demo/explore` as the presentation entry URL.
+Open `/` for Explore. All website catalogue and account flows use connected records. The historical example routes return 404. Missing configuration produces an unavailable state. Enable the separate phone and SMS flags after their signed-hook and delivery tests pass.
 
-Set `APP_ORIGIN` to the exact stable HTTPS origin once the domain is chosen, for example `https://food-go-preview.example.com`. That example is not an owned/live domain. Omit a trailing slash, path, query and fragment. Do not trust request headers to choose the application's origin. A different temporary preview hostname is a different origin; keep Auth disabled on arbitrary branch previews rather than weakening origin checks.
+Set `APP_ORIGIN=https://food-go-three.vercel.app` for the current hosting address. Update it and the Supabase callback allowlist together when the final domain is chosen. Omit a trailing slash, path, query and fragment. Configure branch previews separately if accounts need to work on their origins.
 
-## Server configuration for a later connected release
+## Server configuration
 
 | Variable | Purpose | Requirement |
 | --- | --- | --- |
@@ -39,9 +45,12 @@ Set `APP_ORIGIN` to the exact stable HTTPS origin once the domain is chosen, for
 | `MOBILE_MESSAGE_API_USERNAME` | Mobile Message API authentication | Server secret from the provider |
 | `MOBILE_MESSAGE_API_PASSWORD` | Mobile Message API authentication | Server secret from the provider |
 | `MOBILE_MESSAGE_SENDER_ID` | Approved sender identity | Provider-approved value, no OTP or personal phone number in source |
+| `OPENROUTESERVICE_API_KEY` | Optional supported pedestrian routing provider | Server secret; uses `foot-walking`, never include it in a public variable |
+| `FOOD_GO_PHOTON_ENDPOINT` | Optional owned Photon search endpoint | HTTPS URL; unset uses the public Photon service and shared lease |
+| `FOOD_GO_FOOT_ROUTER_ENDPOINT` | Optional owned OSRM foot router | HTTPS base URL; must serve pedestrian routes, unset uses public FOSSGIS foot routing and shared lease |
 | `PORT` | Listening port for ordinary Node.js hosting | Host process environment; Vercel manages its own serving runtime |
 
-Only literal `true` enables the flags. Supplying keys alone does not open a feature. The existing development Supabase project is not the production target by implication. Do not put a privileged service key, provider password or cookie secret in a public variable or commit one to Git.
+Only literal `true` enables a feature flag. The owner explicitly selected the existing Food go project for the connected release. Use the [release handoff](connected-release.md) for its target origin, setup and checks. Store server secrets in the host environment.
 
 ## Settings outside this application's environment
 

@@ -2,27 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, UserRound, Zap } from "lucide-react";
 import { Brand } from "./brand";
 import { FoodNavigation } from "./food-navigation";
 import type { CatalogueMode } from "@/lib/catalogue-contracts";
+import { useJourney } from "./journey-provider";
 
 export function SiteShell({
   children,
   signedIn = false,
   displayName,
   catalogueMode,
+  accountType,
 }: {
   children: React.ReactNode;
   signedIn?: boolean;
   displayName?: string;
   catalogueMode: CatalogueMode;
+  accountType?: "explorer" | "partner";
 }) {
   const pathname = usePathname();
-  if (pathname === "/demo" || pathname.startsWith("/demo/")) return <>{children}</>;
+  const journey = useJourney();
+  const ownerView = accountType === "partner" && pathname.startsWith("/partner");
   const exampleNeighbourhood = pathname === "/explore-preview";
-  const examplePage = exampleNeighbourhood || pathname.startsWith("/explore-preview/");
-  const socialPreview = pathname === "/feed-preview";
   return (
     <div className="site-shell">
       <a className="skip-link" href="#main-content">
@@ -33,28 +35,24 @@ export function SiteShell({
           <Link href="/" aria-label="Food Go home" className="brand-link">
             <Brand />
           </Link>
-          <FoodNavigation pathname={pathname} />
+          <FoodNavigation pathname={pathname} owner={ownerView} />
           <div className="header-actions">
-            <Link href="/partner" className="venue-entry">
-              For venues <ArrowUpRight size={14} />
+            {signedIn && journey?.data && <Link className="account-entry xp-entry" href="/profile"
+              aria-label={`Passport, ${journey.data.progress.xp} XP, level ${journey.data.progress.level}`}><Zap size={15} aria-hidden="true"/><span>{journey.data.progress.xp} XP</span></Link>}
+            <Link href={accountType === "partner" ? "/partner/dashboard" : "/partner"} className="venue-entry">
+              {accountType === "partner" ? "My restaurants" : "For venues"} <ArrowUpRight size={14} />
             </Link>
             <Link
               href={signedIn ? "/profile" : "/auth/sign-in"}
-              className="account-entry"
+              className={`account-entry${signedIn ? " account-personal" : ""}`}
+              aria-label={signedIn ? "Open your Passport" : undefined}
             >
+              <UserRound size={16} aria-hidden="true"/>
               <span>{signedIn ? displayName || "My account" : "Sign in"}</span>
             </Link>
           </div>
         </div>
       </header>
-      <div className="preview-strip">
-        <span className="preview-dot" />
-        <span>Development preview</span>
-        <span className="preview-detail">
-          {socialPreview ? "Fictional community. Changes stay on this browser." : examplePage || catalogueMode === "demo" ? "Example venues. No live bookings or check-ins." : "Published venues only. No live bookings or check-ins."}
-        </span>
-        <Link href="/demo">Play the full adventure demo</Link>
-      </div>
       <main
         id="main-content"
         className={`main-content ${pathname === "/" || exampleNeighbourhood ? "discovery-main" : ""}`}
@@ -68,9 +66,11 @@ export function SiteShell({
         </div>
         <nav aria-label="Information">
           <Link href="/partner">List your venue</Link>
+          <Link href="/collect">Collect a visit</Link>
+          <Link href="/acknowledgement">Community acknowledgement</Link>
           <Link href="/help">Help and privacy</Link>
           <a
-            href="https://github.com/DasuniPathirana/food-go"
+            href="https://github.com/Kalana8/Food_Go"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -78,7 +78,7 @@ export function SiteShell({
           </a>
         </nav>
       </footer>
-      <FoodNavigation pathname={pathname} mobile />
+      <FoodNavigation pathname={pathname} mobile owner={ownerView} />
     </div>
   );
 }

@@ -49,7 +49,7 @@ jobs:
         shell: bash
         env:
           APP_ORIGIN: http://127.0.0.1:3000
-          FOOD_GO_CATALOGUE_MODE: demo
+          FOOD_GO_CATALOGUE_MODE: supabase
           FOOD_GO_AUTH_ENABLED: "false"
           FOOD_GO_AUTH_PRODUCTION_READY: "false"
           FOOD_GO_COMMUNITY_ENABLED: "false"
@@ -123,6 +123,12 @@ jobs:
         timeout-minutes: 5
         # CLI 3 targets local by default; --local is not a supported flag.
         run: npx --yes supabase@3.1.0 test db
+
+      - name: Exercise signup, owner approval, collections and verified XP
+        timeout-minutes: 8
+        run: |
+          npm ci
+          node scripts/check-operator-local.mjs
 
       - name: Stop the disposable local stack
         if: always()

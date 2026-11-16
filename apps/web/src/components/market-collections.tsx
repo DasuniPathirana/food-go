@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, ArrowUpRight, BookOpen, Bookmark, Check, Compass, Flag, Heart, MapPin, MessagesSquare, Radio, Store, Ticket, Trophy, UserRound, Utensils, Zap } from "lucide-react";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
-import { DEMO_DISH_XP, DEMO_QUESTS, demoQuestProgress, type DemoGameAction, type DemoGameState } from "@/lib/demo-game";
+import { DEMO_QUESTS, demoQuestProgress, type DemoGameAction, type DemoGameState } from "@/lib/demo-game";
 import css from "./market-collections.module.css";
 
 type GameProps = {
@@ -14,23 +14,21 @@ type GameProps = {
   venues: CatalogueVenue[];
 };
 
-const explore = "/demo/explore";
+const explore = "/demo/explore?map=adventure";
 const venueUrl = (id: string) => `/demo/venue/${encodeURIComponent(id)}`;
 
-export function DemoCollection({ dishes, state, dispatch, venues, xp }: GameProps & { dishes: boolean; xp: number }) {
+export function DemoCollection({ dishes, state, dispatch, venues }: GameProps & { dishes: boolean }) {
   const [tab, setTab] = useState("all");
   const saves: readonly string[] = dishes ? state.savedDishes : state.savedVenues;
   const discoveries: readonly string[] = dishes ? state.collected : state.visited;
   const visible = venues.filter((venue) => tab === "all" || (tab === "saved" ? saves : discoveries).includes(venue.id));
   return <div className={css.page}>
     <header className={css.heading}>
-      <div><h1>{dishes ? "FoodDex" : "VenueDex"}</h1><p>{dishes ? "Save a dish for later or collect it on a demo visit." : "Save your next stop and keep the places you’ve visited."}</p></div>
-      <Link className={css.mapLink} href={explore}><Compass size={17} /> Keep exploring <ArrowUpRight size={15} /></Link>
+      <div><h1>{dishes ? "FoodDex" : "VenueDex"}</h1><p>{dishes ? "Dishes to try and collect." : "Places to save and visit."}</p></div>
     </header>
     <div className={css.summary} aria-label="Your collection summary">
       <span>{dishes ? <BookOpen /> : <Store />} <strong>{discoveries.length}/{venues.length}</strong> {dishes ? "dishes collected" : "places visited"}</span>
       <span><Bookmark /> <strong>{saves.length}</strong> saved</span>
-      <span><Zap /> <strong>{xp}</strong> demo XP</span>
     </div>
     <div className={css.tabs} role="group" aria-label="Collection filters">{[
       ["all", "Discover all"], ["saved", "Saved to try"], ["collected", dishes ? "Collected" : "Visited"],
@@ -46,12 +44,11 @@ export function DemoCollection({ dishes, state, dispatch, venues, xp }: GameProp
         <div className={css.foodInfo}><h2><Link href={venueUrl(venue.id)}>{title}<ArrowUpRight size={16} /></Link></h2>
           <p>{dishes ? venue.name : venue.building ? `${venue.building.name} · ${venue.building.unit}` : venue.suburb}</p><small>{venue.cuisine}</small>
         </div>
-        <div className={css.stub}><span className={collected ? css.collected : undefined}>{collected && <Check size={14} />}{collected ? (dishes ? "Collected" : "Visited") : "Example discovery"}</span>
-          <strong><Zap size={14} />{dishes ? DEMO_DISH_XP[venue.id as keyof typeof DEMO_DISH_XP] : 50} demo XP</strong></div>
+        {collected && <div className={css.stub}><span className={css.collected}><Check size={14} />{dishes ? "Collected" : "Visited"}</span></div>}
       </article>;
     })}</div> : <div className={css.empty}><BookOpen size={30} /><h2>{tab === "saved" ? "Nothing saved yet" : dishes ? "No dishes collected yet" : "No visits yet"}</h2>
       <p>{tab === "saved" ? "Bookmark a discovery to add it to this list." : dishes ? "Visit a stop and confirm its dish separately to collect it." : "Start a route and confirm your example visit at a stop."}</p>
-      <Link className={css.action} href={explore}>Go exploring <ArrowRight size={16} /></Link></div>}
+      <button className={css.action} onClick={() => setTab("all")}>Show all {dishes ? "dishes" : "places"} <ArrowRight size={16} /></button></div>}
   </div>;
 }
 

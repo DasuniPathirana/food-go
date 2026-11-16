@@ -1,0 +1,9 @@
+/** Published wording for the version in community-policy.ts. Change the version with the text. */
+export const communityAcknowledgement = [
+  { title: "Why Food Go exists", body: "Food Go aims to support hospitality and agriculture by encouraging local economic activity and employment opportunities. Help make it a welcoming place to discover food and share experiences." },
+  { title: "Respect people and businesses", body: "Do not post abuse, harassment, threats, personal attacks, false allegations, or misleading or unlawful content about another user, restaurant or third party. Share truthful, first-hand experiences. Respectful criticism is allowed. Do not share someone else's private information without permission." },
+  { title: "Raise concerns in the right place", body: "Raise service disputes directly with the business. Food-safety, consumer, workplace or other serious concerns can be reported to the relevant government authority or other appropriate body. Food Go does not resolve these disputes. You can still use our report and block tools for platform misuse, and make lawful complaints or reports." },
+  { title: "What happens after a breach", body: "Public posts and comments are reviewed before publication. Breaches may lead to content removal, account restrictions or suspension after review. Moderation applies to the conduct and content, rather than whether an experience is positive or negative." },
+  { title: "Your responsibility and rights", body: "You are responsible for what you publish and for unlawful conduct in accordance with applicable law. This acknowledgement does not remove consumer rights or other rights that cannot legally be excluded." },
+] as const;
+export const acknowledgementCheckbox = "I have read the acknowledgement and agree to follow these community rules.";

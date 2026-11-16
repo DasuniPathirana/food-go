@@ -65,10 +65,12 @@ export function VenueDetail({ venue, mode }: { venue: CatalogueVenue; mode: Cata
           <p className="inline-notice">
             <ShieldCheck size={17} />
             {mode === "demo" ? "This is a fictional venue with illustrative photography. Bookings, offers and check-ins are not available."
-              : "Published venue listing. The illustration is a placeholder. Bookings and verified check-ins are not connected."}
+              : "Collect a venue-issued code to verify your visit or a dish discovery."}
           </p>
         </div>
       </section>
+      {mode === "supabase" && <section className="content-panel"><h2>Collect your discovery</h2>
+        <p>Ask the team for a visit QR or a code for the dish you tried.</p><Link href="/collect" className="primary-button">Collect XP</Link></section>}
       {mode === "supabase" ? <div className="detail-columns">
         <section className="content-panel"><span className="eyebrow">On the menu</span><h2>Available dishes</h2>
           {venue.dishes.length ? venue.dishes.map((dish) => <article key={dish.id} className="content-panel">

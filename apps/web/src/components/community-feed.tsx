@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { CommunityConsentNotice, useCommunityConsent } from "./community-consent";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, BookOpen, Check, ChevronDown, Clock3, Compass, Copy, Flag, Globe2, Heart, LockKeyhole, MessageCircle, MoreHorizontal, RotateCcw, Send, Share2, ShieldCheck, Trash2, UserRound, Users, UtensilsCrossed, X } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, Clock3, Compass, Copy, Flag, Globe2, Heart, LockKeyhole, MessageCircle, MoreHorizontal, RotateCcw, Send, Share2, ShieldCheck, Trash2, Users, UtensilsCrossed, X } from "lucide-react";
 import type { CommunityAuthor, CommunityFeed as FeedResult } from "@/lib/community";
 import { communityFeedSchema, communityWriteResultSchema } from "@/lib/community";
 import { createFeedPreview, PREVIEW_FEED_KEY, previewViewer, readFeedPreview, visiblePreviewPosts, type FeedPost, type FeedPreview } from "@/lib/feed-preview";
@@ -16,6 +17,7 @@ const timeLabel = (value: string) => new Intl.DateTimeFormat("en-AU", { day: "nu
 type Action = { action: string; [field: string]: string | boolean };
 
 export function CommunityFeed({ preview = false, initialWall = "public", initialPost, basePath, previewName, presentation = "feed" }: { preview?: boolean; initialWall?: string; initialPost?: string; basePath?: string; previewName?: string; presentation?: "feed" | "passport" }) {
+  const consent = useCommunityConsent();
   const passport = presentation === "passport";
   const [wall, setWall] = useState(passport ? "me" : validWall(initialWall));
   const [postFilter, setPostFilter] = useState(!passport && initialPost && uuid.test(initialPost) ? initialPost : undefined);
@@ -45,6 +47,7 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
   const previousInitial = useRef({ initialWall, initialPost, presentation });
   const path = basePath || (preview ? "/feed-preview" : "/feed");
   const demo = path.startsWith("/demo/");
+  const profilePath = demo || preview ? "/demo/passport" : "/profile";
   const explorePath = demo ? "/demo/explore" : "/";
   const questPath = demo ? "/demo/quests" : "/quests";
   const foodDexPath = demo ? "/demo/food-dex" : "/food-dex";
@@ -167,12 +170,18 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
     const controller = new AbortController(); controllers.current.add(controller);
     try {
       const response = await fetch("/api/community", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data), signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
-      const parsed = communityWriteResultSchema.safeParse(await response.json());
+      const payload = await response.json();
+      if (response.status === 403 && payload?.code === "acknowledgement_required") {
+        consent?.refresh(); consent?.open();
+        if (mounted.current) setNotice("Review the community acknowledgement before taking part. Your draft is still here.");
+        return false;
+      }
+      const parsed = communityWriteResultSchema.safeParse(payload);
       if (!response.ok || !parsed.success) throw new Error("unavailable");
       const result = parsed.data;
       if (mounted.current) {
         setRefresh((value) => value + 1);
-        setNotice(result.status === "pending" ? "Sent for review. You can see it on My wall while it waits for approval." : result.status === "private" ? "Saved to your private wall. Only you can see it." : "Your change has been saved.");
+        setNotice(result.status === "pending" ? "Sent for review. You can see the post in your Passport." : result.status === "private" ? "Saved privately in your Passport." : "Your change has been saved.");
       }
       return true;
     } catch {
@@ -183,7 +192,7 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
   const source: FeedPost[] = preview ? example.posts : feed.posts;
   const posts = preview ? visiblePreviewPosts(example, wall, postFilter) : source;
   const wallOwner = wall === "me" ? viewer : (feed as FeedResult & { wallOwner?: CommunityAuthor | null }).wallOwner || source.find((post) => post.author.id === wall)?.author;
-  const wallTitle = wall === "public" ? "Public wall" : wall === "me" ? "My wall" : `${wallOwner?.name || "Explorer"}'s wall`;
+  const wallTitle = wall === "public" ? "Latest posts" : wall === "me" ? "Your posts" : `${wallOwner?.name || "Explorer"}’s posts`;
   const isOwnWall = wall === "me" || wall === viewer?.id;
 
   async function publish(event: FormEvent) {
@@ -195,12 +204,12 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
       const post: FeedPost = { id: crypto.randomUUID(), author: viewer || previewViewer, body: content, createdAt: new Date().toISOString(), visibility, status: visibility === "public" ? "published" : "private", likeCount: 0, commentCount: 0, shareCount: 0, liked: false, shared: false, comments: [], commentsNextCursor: null };
       saveExample({ ...example, posts: [post, ...example.posts] });
       social("post", post);
-      setBody(""); if (visibility === "private") navigate("me");
-      setNotice("Your example post is saved in this browser. It has not been published to Food Go."); return;
+      setBody("");
+      setNotice(visibility === "private" ? "Saved privately in your example Passport." : "Your example post is saved in this browser."); return;
     }
     const fingerprint = `${visibility}:${content}`;
     if (createRetry.current?.fingerprint !== fingerprint) createRetry.current = { fingerprint, id: crypto.randomUUID() };
-    if (await request({ action: "create", body: content, visibility, requestId: createRetry.current.id }, "create")) { setBody(""); createRetry.current = null; navigate("me"); setNotice(visibility === "private" ? "Saved privately to My wall." : "Sent for review. Your post is on My wall while it waits for approval."); }
+    if (await request({ action: "create", body: content, visibility, requestId: createRetry.current.id }, "create")) { setBody(""); createRetry.current = null; setNotice(visibility === "private" ? "Saved privately in your Passport." : "Sent for review. You can see the post in your Passport."); }
   }
   async function like(post: FeedPost) {
     if (preview) { saveExample({ ...example, posts: example.posts.map((item) => item.id === post.id ? { ...item, liked: !item.liked, likeCount: Math.max(0, item.likeCount + (item.liked ? -1 : 1)) } : item) }); if (!post.liked) social("like", post); }
@@ -222,7 +231,7 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
   async function share(post: FeedPost) {
     if (preview) {
       saveExample({ ...example, posts: example.posts.map((item) => item.id === post.id ? { ...item, shared: !item.shared, shareCount: Math.max(0, item.shareCount + (item.shared ? -1 : 1)) } : item) });
-      setNotice(post.shared ? "The example share was removed from your wall." : "Shared to your example wall in this browser.");
+      setNotice(post.shared ? "The shared post was removed from your Passport." : "Shared to your example Passport.");
       if (!post.shared) social("share", post);
     } else await request({ action: "share", postId: post.id, shared: !post.shared }, post.id);
     setSharing(null);
@@ -275,38 +284,42 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
   function reset() {
     saveExample(createFeedPreview()); setBody(""); setCommentDrafts({}); setCommentsOpen([]); setSharing(null); setReporting(null); navigate("public"); setNotice("The example feed has been reset in this browser.");
   }
-  const canWrite = Boolean(viewer) && (preview || feed.status === "ready");
+  const canWrite = Boolean(viewer) && (preview || (feed.status === "ready" && Boolean(consent?.accepted)));
+  const canUseSafetyTools = Boolean(viewer) && (preview || feed.status === "ready");
 
   return <div className={`${styles.community} ${demo ? styles.embedded : ""} ${passport ? styles.passportWall : ""}`}>
     {passport ? (
-      <div className={styles.passportHeading}><h2>My wall</h2><Link href={path}>Public feed<ArrowRight size={15} /></Link></div>
+      <div className={styles.passportHeading}><h2>Your posts</h2><Link href={path}>Feed<ArrowRight size={15} /></Link></div>
     ) : (
       <header className={styles.pageHeading}>
         <div className={styles.conversationMark} aria-hidden="true"><UtensilsCrossed /></div>
-        <div className={styles.headingCopy}><h1>Community</h1><p>Food finds and stories from the neighbourhood.</p></div>
+        <div className={styles.headingCopy}><h1>Feed</h1><p>Pull up a chair. See what people are discovering.</p></div>
         <Link href={explorePath} className={styles.exploreLink}><Compass size={18} />Explore the map<ArrowRight size={16} /></Link>
       </header>
     )}
-    {preview && !demo && !passport && <div className={styles.previewNotice}><ShieldCheck size={18} /><p><strong>Example community.</strong> People, posts and activity are fictional. Changes stay in this browser.</p><button type="button" onClick={reset} aria-label="Reset community preview" title="Reset community preview"><RotateCcw size={15} />Reset</button>{!demo && <Link href="/feed">Public feed<ArrowRight size={14} /></Link>}</div>}
+    {preview && !demo && !passport && <div className={styles.previewNotice}><ShieldCheck size={18} /><p><strong>Example feed.</strong> People, posts and activity are fictional. Changes stay in this browser.</p><button type="button" onClick={reset} aria-label="Reset feed preview" title="Reset feed preview"><RotateCcw size={15} />Reset</button>{!demo && <Link href="/feed">Public feed<ArrowRight size={14} /></Link>}</div>}
+    {!preview && viewer && <CommunityConsentNotice/>}
     <div className={styles.layout}>
       <div className={styles.feedColumn} ref={feedColumn}>
-        {!passport && <div className={styles.mobileTabs}><WallTabs wall={wall} onWall={navigate} /></div>}
-        {!passport && (wall !== "public" || postFilter) && <section className={styles.wallIdentity}><Avatar author={wallOwner || { id: wall, name: isOwnWall ? viewer?.name || "Your wall" : "Food explorer" }} /><div><h2>{postFilter ? "A story worth sharing" : wallTitle}</h2><p>{isOwnWall ? "Your stories, shared discoveries and private thoughts." : "Public stories and discoveries shared by this explorer."}</p></div><button type="button" onClick={() => navigate("public")} aria-label="Return to public wall"><X size={18} /></button></section>}
-        {!postFilter && (wall === "public" || isOwnWall) && <form className={styles.composer} onSubmit={publish}>
-          <div className={styles.composerTop}><Avatar author={viewer || { id: "guest", name: "Guest explorer" }} /><div><strong>{viewer?.name || "Share a food find"}</strong><label className={styles.visibility}><span className={styles.srOnly}>Post audience</span>{visibility === "public" ? <Globe2 size={13} /> : <LockKeyhole size={13} />}<select value={visibility} onChange={(event) => setVisibility(event.target.value as "public" | "private")} disabled={!canWrite || Boolean(pending)} aria-label="Post audience"><option value="public">Public wall</option><option value="private">Only me</option></select></label></div></div>
+        {!passport && (wall !== "public" || postFilter) && <section className={styles.wallIdentity}><Avatar author={wallOwner || { id: wall, name: isOwnWall ? viewer?.name || "Your Passport" : "Food explorer" }} /><div><h2>{postFilter ? "Post" : wallTitle}</h2><p>{isOwnWall ? "Your stories, shared discoveries and private thoughts." : "Public stories and discoveries shared by this explorer."}</p></div><button type="button" onClick={() => navigate("public")} aria-label="Return to feed"><X size={18} /></button></section>}
+        {!postFilter && (wall === "public" || isOwnWall) && (viewer || preview) && <form className={styles.composer} onSubmit={publish}>
+          <div className={styles.composerTop}><Avatar author={viewer || { id: "guest", name: "Guest explorer" }} /><div>
+            {viewer && !passport ? <Link className={styles.profileLink} href={profilePath} aria-label={`Open ${viewer.name}'s Passport`}>{viewer.name}</Link> : <strong>{viewer?.name || "Share a food find"}</strong>}
+            <label className={styles.visibility}><span className={styles.srOnly}>Post audience</span>{visibility === "public" ? <Globe2 size={13} /> : <LockKeyhole size={13} />}<select value={visibility} onChange={(event) => setVisibility(event.target.value as "public" | "private")} disabled={!canWrite || Boolean(pending)} aria-label="Post audience"><option value="public">Public</option><option value="private">Only me</option></select></label></div></div>
           <label className={styles.srOnly} htmlFor="community-post">Your food story</label><textarea id="community-post" value={body} onChange={(event) => setBody(event.target.value)} maxLength={2000} rows={2} placeholder="A new favourite? Tell the table." disabled={!canWrite || pending === "create"} aria-describedby="post-audience-note" />
-          <div className={styles.composerFooter}><p id="post-audience-note">{preview ? "Example post. Saved on this browser." : visibility === "private" ? "Only you can see this post." : "Public posts are reviewed before appearing."}<span>{body.length}/2000</span></p>{canWrite ? <button className={styles.primary} type="submit" disabled={!body.trim() || Boolean(pending)}><Send size={16} />{pending === "create" ? "Sharing…" : "Share a story"}</button> : <Link href="/auth/sign-in" className={styles.primary}>Sign in to share<ArrowRight size={15} /></Link>}</div>
+          <div className={styles.composerFooter}><p id="post-audience-note">{preview ? "Example post. Saved on this browser." : visibility === "private" ? "Only you can see this post." : "Public posts are reviewed before appearing."}<span>{body.length}/2000</span></p>{canWrite ? <button className={styles.primary} type="submit" disabled={!body.trim() || Boolean(pending)}><Send size={16} />{pending === "create" ? "Sharing…" : "Share a story"}</button> : viewer && !preview ? <button type="button" className={styles.primary} onClick={consent?.open}>Review acknowledgement</button> : <Link href="/auth/sign-in" className={styles.primary}>Sign in to share<ArrowRight size={15} /></Link>}</div>
         </form>}
-        <div className={styles.feedHeading}>{passport ? <h3>Your stories</h3> : <h2>{postFilter ? "Story" : wallTitle}</h2>}<span><Clock3 size={14} />Latest stories</span></div>
+        {!postFilter && !viewer && !preview && loaded && <section className={styles.guestComposer} aria-label="Join the conversation"><MessageCircle size={26} aria-hidden="true"/><div><h2>Every good find has a story.</h2><p>Share yours, save a favourite and make room for your next discovery.</p><div><Link className={styles.primary} href="/auth/sign-in">Sign in to share<ArrowRight size={16}/></Link><Link className={styles.textLink} href="/auth/register">Create an account<ArrowRight size={15}/></Link></div></div></section>}
+        {!passport && <div className={styles.feedHeading}><h2>{postFilter ? "Story" : "Latest posts"}</h2><Clock3 size={15} aria-hidden="true" /></div>}
         {notice && <div className={styles.notice} role="status"><p>{notice}</p><button type="button" onClick={() => { setNotice(""); setShareUrl(""); }} aria-label="Dismiss message"><X size={17} /></button></div>}
         {shareUrl && <label className={styles.copyField}>Post link<input readOnly value={shareUrl} onFocus={(event) => event.target.select()} /></label>}
         {(!loaded || (loading && !posts.length)) && <div className={styles.loading} role="status"><span /><p>Loading stories…</p></div>}
-        {loaded && !loading && !preview && feed.status !== "ready" && <section className={styles.empty}><Users size={30} /><h3>{feed.status === "disabled" ? "The community is getting ready" : "Stories are temporarily unavailable"}</h3><p>{feed.status === "disabled" ? "Public sharing will open after account and moderation setup. You can try the complete example experience now." : "Try again shortly. Your text stays on this page while you retry."}</p><div><Link className={styles.primary} href="/feed-preview">Try the community preview<ArrowRight size={16} /></Link>{feed.status === "unavailable" && <button type="button" className={styles.outline} onClick={() => setRefresh((value) => value + 1)}>Try again</button>}</div></section>}
-        {loaded && !loading && (preview || feed.status === "ready") && !posts.length && <section className={styles.empty}><MessageCircle size={29} /><h3>{postFilter ? "This story is not available" : isOwnWall ? "Your wall is ready for its first story" : "There is room for your story"}</h3><p>{postFilter ? "It may have been removed, made private or still be waiting for review." : isOwnWall ? "Share a thought, post an experience or share someone else's discovery to find it here." : "Public stories appear here after review. Explore a place and bring back something worth sharing."}</p>{!preview && !viewer && <Link href="/auth/sign-in" className={styles.outline}>Sign in<ArrowRight size={15} /></Link>}{!preview && <Link href="/feed-preview" className={styles.textLink}>See the example community<ArrowRight size={15} /></Link>}</section>}
+        {loaded && !loading && !preview && feed.status !== "ready" && <section className={styles.empty}><Users size={30} aria-hidden="true"/><h3>{feed.status === "disabled" ? "Sharing opens soon" : "We could not load the stories"}</h3><p>{feed.status === "disabled" ? "Public sharing is being prepared. You can keep exploring the map and published places." : "Try again in a moment. Any text you have written stays on this page."}</p><div>{feed.status === "unavailable" && <button type="button" className={styles.outline} onClick={() => setRefresh((value) => value + 1)}>Try again</button>}<Link className={styles.textLink} href={explorePath}>Explore the map<ArrowRight size={16}/></Link></div></section>}
+        {loaded && !loading && (preview || feed.status === "ready") && !posts.length && <section className={styles.empty}><MessageCircle size={29} aria-hidden="true"/><h3>{postFilter ? "This story is not available" : isOwnWall ? "Your story starts here" : "The table is open"}</h3><p>{postFilter ? "It may have been removed, made private or still be waiting for review." : isOwnWall ? "Post a food memory, keep a thought just for yourself, or share a discovery from Feed." : "Published food stories will appear here. Explore a place, then bring back something worth sharing."}</p>{!postFilter && <Link href={explorePath} className={styles.textLink}>Find your next stop<ArrowRight size={15}/></Link>}</section>}
         {loaded && posts.map((entry) => { const post = preview && previewName ? { ...entry, author: entry.author.id === previewViewer.id ? { ...entry.author, name: previewName } : entry.author, comments: entry.comments.map(comment => comment.author.id === previewViewer.id ? { ...comment, author: { ...comment.author, name: previewName } } : comment) } : entry; return <article key={post.id} id={`post-${post.id}`} data-view-post={post.id} className={`${styles.post} ${postFilter === post.id ? styles.permalinkPost : ""}`}>
           {(post.sharedBy || (preview && isOwnWall && post.shared && post.author.id !== previewViewer.id)) && <p className={styles.sharedBy}><Share2 size={13} />{post.sharedBy?.name || "You"} shared this story</p>}
-          <header className={styles.postHeader}><Avatar author={post.author} /><div className={styles.authorCopy}><a href={`${path}?wall=${post.author.id}`} onClick={(event) => { if (!passport && !event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); navigate(post.author.id); } }}>{post.author.name}</a><p><time dateTime={post.createdAt}>{timeLabel(post.createdAt)}</time><span aria-hidden="true">·</span>{post.visibility === "private" ? <LockKeyhole size={12} aria-label="Only me" /> : <Globe2 size={12} aria-label="Public" />}{post.status !== "published" && <span className={styles.status}>{post.status === "pending" ? "Awaiting review" : "Only me"}</span>}</p></div>
-            <details className={styles.options}><summary aria-label={`Post options for ${post.author.name}`}><MoreHorizontal size={20} /></summary><div onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.currentTarget.closest("details")?.removeAttribute("open"); }}>{post.author.id === viewer?.id ? <button type="button" disabled={Boolean(pending)} onClick={() => remove(post)}><Trash2 size={15} />Remove my post</button> : <><button type="button" disabled={!canWrite || Boolean(pending)} onClick={() => { setReporting(post.id); setSharing(null); }}><Flag size={15} />Report post</button><button type="button" disabled={!canWrite || Boolean(pending)} onClick={() => block(post.author)}><ShieldCheck size={15} />Block {post.author.name}</button></>}</div></details>
+          <header className={styles.postHeader}><Avatar author={post.author} /><div className={styles.authorCopy}><a href={post.author.id === viewer?.id ? profilePath : `${path}?wall=${post.author.id}`} onClick={(event) => { if (!passport && post.author.id !== viewer?.id && !event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); navigate(post.author.id); } }}>{post.author.name}</a><p><time dateTime={post.createdAt}>{timeLabel(post.createdAt)}</time><span aria-hidden="true">·</span>{post.visibility === "private" ? <LockKeyhole size={12} aria-label="Only me" /> : <Globe2 size={12} aria-label="Public" />}{post.status !== "published" && <span className={styles.status}>{post.status === "pending" ? "Awaiting review" : "Only me"}</span>}</p></div>
+            <details className={styles.options}><summary aria-label={`Post options for ${post.author.name}`}><MoreHorizontal size={20} /></summary><div onClick={(event) => { if ((event.target as HTMLElement).closest("button")) event.currentTarget.closest("details")?.removeAttribute("open"); }}>{post.author.id === viewer?.id ? <button type="button" disabled={Boolean(pending)} onClick={() => remove(post)}><Trash2 size={15} />Remove my post</button> : <><button type="button" disabled={!canUseSafetyTools || Boolean(pending)} onClick={() => { setReporting(post.id); setSharing(null); }}><Flag size={15} />Report post</button><button type="button" disabled={!canUseSafetyTools || Boolean(pending)} onClick={() => block(post.author)}><ShieldCheck size={15} />Block {post.author.name}</button></>}</div></details>
           </header>
           <div className={post.photo ? styles.photoStory : undefined}>
             {post.photo && <Image className={styles.postPhoto} src={post.photo.src} alt={post.photo.alt} width={900} height={620} sizes="(max-width: 620px) 100vw, 400px" />}
@@ -315,12 +328,12 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
           <div className={styles.postCounts}><span><Heart size={14} />{post.likeCount} {post.likeCount === 1 ? "like" : "likes"}</span><span>{post.commentCount} {post.commentCount === 1 ? "comment" : "comments"}<span aria-hidden="true"> · </span>{post.shareCount} {post.shareCount === 1 ? "share" : "shares"}{!preview && post.reachCount !== undefined && <><span aria-hidden="true"> · </span><span title="Distinct verified signed-in accounts, excluding the author">{post.reachCount} reached</span></>}</span></div>
           <div className={styles.postActions}><button type="button" onClick={() => like(post)} disabled={!canWrite || Boolean(pending) || post.status !== "published"} aria-pressed={post.liked} aria-label={`${post.liked ? "Unlike" : "Like"} post by ${post.author.name}`}><Heart size={18} fill={post.liked ? "currentColor" : "none"} />Like</button><button type="button" aria-expanded={commentsOpen.includes(post.id)} aria-controls={`comments-${post.id}`} onClick={() => setCommentsOpen((open) => open.includes(post.id) ? open.filter((id) => id !== post.id) : [...open, post.id])}><MessageCircle size={18} />Comment</button><button type="button" aria-expanded={sharing === post.id} aria-controls={`share-${post.id}`} onClick={() => { setSharing(sharing === post.id ? null : post.id); setReporting(null); }}><Share2 size={18} />Share</button></div>
           {post.status !== "published" && <p className={styles.privateNote}>{post.status === "private" ? "Only you can see this post. Private posts do not receive public likes, comments or shares." : "Only you can see this post while it waits for review. Public reactions open after approval."}</p>}
-          {sharing === post.id && <div className={styles.sharePanel} id={`share-${post.id}`}><button type="button" onClick={() => copy(post)}><Copy size={16} />Copy post link</button><button type="button" disabled={!canWrite || Boolean(pending) || post.status !== "published" || post.author.id === viewer?.id} onClick={() => share(post)}>{post.shared ? <Check size={16} /> : <Share2 size={16} />}{post.shared ? "Remove from my wall" : "Share to my wall"}</button></div>}
+          {sharing === post.id && <div className={styles.sharePanel} id={`share-${post.id}`}><button type="button" onClick={() => copy(post)}><Copy size={16} />Copy post link</button><button type="button" disabled={!canWrite || Boolean(pending) || post.status !== "published" || post.author.id === viewer?.id} onClick={() => share(post)}>{post.shared ? <Check size={16} /> : <Share2 size={16} />}{post.shared ? "Remove from Passport" : "Share to Passport"}</button></div>}
           {reporting === post.id && <form className={styles.reportPanel} onSubmit={(event) => { event.preventDefault(); report(post); }}><label>Why are you reporting this post?<select value={reportReason} onChange={(event) => setReportReason(event.target.value)}><option value="spam">Spam or misleading content</option><option value="abuse">Abuse or harassment</option><option value="other">Something else</option></select></label><div><button className={styles.outline} type="submit" disabled={Boolean(pending)}>Send report</button><button type="button" onClick={() => setReporting(null)}>Cancel</button></div></form>}
           <section id={`comments-${post.id}`} className={styles.comments} hidden={!commentsOpen.includes(post.id)} aria-label={`Comments on ${post.author.name}'s post`}>
-            {post.comments.length ? post.comments.map((entry) => <div className={styles.comment} key={entry.id}><Avatar author={entry.author} small /><div><a href={`${path}?wall=${entry.author.id}`} onClick={(event) => { if (!passport && !event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); navigate(entry.author.id); } }}>{entry.author.name}</a><p>{entry.body}</p><span>{timeLabel(entry.createdAt)}{entry.status === "pending" ? " · Awaiting review" : ""}</span></div></div>) : <p className={styles.noComments}>Start a kind conversation.</p>}
+            {post.comments.length ? post.comments.map((entry) => <div className={styles.comment} key={entry.id}><Avatar author={entry.author} small /><div><a href={entry.author.id === viewer?.id ? profilePath : `${path}?wall=${entry.author.id}`} onClick={(event) => { if (!passport && entry.author.id !== viewer?.id && !event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); navigate(entry.author.id); } }}>{entry.author.name}</a><p>{entry.body}</p><span>{timeLabel(entry.createdAt)}{entry.status === "pending" ? " · Awaiting review" : ""}</span></div></div>) : <p className={styles.noComments}>Start a kind conversation.</p>}
             {!preview && post.commentsNextCursor && <button type="button" className={styles.moreComments} onClick={() => moreComments(post)} disabled={Boolean(pending)}>View more comments<ChevronDown size={15} /></button>}
-            <form onSubmit={(event) => comment(event, post)} className={styles.commentForm}><Avatar author={viewer || { id: "guest", name: "Guest explorer" }} small /><label className={styles.srOnly} htmlFor={`reply-${post.id}`}>Comment on {post.author.name}&apos;s post</label><textarea id={`reply-${post.id}`} rows={1} maxLength={1000} value={commentDrafts[post.id] || ""} onChange={(event) => setCommentDrafts((drafts) => ({ ...drafts, [post.id]: event.target.value }))} disabled={!canWrite || Boolean(pending) || post.status !== "published"} placeholder={canWrite ? "Add a kind thought…" : "Sign in to join the conversation"} /><button type="submit" aria-label={`Send comment on ${post.author.name}'s post`} disabled={!canWrite || Boolean(pending) || !commentDrafts[post.id]?.trim() || post.status !== "published"}><Send size={17} /></button></form>
+            <form onSubmit={(event) => comment(event, post)} className={styles.commentForm}><Avatar author={viewer || { id: "guest", name: "Guest explorer" }} small /><label className={styles.srOnly} htmlFor={`reply-${post.id}`}>Comment on {post.author.name}&apos;s post</label><textarea id={`reply-${post.id}`} rows={1} maxLength={1000} value={commentDrafts[post.id] || ""} onChange={(event) => setCommentDrafts((drafts) => ({ ...drafts, [post.id]: event.target.value }))} disabled={!canWrite || Boolean(pending) || post.status !== "published"} placeholder={canWrite ? "Add a kind thought…" : viewer ? "Review the acknowledgement to comment" : "Sign in to join the conversation"} /><button type="submit" aria-label={`Send comment on ${post.author.name}'s post`} disabled={!canWrite || Boolean(pending) || !commentDrafts[post.id]?.trim() || post.status !== "published"}><Send size={17} /></button></form>
           </section>
         </article>; })}
         {!preview && feed.nextCursor && <button className={styles.loadMore} type="button" disabled={loading} onClick={morePosts}>{loading ? "Loading stories…" : "More stories"}<ChevronDown size={16} /></button>}
@@ -336,7 +349,7 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
           </div>
         </div>
         <div className={styles.communityNote}><ShieldCheck size={19} /><p>Share kindly. Keep personal details private. A story is not a verified check-in.</p></div>
-        <div className={styles.railLinks}><Link href="/help">Community and privacy<ArrowRight size={14} /></Link>{preview ? <Link href={demo ? "/demo/passport" : "/feed"}>{demo ? "Open your passport" : "Go to the public feed"}<ArrowRight size={14} /></Link> : <Link href="/feed-preview">Try the community preview<ArrowRight size={14} /></Link>}</div>
+        <div className={styles.railLinks}><Link href="/help">Help and privacy<ArrowRight size={14} /></Link><Link href="/profile">Open Passport<ArrowRight size={14} /></Link></div>
       </aside>}
     </div>
   </div>;
@@ -345,7 +358,4 @@ export function CommunityFeed({ preview = false, initialWall = "public", initial
 function Avatar({ author, small = false }: { author: CommunityAuthor; small?: boolean }) {
   const tone = author.id.charCodeAt(0) % 3;
   return <span className={`${styles.avatar} ${small ? styles.smallAvatar : ""} ${styles[`tone${tone}`]}`} aria-hidden="true">{author.name.trim().slice(0, 1).toLocaleUpperCase("en-AU")}</span>;
-}
-function WallTabs({ wall, onWall }: { wall: string; onWall: (wall: string) => void }) {
-  return <div className={styles.wallTabs} aria-label="Choose a wall"><button type="button" aria-pressed={wall === "public"} onClick={() => onWall("public")}><Globe2 size={19} />Public wall<ArrowRight size={15} /></button><button type="button" aria-pressed={wall === "me"} onClick={() => onWall("me")}><UserRound size={19} />My wall<ArrowRight size={15} /></button></div>;
 }

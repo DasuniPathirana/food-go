@@ -1,0 +1,25 @@
+.map { position: absolute; inset: 0; overflow: hidden; isolation: isolate; background: #d5d6c4; touch-action: none; cursor: grab; user-select: none; }
+.map:active { cursor: grabbing; }
+.map:focus-visible { outline: 3px solid var(--focus); outline-offset: -4px; }
+.plane { position: absolute; transform-origin: top left; pointer-events: none; }
+.plane img, .plane canvas { display: block; position: absolute; left: 0; max-width: none; }
+.plane canvas { opacity: .84; }
+.map .marker { position: absolute; transform: translate(-50%, -100%); display: grid; justify-items: center;
+  align-content: end; width: 44px; height: 44px; padding: 0; background: transparent; border: 0; color: #fffdf3; }
+.marker svg { color: #f8df70; fill: #0d4945; filter: drop-shadow(0 2px 3px #241b2977); order: 2; }
+.marker span { width: max-content; max-width: 104px; padding: 3px 7px; border: 1px solid #f4e9c6; border-radius: 5px; background: #174440; font: 700 12px/1.1 var(--font-body); }
+.marker[aria-pressed=true] { z-index: 2; }
+.marker[aria-pressed=true] span { background: var(--sunny); color: var(--ink); border-color: var(--ink); }
+.dropped { position: absolute; transform: translate(-50%,-100%); color: var(--accent); pointer-events: none; filter: drop-shadow(0 2px 2px #241b295a); }
+.dropped svg { stroke: var(--ink); }
+.tools { position: absolute; right: 9px; bottom: 31px; display: flex; flex-direction: column; padding: 2px; border: 1px solid var(--ink); border-radius: 8px; background: var(--canvas); }
+.tools button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--ink); border: 0; border-radius: 5px; }
+.tools button:focus-visible, .map .marker:focus-visible { outline: 3px solid var(--focus); }
+.tools button:hover, .tools button[aria-pressed=true] { background: var(--sunny); }
+.credit, .error { position: absolute; background: var(--canvas); padding: 3px 7px; color: var(--ink); font: 600 12px/1.3 var(--font-body); }
+.credit { bottom: 0; right: 0; text-decoration: underline; }
+.error { left: 5px; bottom: 20px; max-width: 60%; }
+@media (max-width: 760px), (pointer: coarse) {
+  .tools { display: grid; grid-template-columns: repeat(2,44px); }
+  .marker span { max-width: 78px; font-size: 11px; }
+}

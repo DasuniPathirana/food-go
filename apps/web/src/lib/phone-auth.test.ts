@@ -40,7 +40,7 @@ test("phone OTP actions exercise origin, configuration, provider rejection and v
       let returnedPhone = "61412345678";
       const factory = async () => {
         calls++;
-        return { auth: {
+        return { from: () => ({ select: () => ({ eq: () => ({ single: async () => ({ data: { account_type: "explorer" } }) }) }) }), auth: {
           signInWithOtp: async (input) => {
             assert.deepEqual(input, { phone: "61412345678", options: { channel: "sms", shouldCreateUser: true } });
             return { error: requestError };
@@ -101,7 +101,7 @@ test("phone OTP actions exercise origin, configuration, provider rejection and v
       assert.equal((await requestPhoneCode(request(phone), factory)).status, 503);
       const verified = await verifyPhoneCode(request(code), factory);
       assert.equal(verified.status, 200);
-      assert.deepEqual(await verified.json(), { redirectTo: "/profile" });
+      assert.deepEqual(await verified.json(), { redirectTo: "/" });
       assert.equal(verified.headers.get("cache-control"), "no-store");
       otpError = { status: 400, message: "Wrong/replayed code 012345 for 0412345678" };
       const rejected = await verifyPhoneCode(request(code), factory);

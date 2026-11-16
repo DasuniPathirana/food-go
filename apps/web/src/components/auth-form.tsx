@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, Check, LoaderCircle } from "lucide-react";
+import { ArrowRight, Check, Coffee, LoaderCircle, MapPin, Utensils } from "lucide-react";
 import {
   signInSchema,
   registerSchema,
@@ -11,6 +12,10 @@ import {
   resetPasswordSchema,
   type AuthMode,
 } from "@/lib/auth/contracts";
+import { COMMUNITY_POLICY_VERSION } from "@/lib/community-policy";
+import { acknowledgementCheckbox } from "@/lib/community-policy-copy";
+import { CommunityAcknowledgement } from "./community-acknowledgement";
+import consentStyles from "./community-consent.module.css";
 
 const content = {
   "sign-in": {
@@ -21,7 +26,7 @@ const content = {
   register: {
     title: "Create your account",
     description:
-      "Create a Food Go account. Collection sync will be connected in a later stage.",
+      "Save your discoveries, collect XP and share your food stories.",
     button: "Create account",
   },
   "forgot-password": {
@@ -41,13 +46,17 @@ export function AuthForm({
   mode,
   configured,
   notice,
+  destination,
 }: {
   mode: AuthMode;
   configured: boolean;
   notice?: "link-expired" | "password-updated";
+  destination?: "/profile" | "/admin" | "/partner/dashboard" | "/collect";
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
+  const [accountType, setAccountType] = useState<"explorer" | "partner">("explorer");
+  const [acceptedAcknowledgement, setAcceptedAcknowledgement] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
@@ -77,7 +86,7 @@ export function AuthForm({
             : signInSchema;
     const input =
       mode === "register"
-        ? { displayName, email, password }
+        ? { displayName, email, password, accountType, acceptedAcknowledgement, acknowledgementVersion: COMMUNITY_POLICY_VERSION }
         : mode === "forgot-password"
           ? { email }
           : mode === "reset-password"
@@ -123,7 +132,8 @@ export function AuthForm({
       setPassword("");
       setConfirmation("");
       if (mode === "sign-in") {
-        router.replace("/profile");
+        const next = "redirectTo" in data && ["/", "/partner/dashboard"].includes(String(data.redirectTo)) ? String(data.redirectTo) : "/";
+        router.replace(destination || next);
         router.refresh();
       } else if (mode === "reset-password") {
         router.replace("/auth/sign-in?notice=password-updated");
@@ -149,19 +159,18 @@ export function AuthForm({
         <Link href="/" className="back-link">
           Back to exploring
         </Link>
-        <p className="eyebrow">Your Food Go account</p>
         <h1>{copy.title}</h1>
         <p>{copy.description}</p>
+        {(mode === "register" || mode === "sign-in") && <div className="auth-art" aria-hidden="true"><span className="auth-art-plate"/><Image src="/images/adventure/explorer.svg" alt="" width={122} height={168} unoptimized/>
+          <span className="auth-art-food"><Utensils size={28}/></span><span className="auth-art-coffee"><Coffee size={27}/></span><span className="auth-art-pin"><MapPin size={25}/></span></div>}
         <p>You can keep browsing without an account.</p>
       </div>
       <div className="auth-panel">
         {!configured && (
           <div className="auth-status" role="status">
-            <strong>Accounts are not connected yet</strong>
+            <strong>Account services are unavailable</strong>
             <p>
-              You can browse this preview without an account. Sign-in will open
-              after the server and email service are configured. Do not enter
-              real account details here yet.
+              Please try again shortly. You can browse published places while account services are unavailable.
             </p>
           </div>
         )}
@@ -188,6 +197,11 @@ export function AuthForm({
           </div>
         ) : (
           <form onSubmit={submit} noValidate>
+            {mode === "register" && <div className="form-field"><label htmlFor="account-type">I am joining as</label>
+              <select id="account-type" value={accountType} disabled={!configured || pending}
+                onChange={event => setAccountType(event.target.value as "explorer" | "partner")}>
+                <option value="explorer">A food explorer</option><option value="partner">A restaurant or cafe owner</option>
+              </select><p className="field-hint">Business owners get a venue dashboard. Ownership is reviewed before publication.</p></div>}
             {mode === "register" && (
               <div className="form-field">
                 <label htmlFor="auth-field-displayName">Your name</label>
@@ -312,6 +326,14 @@ export function AuthForm({
                 {showPassword ? "Hide password" : "Show password"}
               </button>
             )}
+            {mode === "register" && <div className={consentStyles.registration}>
+              <details><summary>Community acknowledgement</summary><CommunityAcknowledgement/><Link href="/acknowledgement" target="_blank" rel="noopener noreferrer">Read the full acknowledgement</Link></details>
+              <label className={consentStyles.check}><input id="auth-field-acceptedAcknowledgement" type="checkbox" checked={acceptedAcknowledgement}
+                onChange={event => setAcceptedAcknowledgement(event.target.checked)} disabled={!configured || pending} aria-invalid={Boolean(fields.acceptedAcknowledgement)}
+                aria-describedby="auth-acknowledgement-note"/><span>{acknowledgementCheckbox}</span></label>
+              <p className={consentStyles.note} id="auth-acknowledgement-note">After email confirmation, confirm the acknowledgement once for your verified account. We record its version and acceptance time.</p>
+              {fields.acceptedAcknowledgement && <p className="field-error" role="alert">{fields.acceptedAcknowledgement}</p>}
+            </div>}
             {error && (
               <p className="field-error" role="alert">
                 {error}

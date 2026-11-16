@@ -24,6 +24,8 @@ export async function proxy(request: NextRequest) {
     ].join("; ");
   } else {
     const nonce = randomBytes(32).toString("base64");
+    const satelliteHost = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim() ? " https://api.maptiler.com" : "";
+    const worldMapHosts = " https://tiles.openfreemap.org https://tile.openstreetmap.org";
     requestHeaders.set("x-nonce", nonce);
     contentSecurityPolicy = [
       "default-src 'self'",
@@ -31,9 +33,9 @@ export async function proxy(request: NextRequest) {
       // React style properties and the current responsive components use inline CSS.
       // This exception does not permit inline JavaScript or event handlers.
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      `img-src 'self' data: blob:${satelliteHost}${worldMapHosts}`,
       "font-src 'self'",
-      `connect-src 'self'${isDevelopment ? " ws://127.0.0.1:* ws://localhost:* wss://127.0.0.1:* wss://localhost:*" : ""}`,
+      `connect-src 'self'${satelliteHost}${worldMapHosts}${isDevelopment ? " ws://127.0.0.1:* ws://localhost:* wss://127.0.0.1:* wss://localhost:*" : ""}`,
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

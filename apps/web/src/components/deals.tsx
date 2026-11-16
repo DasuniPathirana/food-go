@@ -1,8 +1,7 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Clock, Compass, MapPin, Percent, Ticket, Zap } from "lucide-react";
+import type { PromotionResult } from "@/lib/promotions";
 import styles from "./deals.module.css";
 
 const DEMO_DEALS = [
@@ -82,7 +81,7 @@ export function DemoDeals() {
           <h1>Deals</h1>
           <p>Discover delicious offers from local venues near you.</p>
         </div>
-        <Link className={styles.mapLink} href="/demo/explore">
+        <Link className={styles.mapLink} href="/demo/explore?map=adventure">
           <Compass size={17} /> Find a place <Zap size={15} />
         </Link>
       </header>
@@ -134,106 +133,35 @@ export function DemoDeals() {
   );
 }
 
-export function ConnectedDeals() {
-  return (
-    <>
-      <div className="page-intro">
-        <div>
-          <h1>Deals near you</h1>
-          <p>Local offers and discoveries from venues in your neighbourhood.</p>
-        </div>
-        <Link className="secondary-button" href="/">
-          <Compass size={17} />
-          Find a place
-          <ArrowRight size={16} />
-        </Link>
+const expiry = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Australia/Melbourne" });
+
+export function PromotionList({ result, limit }: { result: PromotionResult; limit?: number }) {
+  if (result.status === "unavailable") return <div role="status" className={styles.offerEmpty} data-compact={limit !== undefined}><span className={styles.emptyTicket} aria-hidden="true"><Ticket size={32}/></span><div><h3>Promotions are temporarily unavailable</h3><p>Please try again shortly. You can keep exploring the map.</p>{limit === undefined && <Link href="/">Browse the map <ArrowRight size={15}/></Link>}</div></div>;
+  if (!result.promotions.length) return <div className={styles.offerEmpty} data-compact={limit !== undefined}><span className={styles.emptyTicket} aria-hidden="true"><Ticket size={32}/></span><div><h3>A little room for a good deal.</h3><p>There are no active promotions at the moment. New offers appear here after approval.</p>{limit === undefined && <Link href="/">Find your next place <ArrowRight size={15}/></Link>}</div></div>;
+  return <div className={styles.promotionGrid}>{result.promotions.slice(0, limit).map(promo =>
+    <article className={styles.promotion} key={promo.id}>
+      <div className={styles.ticketIcon}><Ticket size={21} aria-hidden="true" /></div>
+      <div className={styles.promotionBody}><h3>{promo.title}</h3><p>{promo.description}</p>
+        <Link href={`/venues/${encodeURIComponent(promo.venueSlug)}`}>{promo.venueName}<ArrowRight size={14} /></Link>
+        <small className={styles.offerExpiry}><Clock size={13}/><span>{promo.suburb} · Ends <time dateTime={promo.endsAt}>{expiry.format(new Date(promo.endsAt))}</time> Melbourne time</span></small>
       </div>
-      <div className="profile-grid">
-        <section className="content-panel" aria-labelledby="deals-title">
-          <div className="section-heading">
-            <div>
-              <h2 id="deals-title">Available deals</h2>
-            </div>
-            <Ticket size={24} />
-          </div>
-          <div className="stat-grid" aria-label="Deals summary">
-            <div className="stat-card">
-              <Ticket size={19} />
-              <strong>{DEMO_DEALS.length}</strong>
-              <span>Deals available</span>
-            </div>
-            <div className="stat-card">
-              <MapPin size={19} />
-              <strong>6</strong>
-              <span>Venues offering</span>
-            </div>
-            <div className="stat-card">
-              <Percent size={19} />
-              <strong>50%</strong>
-              <span>Best discount</span>
-            </div>
-          </div>
-        </section>
-      </div>
-      <section style={{ marginTop: "24px" }}>
-        {DEMO_DEALS.map((deal) => (
-          <article
-            key={deal.id}
-            style={{
-              display: "flex",
-              gap: "16px",
-              padding: "16px 0",
-              borderBottom: "1px solid var(--line, #dddcd4)",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                flex: "0 0 80px",
-                height: "60px",
-                borderRadius: "8px",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              <Image
-                src={deal.image}
-                alt=""
-                width={80}
-                height={60}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700 }}>{deal.title}</h3>
-              <p style={{ margin: "2px 0 0", fontSize: "14px", color: "var(--muted, #414141)" }}>
-                {deal.venue} · {deal.suburb}
-              </p>
-            </div>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "5px",
-                padding: "6px 12px",
-                borderRadius: "5px",
-                background: "var(--primary, #c73527)",
-                color: "#fff",
-                fontSize: "13px",
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-              }}
-            >
-              <Ticket size={14} />
-              {deal.discount}
-            </span>
-          </article>
-        ))}
-      </section>
-      <p className="inline-notice" style={{ marginTop: "20px" }}>
-        <Ticket size={19} />
-        These are example deal designs. No real discounts or vouchers are issued in this preview.
-      </p>
-    </>
-  );
+    </article>)}</div>;
+}
+
+export function ConnectedDeals({ result }: { result: PromotionResult }) {
+  return <div className={styles.page}>
+    <header className={`${styles.heading} ${styles.connectedHeading}`}><div><h1>Deals</h1><p>Current offers from local venues.</p></div><span className={styles.dealSeal} aria-hidden="true"><Ticket size={36}/><Percent size={17}/></span></header>
+    <div className={styles.sectionHeading}><h2 className={styles.sectionTitle}>Active promotions</h2>{result.status === "ready" && result.promotions.length > 0 && <span className={styles.offerCount}>{result.promotions.length} {result.promotions.length === 1 ? "offer" : "offers"}</span>}</div>
+    <PromotionList result={result} />
+  </div>;
+}
+
+export function DemoPromoStrip() {
+  const promo = DEMO_DEALS[0];
+  return <section className={styles.previewStrip} aria-labelledby="example-promotions">
+    <div className={styles.sectionHeading}><h2 id="example-promotions">Example promotions</h2>
+      <Link href="/demo/deals">All demo deals <ArrowRight size={16} /></Link></div>
+    <div className={styles.promotion}><div className={styles.ticketIcon}><Ticket size={21} aria-hidden="true" /></div>
+      <div><h3>{promo.title}</h3><p>{promo.venue} · {promo.suburb}</p><small>Example offer · {promo.discount}</small></div></div>
+  </section>;
 }

@@ -9,6 +9,86 @@
   padding: clamp(22px, 3vw, 38px) clamp(16px, 4vw, 48px) 38px;
 }
 
+.storefront {
+  width: min(1180px, 100%);
+  margin-inline: auto;
+  padding: 30px clamp(16px, 3vw, 40px) 34px;
+  display: grid;
+  gap: 34px;
+}
+.sectionHeading { display: flex; gap: 15px; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+.sectionHeading h2, .page .sectionTitle { margin: 0; font: 800 2rem/1.12 var(--font-display); }
+.sectionHeading a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--petrol); font: 700 .9rem/1.2 var(--font-body); }
+.sectionHeading a:hover, .directoryEntry:hover strong, .promotion a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.availability { padding: 14px 0; margin: 8px 0 0; border-top: 1px solid var(--line); color: var(--muted); }
+.promotionGrid, .directory { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; }
+.promotion { position: relative; display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 20px 17px 15px; border: 1px solid #d7bc76; border-radius: 14px; background: #fff1cc; overflow-wrap: anywhere; box-shadow: 0 4px 12px #4b38120a; }
+.promotion h3 { margin: 0; color: var(--ink); font: 800 1.75rem/1.08 var(--font-display); }
+.promotion p { margin: 8px 0 4px; color: #4e412c; font: 500 .94rem/1.45 var(--font-body); white-space: pre-line; }
+.promotion a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font: 700 .9rem/1.2 var(--font-body); color: var(--link); }
+.promotion small, .directoryEntry small { display: block; color: var(--muted); font-size: 13px; }
+.promotionBody { flex: 1; min-width: 0; }
+.promotion .offerExpiry { display: flex; gap: 6px; align-items: flex-start; padding-top: 11px; margin-top: 7px; border-top: 1px dashed #d8bb74; font: 500 .77rem/1.4 var(--font-body); color: #655330; }
+.offerExpiry > svg { flex: none; margin-top: 2px; }
+.ticketIcon, .restaurantIcon { display: grid; place-items: center; flex: none; border-radius: 7px; color: var(--ink); background: var(--sunny); }
+.ticketIcon { width: 34px; height: 34px; border: 1px solid #dcad26; }
+.directoryEntry { display: grid; position: relative; grid-template-columns: minmax(0, 1fr) auto; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: 0 3px 12px #30231a07; }
+.directoryPhoto { grid-column: 1 / -1; display: block; width: 100%; overflow: hidden; aspect-ratio: 16 / 9; background: var(--sage-light); }
+.directoryPhoto > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.restaurantIcon { width: 100%; height: 100%; background: #e4eee1; color: var(--petrol); border-radius: 0; }
+.directoryInfo { display: block; min-width: 0; padding: 15px 4px 17px 17px; }
+.directoryArrow { color: var(--petrol); margin-right: 16px; align-self: center; }
+.directoryEntry strong { color: var(--ink); font: 750 1.15rem/1.25 var(--font-body); }
+.directoryEntry small { margin-top: 5px; font-size: .83rem; }
+.directoryEntry strong, .directoryEntry small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.directoryEmpty { display: flex; align-items: center; gap: 16px; padding: 22px; border: 1px solid #c8d6c6; border-radius: 14px; background: #eff4ea; }
+.directoryEmpty > svg { flex: none; color: var(--petrol); }
+.directoryEmpty h3 { margin: 0 0 5px; font: 800 1.65rem/1.1 var(--font-display); color: #244a40; }
+.directoryEmpty p { margin: 0; color: #496254; font: 500 .94rem/1.45 var(--font-body); }
+.directoryEmpty a { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; color: var(--link); font-weight: 700; font-size: .9rem; }
+.offerEmpty { display: flex; align-items: center; gap: 22px; min-height: 220px; margin-top: 12px; padding: 30px; border: 1px solid #dbc38c; border-radius: 18px; background: #fff1d1; color: #4c3b24; }
+.offerEmpty[data-compact=true] { min-height: 140px; padding: 23px; }
+.offerEmpty h3 { margin: 0 0 7px; font: 800 2rem/1.1 var(--font-display); color: var(--ink); }
+.offerEmpty p { margin: 0; max-width: 52ch; font: 500 .95rem/1.5 var(--font-body); }
+.offerEmpty a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin-top: 17px; padding: 10px 15px; background: var(--petrol); color: white; border-radius: 8px; font: 700 .9rem/1.2 var(--font-body); }
+.emptyTicket { display: grid; place-items: center; position: relative; flex: none; width: 98px; height: 116px; border-radius: 15px; border: 1px solid #bfa15c; background: var(--sunny); color: var(--ink); }
+.emptyTicket::after { content: ""; position: absolute; inset: auto 14px 20px; border-top: 1px dashed #9e7c28; }
+.offerEmpty[data-compact=true] .emptyTicket { width: 64px; height: 76px; border-radius: 11px; }
+.offerEmpty[data-compact=true] .emptyTicket::after { bottom: 12px; }
+.offerCount { font: 700 .85rem/1.2 var(--font-body); color: #4f614d; }
+.page .connectedHeading { padding-bottom: 22px; margin-bottom: 25px; border-bottom: 1px solid var(--line); }
+.page .connectedHeading h1 { font-size: 3.75rem; color: var(--petrol); }
+.dealSeal { display: grid; place-items: center; position: relative; flex: none; width: 72px; height: 72px; border: 1px solid #d2ad35; background: var(--sunny); color: var(--ink); border-radius: 20px; }
+.dealSeal > svg + svg { position: absolute; right: -6px; bottom: -5px; padding: 4px; box-sizing: content-box; border: 3px solid var(--canvas); border-radius: 10px; background: var(--petrol); color: white; }
+.page :is(a,button):focus-visible, .storefront a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.previewStrip .promotion { margin-top: 8px; }
+@media (prefers-reduced-motion: no-preference) {
+  .directoryEntry { transition: border-color 180ms ease, box-shadow 180ms ease; }
+  .directoryEntry:hover { border-color: #8daf9c; box-shadow: 0 6px 18px #30231a14; }
+  .directoryPhoto > img { transition: transform 180ms ease; }
+  .directoryEntry:hover .directoryPhoto > img { transform: scale(1.025); }
+  .promotionGrid > :first-child .ticketIcon, .previewStrip .ticketIcon { animation: promo-highlight 900ms ease-in-out 2; }
+  @keyframes promo-highlight { 50% { background-color: #ffb95c; } }
+}
+@media (max-width: 900px) {
+  .promotionGrid, .directory { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 590px) {
+  .promotionGrid, .directory { grid-template-columns: minmax(0, 1fr); }
+  .directory { gap: 12px; }
+  .storefront { gap: 20px; }
+  .storefront .sectionHeading h2 { font-size: 1.8rem; }
+  .directoryEmpty { padding: 18px 16px; align-items: flex-start; }
+  .directoryEmpty p { font-size: .9rem; }
+  .offerEmpty, .offerEmpty[data-compact=true] { align-items: flex-start; gap: 15px; padding: 20px 16px; min-height: 0; }
+  .offerEmpty h3 { font-size: 1.65rem; }
+  .offerEmpty p { font-size: .9rem; }
+  .emptyTicket { width: 62px; height: 78px; border-radius: 11px; }
+  .emptyTicket::after { bottom: 12px; }
+  .page .connectedHeading h1 { font-size: 3rem; }
+  .dealSeal { width: 58px; height: 58px; border-radius: 16px; }
+}
+
 .heading {
   display: flex;
   align-items: center;

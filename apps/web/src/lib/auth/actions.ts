@@ -14,6 +14,7 @@ import { authJson, readAuthRequest } from "./http";
 import { createAuthClient } from "./server";
 import { canResetPassword, recoveryCookieName } from "./recovery";
 import { australianMobile } from "../phone-number";
+import { accountLanding } from "./landing";
 
 type AuthClientFactory = typeof createAuthClient;
 
@@ -97,7 +98,7 @@ export async function verifyPhoneCode(
       await client.auth.signOut({ scope: "local" });
       return phoneFailure();
     }
-    return authJson({ redirectTo: "/profile" });
+    return authJson({ redirectTo: await accountLanding(client, data.user.id) });
   } catch {
     return phoneFailure(503);
   }
@@ -120,7 +121,7 @@ export async function signIn(request: Request) {
       await client.auth.signOut({ scope: "local" });
       return failure();
     }
-    return authJson({ redirectTo: "/profile" });
+    return authJson({ redirectTo: await accountLanding(client, data.user.id) });
   } catch {
     return failure(503);
   }
@@ -135,7 +136,7 @@ export async function register(request: Request) {
       email: input.data.email,
       password: input.data.password,
       options: {
-        data: { display_name: input.data.displayName },
+        data: { display_name: input.data.displayName, account_type: input.data.accountType },
         emailRedirectTo: `${input.config.origin}/auth/callback?next=/profile`,
       },
     });

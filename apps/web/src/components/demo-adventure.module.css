@@ -152,6 +152,8 @@
 .notifications > a > span > svg { display: none; }
 .status { position: sticky; z-index: 35; bottom: 12px; width: fit-content; max-width: calc(100% - 28px); margin: 0 auto; padding: 11px 17px; border-radius: 5px; background: #252522f5; color: white; font-size: 14px; box-shadow: 0 5px 18px #25252217; pointer-events: none; }
 .status:empty { display: none; }
+.xpReceipt { display: inline-flex; gap: 8px; align-items: center; }
+.xpReceipt svg { color: var(--xp); }
 .modal { position: relative; width: min(500px, calc(100% - 32px)); max-height: calc(100dvh - 32px); overflow: auto; padding: 32px; border: 1px solid #c5c7bc; border-radius: 8px; background: #fffefa; color: var(--ink); box-shadow: 0 24px 70px #25252233; }
 .modal::backdrop { background: #25252275; }
 .modal h2 { font-size: 32px; margin: 6px 22px 18px 0; }
@@ -173,7 +175,8 @@
 
 .passportPage { max-width: 1232px; }
 .stats { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-.demoBanner { min-height: 44px; padding-block: 0; }
+.demoBanner { min-height: 32px; padding-block: 0; border-bottom: 0; background: transparent; }
+.demoBanner > span, .demoBanner p { font-size: 11px; }
 .guideLinks a { min-height: 44px; }
 .xpPill { min-height: 44px; }
 .avatar { width: 44px; height: 44px; }
@@ -232,7 +235,7 @@
   .mapOverlay .mapOptionsToggle { display: grid; flex-shrink: 0; width: 44px; height: 44px; color: #06544f; border-radius: 9px; }
   .mapOverlay .mapOptionsToggle[aria-expanded="true"] { background: #d4ebe6; }
   .mapOverlay .mapOptionsToggle svg { width: 16px; height: 16px; }
-  .mapOverlay .mapOptions { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; padding: 6px; border: 1px solid #746f64; border-radius: 12px; background: #fff9ee; box-shadow: var(--shadow-panel); pointer-events: auto; }
+  .mapOverlay .mapOptions { display: none; margin-top: 5px; padding: 6px; border: 1px solid #746f64; border-radius: 12px; background: #fff9ee; pointer-events: auto; }
   .mapOverlay .mapOptionsOpen { display: grid; gap: 8px; }
   .mapOptions .filters { max-width: 100%; border: none; background: transparent; }
 }

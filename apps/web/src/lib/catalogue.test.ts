@@ -14,8 +14,10 @@ const row = {
   venue_dishes: [{ id: "22222222-2222-4222-8222-222222222222", name: "Seasonal pasta", description: "A menu item.", price_aud_cents: 2400 }],
 };
 
-test("catalogue defaults to isolated demo mode and connected mode fails closed with invalid keys or URLs", () => {
-  assert.deepEqual(readCatalogueConfig({}), { mode: "demo" });
+test("catalogue requires connected configuration and rejects demo mode at runtime", () => {
+  assert.deepEqual(readCatalogueConfig({}), { mode: "supabase", configured: false });
+  assert.deepEqual(readCatalogueConfig({ NODE_ENV: "production" }), { mode: "supabase", configured: false });
+  assert.deepEqual(readCatalogueConfig({ NODE_ENV: "production", FOOD_GO_CATALOGUE_MODE: "demo" }), { mode: "supabase", configured: false });
   const env = { FOOD_GO_CATALOGUE_MODE: "supabase", SUPABASE_URL: config.url, SUPABASE_PUBLISHABLE_KEY: config.key };
   assert.deepEqual(readCatalogueConfig({ ...env, FOOD_GO_AUTH_ENABLED: "false" }), config);
   for (const value of ["https://example.com", `${config.url}/auth/v1`, `${config.url}?key=value`, "http://abcdefghijklmnopqrst.supabase.co"]) {
@@ -40,7 +42,7 @@ test("public SDK query enforces publication and ownership, selects no contacts, 
   let cache: RequestCache | undefined;
   const fetcher: typeof fetch = async (input, init) => {
     requestUrl = new URL(String(input)); cache = init?.cache;
-    return Response.json([{ ...row, organization_id: "never-return", email: "private@example.test" }]);
+    return Response.json([{ ...row, latitude: -37.8078, longitude: 144.9568, organization_id: "never-return", email: "private@example.test" }]);
   };
   const result = await loadCatalogue(config, { query: 'a,(b)"%_', state: "VIC", venueType: "restaurant", limit: 2 }, { fetch: fetcher });
   assert.equal(requestUrl.searchParams.get("status"), "eq.published");
@@ -56,7 +58,19 @@ test("public SDK query enforces publication and ownership, selects no contacts, 
   assert.equal(result.status, "ready");
   assert.equal(result.venues[0]?.image, "/images/venue-placeholder.svg");
   assert.equal(result.venues[0]?.dishes[0]?.priceAudCents, 2400);
+  assert.match(requestUrl.searchParams.get("select") || "", /latitude,longitude/u);
+  assert.deepEqual(result.venues[0]?.coordinates, { latitude: -37.8078, longitude: 144.9568 });
   assert.doesNotMatch(JSON.stringify(result), /never-return|private@example/u);
+});
+
+test("a missing or invalid coordinate pair keeps the published listing usable without placing a pin", async () => {
+  for (const pair of [{}, { latitude: null, longitude: null }, { latitude: 0, longitude: null },
+    { latitude: -91, longitude: 144.96 }, { latitude: -37.81, longitude: 181 }, { latitude: "-37.81", longitude: 144.96 }]) {
+    const result = await loadCatalogue(config, undefined, { fetch: async () => Response.json([{ ...row, ...pair }]) });
+    assert.equal(result.status, "ready");
+    assert.equal(result.venues[0]?.name, row.name);
+    assert.ok(!("coordinates" in result.venues[0]));
+  }
 });
 
 test("connected failures, malformed rows, and missing schema never fall back to fixtures", async () => {
@@ -89,6 +103,7 @@ test("demo dish identifiers are independent from venue favourites", async () => 
   const result = await loadCatalogue({ mode: "demo" });
   assert.equal(result.venues.length, 6);
   assert.ok(result.venues.every((venue) => venue.dishes.every((dish) => dish.id !== venue.id)));
+  assert.ok(result.venues.every((venue) => !("coordinates" in venue)));
   const example = result.venues[0];
   assert.ok(example);
   assert.equal(venueHref(example), `/explore-preview/venues/${example.slug}`);
