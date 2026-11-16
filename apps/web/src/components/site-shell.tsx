@@ -8,6 +8,7 @@ import { FoodNavigation } from "./food-navigation";
 import type { CatalogueMode } from "@/lib/catalogue-contracts";
 import { useJourney } from "./journey-provider";
 import shell from "./shell-adventure.module.css";
+import { useFeedAccess } from "./feed-access";
 
 export function SiteShell({
   children,
@@ -24,6 +25,7 @@ export function SiteShell({
 }) {
   const pathname = usePathname();
   const journey = useJourney();
+  const { age } = useFeedAccess();
   const ownerView = accountType === "partner" && pathname.startsWith("/partner");
   const exampleNeighbourhood = pathname === "/explore-preview";
   return (
@@ -36,7 +38,7 @@ export function SiteShell({
           <Link href="/" aria-label="Food Go home" className="brand-link">
             <Brand />
           </Link>
-          <FoodNavigation pathname={pathname} owner={ownerView} />
+          <FoodNavigation pathname={pathname} owner={ownerView} feedEligible={age?.feedEligible} />
           <div className="header-actions">
             {!ownerView && <details className={shell.collectionMenu} key={pathname}
               onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }}
@@ -90,7 +92,7 @@ export function SiteShell({
           </a>
         </nav>
       </footer>
-      <FoodNavigation pathname={pathname} mobile owner={ownerView} />
+      <FoodNavigation pathname={pathname} mobile owner={ownerView} feedEligible={age?.feedEligible} />
     </div>
   );
 }

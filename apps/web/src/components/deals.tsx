@@ -138,7 +138,7 @@ export function DemoDeals() {
 
 export function ConnectedDeals({ result }: { result: PromotionResult }) {
   return <div className={styles.page}>
-    <header className={`${styles.heading} ${styles.connectedHeading}`}><div><span className={styles.dealEyebrow}>Good food. Local rewards.</span><h1>Deals</h1><p>A new favourite, a table with friends, a little more for your money.</p></div><span className={styles.dealSeal} aria-hidden="true"><Ticket size={36}/><Percent size={17}/></span></header>
+    <header className={`${styles.heading} ${styles.connectedHeading}`}><div><span className={styles.dealEyebrow}>Good food. Local rewards.</span><h1>Deals</h1><p>A new favourite, a table with friends, a little more for your money.</p></div></header>
     <DealCategories result={result}/>
   </div>;
 }

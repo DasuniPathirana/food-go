@@ -16,6 +16,7 @@ insert into auth.users(id,email,email_confirmed_at) values
  ('b1000000-0000-4000-8000-000000000003','operator@adventure.example.invalid',now()),
  ('b1000000-0000-4000-8000-000000000004','other@adventure.example.invalid',now());
 insert into auth.sessions(id,user_id) select id,id from auth.users where id::text like 'b1000000-%';
+insert into private.player_birth_dates(user_id,birth_date,source) select id,'1990-01-01','account' from auth.users where id::text like 'b1000000-%';
 insert into private.food_go_operators(user_id) values('b1000000-0000-4000-8000-000000000003');
 insert into public.organizations(id,name) values('b2000000-0000-4000-8000-000000000001','Adventure fixture group');
 insert into public.organization_members(organization_id,user_id,role) values('b2000000-0000-4000-8000-000000000001','b1000000-0000-4000-8000-000000000001','owner');

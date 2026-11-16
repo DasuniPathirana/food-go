@@ -142,7 +142,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   return <section className={styles.atlas} aria-label="Geographic exploration">
     <MapFrame label="Explore the world">
       <div ref={controls} className={styles.controls}><div className={styles.placeBar}>
-        <h1><Compass size={24} aria-hidden="true"/>Explore</h1><form className={styles.search} role="search" onSubmit={search}
+        <h1>Explore</h1><form className={styles.search} role="search" onSubmit={search}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}
           onKeyDown={event => { if (event.key === "Escape" && searchOpen) { event.preventDefault(); event.stopPropagation(); setSearchOpen(false); } }}>
           <div className={styles.field}><Search size={17}/><input ref={field} type="search" aria-label="Search map places" maxLength={120} autoComplete="off"

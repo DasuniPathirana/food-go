@@ -9,6 +9,7 @@ import { communityFeedSchema, type CommunityPost } from "@/lib/community";
 import { useAdventure } from "./use-adventure";
 import { useJourney } from "../journey-provider";
 import styles from "./adventure.module.css";
+import { useFeedAccess } from "../feed-access";
 
 const categories = { explore: { label: "Go & discover", icon: MapPin }, try: { label: "Try something new", icon: Utensils }, feedback: { label: "Honest feedback", icon: MessageSquare }, community: { label: "Share your story", icon: Sparkles }, promo: { label: "A little extra", icon: Ticket } };
 type QuestCategory = AdventureQuest["category"];
@@ -16,6 +17,7 @@ const localInputTime = (date: Date) => new Date(date.getTime()-date.getTimezoneO
 
 export function QuestBoard({ signedIn }: { signedIn: boolean }) {
   const game = useAdventure(signedIn), journey = useJourney();
+  const { age } = useFeedAccess();
   const [filter, setFilter] = useState<"available"|"active"|"completed"|"manage">("available");
   const [category, setCategory] = useState<"all"|QuestCategory>("all");
   const [completion, setCompletion] = useState<string | null>(null), [create, setCreate] = useState(false);
@@ -25,7 +27,7 @@ export function QuestBoard({ signedIn }: { signedIn: boolean }) {
   const [storyPage,setStoryPage] = useState<string | undefined>(), [nextStoryPage,setNextStoryPage] = useState<string | null>(null);
   const quests = game.data?.quests ?? [];
   const managed = game.data?.partnerVenues.length || game.data?.operator;
-  const filtered = quests.filter(quest => (category === "all" || quest.category === category) && (filter === "manage" ? quest.managed || game.data?.operator
+  const filtered = quests.filter(quest => (filter === "manage" || quest.category !== "community" || age?.feedEligible) && (category === "all" || quest.category === category) && (filter === "manage" ? quest.managed || game.data?.operator
     : filter === "completed" ? !!quest.participation?.completedAt
       : filter === "active" ? !!quest.participation && !quest.participation.completedAt
         : quest.status === "published" && !quest.participation && !quest.managed));
@@ -74,13 +76,13 @@ export function QuestBoard({ signedIn }: { signedIn: boolean }) {
   }
   const visits = journey?.data?.visits.length ?? 0;
   return <div className={styles.adventurePage}>
-    <header className={styles.pageHeading}><div><span className={styles.eyebrow}><Flag size={15}/>Little adventures. Real connections.</span><h1>Make your next meal<br/><em>part of the story.</em></h1><p>Find a new favourite. Support a local. Bring a little good back with you.</p></div>
+    <header className={styles.pageHeading}><div><span className={styles.eyebrow}>Little adventures. Real connections.</span><h1>Make your next meal<br/><em>part of the story.</em></h1><p>Find a new favourite. Support a local. Bring a little good back with you.</p></div>
       <Link href="/outback" className={styles.primary}><Sprout size={18}/>Visit your Outback<ArrowRight size={17}/></Link></header>
     <section className={styles.questHero} aria-label="Your adventure progress"><div className={styles.questHeroCopy}><span className={styles.eyebrow}>THE QUEST BOARD</span><h2>Good food.<br/>A good reason to get out.</h2><p>Real restaurant requests, genuine experiences and a little more to discover.</p></div>
-      <div className={styles.questIllustration} aria-hidden="true"><span className={styles.ticketArt}><Flag size={48}/><b>ONE MORE<br/>GOOD STORY</b><i>FOOD GO · ADVENTURE CLUB</i></span><span className={styles.questPin}><Utensils size={26}/></span><span className={styles.questSpark}><Sparkles size={29}/></span></div>
+      <div className={styles.questIllustration} aria-hidden="true"><span className={styles.ticketArt}><b>ONE MORE<br/>GOOD STORY</b><i>FOOD GO · ADVENTURE CLUB</i></span></div>
       <div className={styles.progressTicket}>{profile ? <><span>YOUR EXPLORER PASS</span><strong>{String(profile.level).padStart(2,"0")}<small>/ 250</small></strong><b>{profile.tier} explorer</b>
         <progress aria-label="XP towards next level" value={Math.max(0,profile.xp-xpForLevel(profile.level))} max={Math.max(1,profile.nextLevelXp-xpForLevel(profile.level))}/><small>{profile.xp.toLocaleString()} XP · {profile.level === 250 ? "Legendary level reached" : `${Math.max(0,profile.nextLevelXp-profile.xp).toLocaleString()} XP to next checkpoint`}</small><Link href="/profile">Open your Passport<ArrowRight size={14}/></Link></>
-        : <><span>YOUR NEXT CHAPTER</span><Flag size={39}/><h3>Every good story<br/>starts somewhere.</h3><Link href="/auth/sign-in?next=/quests">Sign in for your quests<ArrowRight size={15}/></Link></>}</div></section>
+        : <><span>YOUR NEXT CHAPTER</span><h3>Every good story<br/>starts somewhere.</h3><Link href="/auth/sign-in?next=/quests">Sign in for your quests<ArrowRight size={15}/></Link></>}</div></section>
     {game.error && <div className={styles.notice} role="alert"><span>{game.error}</span><button type="button" onClick={() => void game.refresh()}><RefreshCw size={15}/>Try again</button></div>}
     {notice && <p className={styles.success} role="status"><CheckCheck size={17}/>{notice}</p>}
     {issued && <section className={styles.issuedCode} role="status"><div><ShieldCheck size={22}/><h3>Give this code to the eligible guest.</h3><p>Confirm their qualifying activity before sharing. Each code is single use.</p></div><code>{issued.code}</code><button type="button" className={styles.secondary} onClick={() => { if (!navigator.clipboard?.writeText) { setNotice("Select the code to copy it manually."); return; } void navigator.clipboard.writeText(issued.code).then(() => setNotice("Quest code copied.")).catch(() => setNotice("Select the code to copy it manually.")); }}><Copy size={16}/>Copy code</button>{issued.expiresAt && <small>Expires {new Date(issued.expiresAt).toLocaleString("en-AU")}</small>}<button type="button" aria-label="Close quest code" onClick={() => setIssued(null)}><X size={18}/></button></section>}
@@ -114,7 +116,7 @@ export function QuestBoard({ signedIn }: { signedIn: boolean }) {
                 <button type="submit" className={styles.secondary} disabled={!!game.busy || (quest.category === "community" && !stories.length)}>Verify completion<ShieldCheck size={16}/></button></form>}</>
               : <button type="button" className={styles.primary} disabled={!!game.busy || quest.acceptedCount >= quest.capacity} onClick={() => void perform({ action: "acceptQuest", questId: quest.id }, "Quest added. Visit the restaurant and ask the team to verify your activity.")}>This one's for me<ArrowRight size={16}/></button>}
         </div></article>; })}</section>
-        : <section className={styles.empty}><span className={styles.emptyIcon}>{filter === "completed" ? <BadgeCheck size={30}/> : <Flag size={30}/>}</span><h3>{game.needsAccount ? "Your next chapter is waiting." : filter === "active" ? "Leave a little room for adventure." : filter === "completed" ? "Your good stories will live here." : filter === "manage" ? "Start with an invitation." : "Something good is on its way."}</h3><p>{game.needsAccount ? "Sign in to accept quests and keep your progress together." : filter === "active" ? "Pick a restaurant request from Discover to get started." : filter === "completed" ? "Completed, verified quests will appear here." : filter === "manage" ? "Create a genuine restaurant request and send it for review." : "Published restaurant quests appear here. In the meantime, find your next favourite on Explore."}</p><Link className={styles.secondary} href={game.needsAccount ? "/auth/sign-in?next=/quests" : "/"}>{game.needsAccount ? "Sign in to join in" : "Go exploring"}<ArrowRight size={16}/></Link></section>}
-    <section className={styles.supportingQuests}><div><BookOpen size={24}/><span><h3>A trail of good discoveries.</h3><p>{signedIn ? `${Math.min(visits,3)} of 3 different places collected.` : "Collect venue-issued visit codes as you explore."}</p></span><Link href="/collect">Collect a visit<ArrowRight size={16}/></Link></div><div><ShieldCheck size={24}/><span><h3>Good experiences. Honestly earned.</h3><p>Quest rewards follow verified activity. Honest feedback always comes first.</p></span></div></section>
+        : <section className={styles.empty}><h3>{game.needsAccount ? "Your next chapter is waiting." : filter === "active" ? "Leave a little room for adventure." : filter === "completed" ? "Your good stories will live here." : filter === "manage" ? "Start with an invitation." : "Something good is on its way."}</h3><p>{game.needsAccount ? "Sign in to accept quests and keep your progress together." : filter === "active" ? "Pick a restaurant request from Discover to get started." : filter === "completed" ? "Completed, verified quests will appear here." : filter === "manage" ? "Create a genuine restaurant request and send it for review." : "Published restaurant quests appear here. In the meantime, find your next favourite on Explore."}</p><Link className={styles.secondary} href={game.needsAccount ? "/auth/sign-in?next=/quests" : "/"}>{game.needsAccount ? "Sign in to join in" : "Go exploring"}<ArrowRight size={16}/></Link></section>}
+    <section className={styles.supportingQuests}><div><span><h3>A trail of good discoveries.</h3><p>{signedIn ? `${Math.min(visits,3)} of 3 different places collected.` : "Collect venue-issued visit codes as you explore."}</p></span><Link href="/collect">Collect a visit<ArrowRight size={16}/></Link></div><div><span><h3>Good experiences. Honestly earned.</h3><p>Quest rewards follow verified activity. Honest feedback always comes first.</p></span></div></section>
   </div>;
 }

@@ -49,7 +49,7 @@ for (const path of ["/api/map/search?q=a","/api/map/search?q=A&q=B","/api/map/ro
 for (const path of ["/api/journey","/api/game","/api/adventure","/api/partner/venues","/api/community/policy"]) {
   check((await request(path)).status === 503, `${path} is disabled when Auth is unconfigured`);
 }
-for (const path of ["/api/journey","/api/adventure","/api/partner/manage","/api/admin","/api/admin/security",
+for (const path of ["/api/account/age","/api/journey","/api/adventure","/api/partner/manage","/api/admin","/api/admin/security",
   "/api/community","/api/community/policy","/api/auth/register","/api/auth/sign-in","/api/auth/sign-out","/api/auth/forgot-password","/api/auth/reset-password"]) {
   check((await request(path, { method: "POST" })).status === 403, `${path} requires the trusted origin`);
   const response = await request(path, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{}" });

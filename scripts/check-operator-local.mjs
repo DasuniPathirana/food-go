@@ -73,6 +73,10 @@ try {
   assert.ok(ready, "Local web server started");
   const signin = await webPost("/api/auth/sign-in", { email, password });
   assert.equal(signin.status, 200, "Verified account signs in");
+  const unknownSession = await fetch(origin + "/api/auth/session", { headers: { Cookie: [...cookies].map(([k,v]) => `${k}=${v}`).join("; ") } });
+  assert.equal((await unknownSession.json()).user.ageStatus.status, "unknown", "An existing account is not silently declared adult");
+  assert.equal((await webPost("/api/account/age", { birthDate: "1990-01-01" })).status, 200, "An existing account records its private date once");
+  assert.equal((await webPost("/api/account/age", { birthDate: "2000-01-01" })).status, 409, "Age declaration cannot be changed through another request");
   assert.equal((await webPost("/api/admin/security", { action: "enrol" })).status, 403, "Member cannot enrol via operator endpoint");
   localSql(`begin;
     insert into private.food_go_operators(user_id) values ('${userId}');
@@ -119,9 +123,9 @@ try {
     assert.ok(response.ok, "Read " + path.split("?")[0]);
     return response.json();
   }
-  async function signup(accountType) {
+  async function signup(accountType, birthDate = "1990-01-01") {
     const address = `${accountType}-${randomUUID()}@example.test`, jar = new Map();
-    const registered = await webPost("/api/auth/register", { email: address, password, displayName: "Fixture " + accountType, accountType,
+    const registered = await webPost("/api/auth/register", { email: address, password, birthDate, displayName: "Fixture " + accountType, accountType,
       acknowledgementVersion: "food-go-community-2026-11-15", acceptedAcknowledgement: true }, jar);
     assert.equal(registered.status, 200, "Register through the application");
     const before = await webPost("/api/auth/sign-in", { email: address, password }, jar);
@@ -154,6 +158,18 @@ try {
     return { address, jar };
   }
   const owner = await signup("partner"), customer = await signup("explorer");
+  const young = await signup("explorer", "2015-01-01");
+  const youngCookie = [...young.jar].map(([k,v]) => `${k}=${v}`).join("; ");
+  const youngSession = await fetch(origin + "/api/auth/session", { headers: { Cookie: youngCookie } });
+  const youngPresentation = await youngSession.json();
+  assert.equal(youngPresentation.user.ageStatus.status, "under16", "Signup birth date reaches the private age gate");
+  assert.ok(!JSON.stringify(youngPresentation).includes("2015-01-01"), "Session presentation does not expose the date");
+  assert.equal((await fetch(origin + "/api/community", { headers: { Cookie: youngCookie } })).status, 403, "Young account cannot read Feed API");
+  assert.equal((await webPost("/api/community", { action: "create", body: "This should remain blocked", visibility: "public", requestId: randomUUID() }, young.jar)).status, 403, "Young account cannot post even before consent");
+  assert.equal((await webPost("/api/account/age", { birthDate: "1990-01-01" }, young.jar)).status, 409, "Young account cannot change its date to unlock Feed");
+  const youngHtml = await (await fetch(origin + "/feed", { headers: { Cookie: youngCookie } })).text();
+  assert.ok(youngHtml.includes("Feed is for ages 16 and over") && !youngHtml.includes('data-section="feed"'), "Direct Feed link returns an age notice and no Feed tab");
+  console.log("Feed age API: 9 assertions passed for existing-account declaration, private signup age, server denial and direct-route protection.");
   const created = await webPost("/api/partner/venues", {
     name: "Connected fixture kitchen", email: owner.address, phone: "0391234567",
     address: "123 Test Street", suburb: "Melbourne", state: "VIC", postcode: "3000", cuisine: "Italian",
@@ -238,7 +254,8 @@ try {
   const postId = (await story.json()).id;
   assert.ok((await read("/api/community?wall=me", customer.jar)).posts.some(p => p.id === postId && p.status === "pending"), "Pending post stays on its personal wall");
   await change({ action: "post.publish", id: postId, requestId: randomUUID(), version: "pending", reason: "Fixture independent post review" });
-  assert.ok((await read("/api/community", new Map())).posts.some(p => p.id === postId), "Approved story reaches the public feed");
+  assert.equal((await fetch(origin + "/api/community")).status, 401, "Guests cannot read age-restricted Feed content");
+  assert.ok((await read("/api/community", owner.jar)).posts.some(p => p.id === postId), "Approved story reaches an eligible member's feed");
   assert.ok((await webPost("/api/community", { action: "like", postId, liked: true }, owner.jar)).ok);
   assert.ok((await webPost("/api/community", { action: "view", postId }, owner.jar)).ok);
   assert.ok((await webPost("/api/community", { action: "view", postId }, owner.jar)).ok);

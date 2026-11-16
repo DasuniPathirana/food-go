@@ -7,7 +7,7 @@ import type { CatalogueState } from "@/lib/catalogue-contracts";
 import { SignOutButton } from "./auth-form";
 import { GameProgress } from "./game-progress";
 import { AvatarWardrobe } from "./avatar-customizer";
-import { CommunityFeed } from "./community-feed";
+import { AgeRestrictedFeed } from "./feed-access";
 import { useJourney } from "./journey-provider";
 import { AvatarIllustration } from "./explorer-avatar";
 import { useAvatarPreferences } from "@/lib/avatar-preferences";
@@ -50,7 +50,7 @@ export function ExplorerProfile({ account }: { account?: {
       <Link href="/venue-dex"><MapPin size={19}/><span>Verified places</span>{journey?.data && <strong>{visits}</strong>}<ArrowRight size={15}/></Link>
       <Link href="/food-dex"><Utensils size={19}/><span>Verified dishes</span>{journey?.data && <strong>{dishes}</strong>}<ArrowRight size={15}/></Link>
     </nav>
-    <section className={styles.connectedWall} aria-label="Your posts"><CommunityFeed initialWall="me" presentation="passport" basePath="/feed"/></section>
+    <section className={styles.connectedWall} aria-label="Your posts"><AgeRestrictedFeed initialWall="me" presentation="passport" basePath="/feed"/></section>
     <details className={styles.details}><summary><Sparkles size={18}/>Achievements, avatar and account<ChevronDown size={18}/></summary><div className={styles.detailsBody}>
       <GameProgress/>
       <section className="content-panel"><h2>Your achievements</h2><div className="badge-grid">

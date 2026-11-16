@@ -11,17 +11,17 @@ do $test_grants$ declare f record; begin
     join pg_extension e on e.oid=d.refobjid where e.extname='pgtap' and p.prokind='f'
   loop execute format('grant execute on function %I.%I(%s) to anon,authenticated',f.nspname,f.proname,f.args); end loop;
 end; $test_grants$;
-select plan(83);
+select plan(85);
 
 insert into auth.users(id,email,email_confirmed_at,phone,phone_confirmed_at,raw_user_meta_data) values
- ('91000000-0000-4000-8000-000000000001','xp-alex@example.invalid',now(),null,null,'{"display_name":"Alex XP"}'),
- ('91000000-0000-4000-8000-000000000002','xp-blair@example.invalid',now(),null,null,'{"display_name":"Blair XP"}'),
- ('91000000-0000-4000-8000-000000000003','xp-casey@example.invalid',now(),null,null,'{"display_name":"Casey XP"}'),
- ('91000000-0000-4000-8000-000000000004','xp-unconfirmed@example.invalid',null,null,null,'{}'),
- ('91000000-0000-4000-8000-000000000005',null,null,'61423456789',now(),'{}'),
- ('91000000-0000-4000-8000-000000000006',null,null,'447234567890',now(),'{}'),
- ('91000000-0000-4000-8000-000000000007','xp-cap-owner@example.invalid',now(),null,null,'{}'),
- ('91000000-0000-4000-8000-000000000008','xp-cap-commenter@example.invalid',now(),null,null,'{}');
+ ('91000000-0000-4000-8000-000000000001','xp-alex@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01","display_name":"Alex XP"}'),
+ ('91000000-0000-4000-8000-000000000002','xp-blair@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01","display_name":"Blair XP"}'),
+ ('91000000-0000-4000-8000-000000000003','xp-casey@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01","display_name":"Casey XP"}'),
+ ('91000000-0000-4000-8000-000000000004','xp-unconfirmed@example.invalid',null,null,null,'{"date_of_birth":"1990-01-01"}'),
+ ('91000000-0000-4000-8000-000000000005',null,null,'61423456789',now(),'{"date_of_birth":"1990-01-01"}'),
+ ('91000000-0000-4000-8000-000000000006',null,null,'447234567890',now(),'{"date_of_birth":"1990-01-01"}'),
+ ('91000000-0000-4000-8000-000000000007','xp-cap-owner@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01"}'),
+ ('91000000-0000-4000-8000-000000000008','xp-cap-commenter@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01"}');
 insert into auth.sessions(id,user_id) select id,id from auth.users where id::text like '91000000-%';
 insert into private.community_policy_acceptances(user_id,policy_version)
 select id,'food-go-community-2026-11-15' from auth.users where id::text like '91000000-%';
@@ -47,6 +47,11 @@ select throws_ok('select * from private.community_post_views','42501',null,'anon
 select throws_ok('select * from private.community_xp_events','42501',null,'anonymous readers cannot inspect the XP ledger');
 select throws_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001')$$,'42501',null,'anonymous impressions cannot record reach');
 select throws_ok('select public.food_go_game_profile()','42501',null,'anonymous readers cannot open a game profile');
+select throws_ok('select public.food_go_community_feed()','42501',null,'anonymous readers cannot inspect Feed content');
+select throws_ok('select public.food_go_community_feed_v2()','42501',null,'anonymous readers cannot inspect enriched Feed content');
+reset role;
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000003","session_id":"91000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+set local role authenticated;
 select is((public.food_go_community_feed_v2(p_post=>'92000000-0000-4000-8000-000000000001')->'posts'->0->>'reachCount')::integer,0,'public DTO starts with zero qualified reach');
 select ok(public.food_go_community_feed_v2()::text !~ 'user_id|viewer_id|beneficiary_id|actor_id|event_key|email|phone|91000000','public feed v2 excludes authentication and reach identities');
 reset role;
@@ -188,7 +193,7 @@ select ('93000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'92000000-0000-4
 select is((select count(*)::integer from private.community_xp_events where beneficiary_id=current_setting('food_go.xp_cap_commenter')::uuid and kind='comment'),10,'daily comment XP cap permits ten approved replies');
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_cap_commenter')::uuid)),50,'twelve approved replies earn only 50 comment XP');
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
-select ('96000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'xp-cap-viewer-'||i||'@example.invalid',now(),'{}'::jsonb from generate_series(1,60) i;
+select ('96000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'xp-cap-viewer-'||i||'@example.invalid',now(),'{"date_of_birth":"1990-01-01"}'::jsonb from generate_series(1,60) i;
 insert into auth.sessions(id,user_id) select id,id from auth.users where id::text like '96000000-%';
 insert into private.community_policy_acceptances(user_id,policy_version)
 select id,'food-go-community-2026-11-15' from auth.users where id::text like '96000000-%';
@@ -217,8 +222,8 @@ select is((select count(*)::integer from private.community_xp_events where benef
 update private.community_xp_events set awarded_at=now()-interval '2 days' where event_key=(select event_key from private.community_xp_events where beneficiary_id=current_setting('food_go.xp_cap_owner')::uuid and kind='post' order by event_key limit 1);
 insert into private.community_posts(id,author_id,body,visibility,moderation_status) values('92000000-0000-4000-8000-000000000107',current_setting('food_go.xp_cap_owner')::uuid,'New day cap story','public','published');
 select is((select count(*)::integer from private.community_xp_events where beneficiary_id=current_setting('food_go.xp_cap_owner')::uuid and kind='post'),4,'historical events from an earlier day do not consume today cap');
-select set_config('request.jwt.claims','{"role":"anon"}',true);
-set local role anon;
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000007","session_id":"91000000-0000-4000-8000-000000000007","role":"authenticated"}',true);
+set local role authenticated;
 select ok(public.food_go_community_feed_v2()::text !~ 'user_id|viewer_id|beneficiary_id|actor_id|event_key|email|phone|91000000|96000000','enriched public counts still reveal no viewer or authentication identities');
 reset role;
 select * from finish();

@@ -13,6 +13,18 @@ export const MAP_SOURCE_IDS = {
   accuracy: "food-go-accuracy",
 } as const;
 export const emptyMapFeatures = () => ({ type: "FeatureCollection" as const, features: [] });
+export const GAME_BUILDING_PALETTE = ["#e98a70", "#edc35d", "#79b5bb", "#94be78", "#b09bcf", "#d9a16d", "#91b7da"] as const;
+
+/** A building keeps its material as the camera moves. Prefer the provider's
+ * stable feature ID, then numeric source IDs, then measured height as a fallback.
+ */
+function gameBuildingColour(height: ExpressionSpecification): ExpressionSpecification {
+  const fallback: ExpressionSpecification = ["*", height, 131];
+  const identity: ExpressionSpecification = ["to-number", ["coalesce", ["id"], ["get", "osm_id"], ["get", "id"], fallback], fallback];
+  const bucket: ExpressionSpecification = ["%", ["abs", ["round", identity]], GAME_BUILDING_PALETTE.length];
+  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2],
+    3, GAME_BUILDING_PALETTE[3], 4, GAME_BUILDING_PALETTE[4], 5, GAME_BUILDING_PALETTE[5], GAME_BUILDING_PALETTE[6]];
+}
 
 type PaintValue = AllPaintProperties[keyof AllPaintProperties];
 export type GameMapPaintOverride = {
@@ -63,8 +75,9 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
                     : layer.id.includes("hospital") ? "#f1e3e8"
                       : /school|track/u.test(layer.id) ? "#eee8d7"
                         : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e4e9d4"
-                          : sourceLayer === "building" ? "#e6d4af" : null;
+                          : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
+      if (sourceLayer === "building") add(layer, "fill-color", gameBuildingColour(["coalesce", ["get", "render_height"], ["get", "height"], 4]), "#000000");
       if (sourceLayer === "park" || /wood|grass|cemetery|pitch/u.test(layer.id)) add(layer, "fill-opacity", 0.95, 1);
       if (sourceLayer === "building") add(layer, "fill-outline-color", "#f9fbfc", layer.paint?.["fill-color"] ?? "#000000");
       if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
@@ -108,8 +121,7 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       const base: ExpressionSpecification = ["coalesce", ["get", local ? "min_height" : "render_min_height"], 0];
       add(layer, "fill-extrusion-height", ["min", 22, ["max", 3.5, ["*", height, 0.42]]], 0);
       add(layer, "fill-extrusion-base", ["min", 20, ["max", 0, ["*", base, 0.42]]], 0);
-      add(layer, "fill-extrusion-color", ["interpolate", ["linear"], height,
-        0, "#fff1cd", 15, "#eed9ad", 40, "#d5e4d2", 100, "#c6d7e9", 250, "#ebcaaf"], "#000000");
+      add(layer, "fill-extrusion-color", gameBuildingColour(height), "#000000");
       add(layer, "fill-extrusion-opacity", 1, 1);
       add(layer, "fill-extrusion-vertical-gradient", true, true);
     }
@@ -203,7 +215,9 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
         [MAP_SOURCE_IDS.aerial]: { type: "image", url: ATLAS_AERIAL, coordinates: corners },
         [MAP_SOURCE_IDS.satellite]: { type: "image", url: ATLAS_SATELLITE, coordinates: corners },
         [MAP_SOURCE_IDS.globalSatellite]: globalSource,
-        [MAP_SOURCE_IDS.buildings]: { type: "geojson", data: ATLAS_BUILDINGS, maxzoom: 17 },
+        // The survey has no feature IDs. Stable array-index IDs let the Game
+        // material vary across its real footprints without altering the file.
+        [MAP_SOURCE_IDS.buildings]: { type: "geojson", data: ATLAS_BUILDINGS, generateId: true, maxzoom: 17 },
         [MAP_SOURCE_IDS.route]: { type: "geojson", data: emptyMapFeatures() },
         [MAP_SOURCE_IDS.accuracy]: { type: "geojson", data: emptyMapFeatures() },
       },

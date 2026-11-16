@@ -27,7 +27,7 @@ test("owner promotions select either deal category while legacy submissions rema
   for (const kind of ["premium", true, null]) assert.equal(partnerAction.safeParse({ ...offer, kind }).success, false);
 });
 test("signup selects an explorer or business interface and rejects privileged roles", () => {
-  const account = { displayName: "New explorer", email: "explorer@example.test", password: "a sufficiently long password",
+  const account = { displayName: "New explorer", email: "explorer@example.test", birthDate: "1990-01-01", password: "a sufficiently long password",
     acknowledgementVersion: "food-go-community-2026-11-15", acceptedAcknowledgement: true };
   assert.ok(registerSchema.safeParse({ ...account, accountType: "partner" }).success);
   assert.ok(registerSchema.safeParse({ ...account, accountType: "explorer" }).success);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { australianMobile } from "../phone-number";
 import { COMMUNITY_POLICY_VERSION } from "../community-policy";
+import { birthDateSchema } from "../age-contracts";
 
 const email = z
   .string()
@@ -36,6 +37,7 @@ export const registerSchema = z.strictObject({
     ),
   email,
   password: strongPassword,
+  birthDate: birthDateSchema,
 });
 export const forgotPasswordSchema = z.strictObject({ email });
 export const resetPasswordSchema = z.strictObject({ password: strongPassword });

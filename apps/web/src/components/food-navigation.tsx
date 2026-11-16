@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Compass, Flag, MessagesSquare, Sprout, Store, Ticket } from "lucide-react";
+import { BookOpen, Compass, Flag, MessagesSquare, Sprout, Store, Ticket, UserRound } from "lucide-react";
 import styles from "./food-navigation.module.css";
 
 const destinations = [
@@ -10,11 +10,12 @@ const destinations = [
   { id: "outback", title: "Outback", icon: Sprout, path: "/outback" },
 ] as const;
 
-export function FoodNavigation({ pathname, mobile = false, demo = false, owner = false }: {
+export function FoodNavigation({ pathname, mobile = false, demo = false, owner = false, feedEligible = false }: {
   pathname: string;
   mobile?: boolean;
   demo?: boolean;
   owner?: boolean;
+  feedEligible?: boolean;
 }) {
   const label = demo ? (mobile ? "Demo mobile navigation" : "Demo navigation") : (mobile ? "Mobile navigation" : "Main navigation");
   return (
@@ -25,7 +26,7 @@ export function FoodNavigation({ pathname, mobile = false, demo = false, owner =
         { id: "explore", title: "Explore", path: "/", icon: Compass },
         { id: "passport", title: "Passport", path: "/profile", icon: MessagesSquare },
         { id: "help", title: "Help", path: "/help", icon: Ticket },
-      ] : destinations).map(({ id, title, path, icon: Icon }) => {
+      ] : destinations.map(item => item.id === "feed" && !feedEligible && !demo ? { id: "passport", title: "Passport", path: "/profile", icon: UserRound } : item)).map(({ id, title, path, icon: Icon }) => {
         const href = demo ? `/demo/${id}` : path;
         const exact = pathname === href || (id === "explore" && pathname === "/demo");
         const inSection = id === "explore" && /^\/(demo\/venue\/|explore-preview(?:\/|$)|venues\/)/.test(pathname)
