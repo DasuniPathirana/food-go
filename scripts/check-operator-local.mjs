@@ -245,6 +245,100 @@ try {
   const combined = await read("/api/journey", customer.jar);
   assert.equal(combined.progress.xp, 378, "Social XP combines with exploration and challenge XP");
   assert.equal(combined.progress.reachCount, 1, "Repeated signed-in views count once");
+  let adventureChecks = 0, villageCreated = false;
+  const questId = randomUUID(), adventureRequests = [];
+  const playerId = localSql(`select id from auth.users where email='${customer.address}';`);
+  assert.match(playerId, /^[\da-f-]{36}$/iu);
+  const adventureEqual = (actual, expected, message) => { assert.equal(actual, expected, message); adventureChecks++; };
+  const adventureOk = (condition, message) => { assert.ok(condition, message); adventureChecks++; };
+  function adventureInput(action) {
+    const requestId = randomUUID(); adventureRequests.push(requestId);
+    return { ...action, requestId };
+  }
+  async function adventurePost(action, jar = customer.jar) {
+    const response = await webPost("/api/adventure", action, jar);
+    adventureEqual(response.status, 200, `Adventure ${action.action} succeeds through the authenticated API`);
+    return response.json();
+  }
+  try {
+    const initial = await read("/api/adventure", customer.jar);
+    adventureEqual(initial.profile.xp, 378, "Adventure reads canonical existing XP through a genuine session");
+    adventureEqual(initial.village, null, "A new account has no silently chosen village");
+    const destination = adventureInput({ action: "chooseDestination", region: "VIC" });
+    const chosen = await adventurePost(destination);
+    villageCreated = true;
+    adventureEqual(chosen.state.village.region, "VIC", "Selected destination is persisted");
+    adventureEqual(chosen.state.village.plots.length, 16, "Server creates all sixteen real village plots");
+    adventureEqual(chosen.state.village.resources.wood, 100, "Server supplies the initial materials");
+    const repeatedChoice = await adventurePost(destination);
+    adventureEqual(repeatedChoice.state.village.resources.wood, 100, "Destination retry never grants another starting balance");
+    const clearing = adventureInput({ action: "clear", cell: 0 });
+    const cleared = await adventurePost(clearing);
+    adventureEqual(cleared.state.village.resources.wood, 90, "Clearing spends exactly ten wood");
+    const repeatedClear = await adventurePost(clearing);
+    adventureEqual(repeatedClear.state.village.resources.wood, 90, "Network retry cannot spend clearing materials twice");
+    const construction = adventureInput({ action: "build", cell: 0, structure: "shed" });
+    const built = await adventurePost(construction);
+    adventureEqual(built.state.village.resources.wood, 60, "Construction spends its server-owned cost");
+    adventureEqual(built.state.village.plots.find(plot => plot.cell === 0)?.status, "building", "Construction has an actual pending state");
+    const repeatedBuild = await adventurePost(construction);
+    adventureEqual(repeatedBuild.state.village.resources.wood, 60, "Build retries do not duplicate construction spending");
+    const earlyFinish = await webPost("/api/adventure", adventureInput({ action: "finish", cell: 0 }), customer.jar);
+    adventureEqual(earlyFinish.status, 409, "Browser cannot finish construction before its server timer");
+    const campaign = await adventurePost(adventureInput({ action: "questCreate", id: questId, venueId: createdVenue,
+      title: "Meet the fixture kitchen", description: "Visit our kitchen and meet the team for a genuine experience.",
+      category: "explore", startsAt: new Date(Date.now() - 60000).toISOString(), endsAt: new Date(Date.now() + 3600000).toISOString(), capacity: 2 }), owner.jar);
+    adventureEqual(campaign.state.quests.find(quest => quest.id === questId)?.status, "draft", "Manager creates a private draft quest");
+    const submitted = await adventurePost(adventureInput({ action: "questSubmit", questId }), owner.jar);
+    adventureEqual(submitted.state.quests.find(quest => quest.id === questId)?.status, "pending", "Submission waits for independent approval");
+    adventureEqual((await webPost("/api/adventure", adventureInput({ action: "acceptQuest", questId }), customer.jar)).status, 404,
+      "Pending campaigns cannot be accepted by customers");
+    const approved = await adventurePost(adventureInput({ action: "questReview", questId, decision: "approve", reason: "Independent fixture campaign review" }), cookies);
+    adventureEqual(approved.state.quests.find(quest => quest.id === questId)?.status, "published", "MFA operator independently publishes the quest");
+    await adventurePost(adventureInput({ action: "acceptQuest", questId }));
+    await adventurePost(adventureInput({ action: "acceptQuest", questId }), cookies);
+    const issued = await adventurePost(adventureInput({ action: "questIssue", questId }), owner.jar);
+    adventureOk(/^[a-f0-9]{32}$/u.test(issued.code), "Restaurant issues an opaque staff confirmation code");
+    const completion = adventureInput({ action: "completeQuest", questId, code: issued.code });
+    const completed = await adventurePost(completion);
+    adventureEqual(completed.state.profile.xp, 428, "Genuine staff confirmation adds exactly fifty quest XP");
+    adventureOk(completed.state.quests.find(quest => quest.id === questId)?.participation?.completedAt,
+      "Completion receipt persists on the player's accepted quest");
+    const sameRetry = await adventurePost(completion);
+    adventureEqual(sameRetry.state.profile.xp, 428, "Identical completion retry does not mint XP");
+    const freshRetry = await adventurePost(adventureInput({ action: "completeQuest", questId, code: issued.code }));
+    adventureEqual(freshRetry.state.profile.xp, 428, "A fresh retry identifier still cannot repeat a completed award");
+    const replay = await webPost("/api/adventure", adventureInput({ action: "completeQuest", questId, code: issued.code }), cookies);
+    adventureEqual(replay.status, 404, "Second accepted account cannot replay the consumed staff code");
+    adventureEqual((await read("/api/adventure", cookies)).profile.xp, 0, "Cross-account replay grants no XP");
+    const daily = await adventurePost(adventureInput({ action: "claimDaily" }));
+    adventureEqual(daily.state.village.dailyClaimed, true, "Verified food participation earns a real daily supplies receipt");
+    adventureEqual(daily.state.village.resources.wood, 80, "Daily supplies add the documented earned materials");
+    adventureEqual((await webPost("/api/adventure", adventureInput({ action: "claimDaily" }), customer.jar)).status, 409,
+      "Daily supplies cannot be duplicated with another request ID");
+    const persisted = await read("/api/adventure", newSession);
+    adventureEqual(persisted.village.resources.wood, 80, "Village balances survive a separate genuine sign-in session");
+    adventureEqual(persisted.profile.xp, 428, "Quest progression survives another sign-in session");
+    const canonical = await read("/api/game", newSession);
+    adventureEqual(canonical.status, "ready", "Canonical game profile endpoint accepts the same verified session");
+    adventureEqual(canonical.xp, 428, "Canonical game profile shares the adventure XP ledger");
+    adventureOk(Number.isInteger(canonical.level) && canonical.level >= 1 && canonical.level <= 250
+      && Number.isInteger(canonical.xpLevel) && canonical.achievements && canonical.nextRequirements,
+    "Canonical profile returns the 250-level ladder and server-derived achievement gates");
+    console.log(`Adventure API: ${adventureChecks} assertions passed across real sessions, village spending, independent quest review, one-use evidence and persisted progression.`);
+  } finally {
+    // Remove only the adventure fixtures this block created. Existing signup,
+    // collection and moderation fixtures belong to the disposable job lifecycle.
+    localSql(`begin;
+      delete from private.adventure_rewards where quest_id='${questId}';
+      delete from private.adventure_participations where quest_id='${questId}';
+      delete from private.adventure_codes where quest_id='${questId}';
+      delete from private.adventure_quests where id='${questId}';
+      delete from private.operator_audit where target='${questId}' and action like 'quest.%';
+      ${adventureRequests.length ? `delete from private.adventure_requests where request_id in (${adventureRequests.map(id => `'${id}'`).join(",")});` : ""}
+      ${villageCreated ? `delete from private.outback_events where user_id='${playerId}';delete from private.outback_villages where user_id='${playerId}';` : ""}
+      commit;`);
+  }
   console.log("Verified customer and owner signup, confirmation email, role routing, restaurant review, menu, QR visits, dish XP, retry handling and persistent collections.");
 } finally {
   app.kill("SIGTERM");

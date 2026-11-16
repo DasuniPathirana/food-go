@@ -22,6 +22,7 @@ insert into auth.users(id,email,email_confirmed_at,phone,phone_confirmed_at,raw_
  ('91000000-0000-4000-8000-000000000006',null,null,'447234567890',now(),'{}'),
  ('91000000-0000-4000-8000-000000000007','xp-cap-owner@example.invalid',now(),null,null,'{}'),
  ('91000000-0000-4000-8000-000000000008','xp-cap-commenter@example.invalid',now(),null,null,'{}');
+insert into auth.sessions(id,user_id) select id,id from auth.users where id::text like '91000000-%';
 insert into private.community_policy_acceptances(user_id,policy_version)
 select id,'food-go-community-2026-11-15' from auth.users where id::text like '91000000-%';
 select set_config('food_go.xp_a',(select id::text from private.community_authors where user_id='91000000-0000-4000-8000-000000000001'),true);
@@ -59,18 +60,18 @@ select throws_ok($$select private.community_award('forged','91000000-0000-4000-8
 select throws_ok('select public.food_go_game_profile()','42501',null,'authenticated role without a subject is not a verified viewer');
 select throws_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001')$$,'42501',null,'missing subject cannot record reach');
 reset role;
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000004","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000004","session_id":"91000000-0000-4000-8000-000000000004","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok('select public.food_go_game_profile()','42501',null,'unconfirmed account cannot open earned progress');
 select throws_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001')$$,'42501',null,'unconfirmed account cannot count as qualified reach');
 reset role;
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000006","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000006","session_id":"91000000-0000-4000-8000-000000000006","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok('select public.food_go_game_profile()','42501',null,'confirmed foreign phone is outside the approved identity scope');
 select throws_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001')$$,'42501',null,'foreign phone confirmation cannot mint reach');
 reset role;
 
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","session_id":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is((public.food_go_game_profile()->>'xp')::integer,25,'one approved public post awards 25 XP');
 select is((public.food_go_game_profile()->>'level')::integer,1,'initial level matches the server threshold');
@@ -87,7 +88,7 @@ select is((public.food_go_game_profile()->>'xp')::integer,25,'self-like awards n
 reset role;
 select is((select count(*)::integer from private.community_post_views),0,'self and unavailable views never create private view records');
 
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000005","session_id":"91000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok('select public.food_go_game_profile()','verified Australian phone account can open progress');
 select lives_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001');select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001');$$,'verified AU phone may record and retry a view');
@@ -96,31 +97,31 @@ reset role;
 select is((select count(*)::integer from private.community_post_views where post_id='92000000-0000-4000-8000-000000000001'),1,'repeated view from one account counts once');
 select is((select count(*)::integer from private.community_xp_events where kind='reach'),1,'repeated view creates one reach reward');
 
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","session_id":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001')$$,'another confirmed account contributes independent reach');
 select lives_ok($$select public.food_go_community_write('{"action":"like","postId":"92000000-0000-4000-8000-000000000001","liked":true}');select public.food_go_community_write('{"action":"like","postId":"92000000-0000-4000-8000-000000000001","liked":true}');$$,'like retry remains idempotent');
 reset role;
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","session_id":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is((public.food_go_game_profile()->>'reachCount')::integer,2,'creator sees two qualified distinct accounts');
 select is((public.food_go_game_profile()->>'xp')::integer,29,'post plus two qualified views and one other-account like total 29 XP');
 select ok(public.food_go_game_profile()::text !~ 'user_id|viewer_id|beneficiary_id|actor_id|event_key|post_id|email|phone|91000000','game profile contains no private actor identifiers');
 select ok((select bool_and((select array_agg(k order by k) from jsonb_object_keys(a) k)=array['at','kind','points']) from jsonb_array_elements(public.food_go_game_profile()->'activity') a),'activity exposes only kind, points and timestamp');
 reset role;
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","session_id":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.food_go_community_write('{"action":"like","postId":"92000000-0000-4000-8000-000000000001","liked":false}')$$,'unlike is accepted');
 reset role;
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_a')::uuid)),27,'unlike withdraws the active reward');
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","session_id":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.food_go_community_write('{"action":"like","postId":"92000000-0000-4000-8000-000000000001","liked":true}')$$,'re-like is accepted');
 reset role;
 select is((select count(*)::integer from private.community_xp_events where kind='like' and post_id='92000000-0000-4000-8000-000000000001'),1,'unlike and re-like retain one historical award key');
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_a')::uuid)),29,'re-like restores the original reward without duplication');
 
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000003","session_id":"91000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 set local role authenticated;
 select is(public.food_go_community_write('{"action":"comment","postId":"92000000-0000-4000-8000-000000000001","body":"A useful food reply","requestId":"94000000-0000-4000-8000-000000000001"}')->>'status','pending','new comment requires moderation before XP');
 select set_config('food_go.xp_comment',public.food_go_community_write('{"action":"comment","postId":"92000000-0000-4000-8000-000000000001","body":"A useful food reply","requestId":"94000000-0000-4000-8000-000000000001"}')->>'id',true);
@@ -148,7 +149,7 @@ select is((select coalesce(sum(points),0)::integer from private.community_active
 update private.community_posts set visibility='private',moderation_status='pending' where id='92000000-0000-4000-8000-000000000001';
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_a')::uuid)),25,'making post private withdraws all its active rewards');
 update private.community_posts set visibility='public',moderation_status='published' where id='92000000-0000-4000-8000-000000000001';
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","session_id":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.food_go_community_write('{"action":"delete","postId":"92000000-0000-4000-8000-000000000001"}')$$,'author can remove own rewarded post');
 select is((public.food_go_game_profile()->>'xp')::integer,25,'soft removal withdraws post, like and reach XP');
@@ -157,7 +158,7 @@ reset role;
 update private.community_posts set deleted_at=null where id='92000000-0000-4000-8000-000000000001';
 
 insert into private.community_blocks(author_id,blocked_id) values(current_setting('food_go.xp_a')::uuid,current_setting('food_go.xp_b')::uuid);
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000002","session_id":"91000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000001')$$,'FC004',null,'blocked viewer cannot record even a repeat view');
 select throws_ok($$select public.food_go_record_post_view('92000000-0000-4000-8000-000000000004')$$,'FC004',null,'blocked viewer cannot add new reach');
@@ -166,7 +167,7 @@ reset role;
 insert into private.community_comments(id,post_id,author_id,body,moderation_status) values('93000000-0000-4000-8000-000000000002','92000000-0000-4000-8000-000000000001',current_setting('food_go.xp_b')::uuid,'Comment approved after a block','published');
 select is((select count(*)::integer from private.community_xp_events where comment_id='93000000-0000-4000-8000-000000000002'),0,'approving comment while authors are blocked creates no reward event');
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_a')::uuid)),51,'blocking withdraws that account like and reach rewards');
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000001","session_id":"91000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is((public.food_go_game_profile()->>'reachCount')::integer,1,'blocked account no longer contributes qualified reach');
 reset role;
@@ -188,12 +189,14 @@ select is((select count(*)::integer from private.community_xp_events where benef
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_cap_commenter')::uuid)),50,'twelve approved replies earn only 50 comment XP');
 insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
 select ('96000000-0000-4000-8000-'||lpad(i::text,12,'0'))::uuid,'xp-cap-viewer-'||i||'@example.invalid',now(),'{}'::jsonb from generate_series(1,60) i;
+insert into auth.sessions(id,user_id) select id,id from auth.users where id::text like '96000000-%';
 insert into private.community_policy_acceptances(user_id,policy_version)
 select id,'food-go-community-2026-11-15' from auth.users where id::text like '96000000-%';
 set local role authenticated;
 do $cap_calls$ declare i integer; begin
   for i in 1..60 loop
-    perform set_config('request.jwt.claims',jsonb_build_object('sub','96000000-0000-4000-8000-'||lpad(i::text,12,'0'),'role','authenticated')::text,true);
+    perform set_config('request.jwt.claims',jsonb_build_object('sub','96000000-0000-4000-8000-'||lpad(i::text,12,'0'),
+      'session_id','96000000-0000-4000-8000-'||lpad(i::text,12,'0'),'role','authenticated')::text,true);
     perform public.food_go_record_post_view('92000000-0000-4000-8000-000000000101');
     perform public.food_go_community_write('{"action":"like","postId":"92000000-0000-4000-8000-000000000101","liked":true}');
   end loop;
@@ -203,7 +206,7 @@ select is((select count(*)::integer from private.community_post_views where post
 select is((select count(*)::integer from private.community_xp_events where post_id='92000000-0000-4000-8000-000000000101' and kind='reach'),25,'reach XP is bounded to 25 accounts per post');
 select is((select count(*)::integer from private.community_xp_events where beneficiary_id=current_setting('food_go.xp_cap_owner')::uuid and kind='like'),50,'daily creator-like XP is capped at 50 unique events');
 select is((select coalesce(sum(points),0)::integer from private.community_active_xp(current_setting('food_go.xp_cap_owner')::uuid)),200,'post, like and reach caps combine to the expected bounded total');
-select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000007","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-4000-8000-000000000007","session_id":"91000000-0000-4000-8000-000000000007","role":"authenticated"}',true);
 set local role authenticated;
 select is((public.food_go_game_profile()->>'reachCount')::integer,60,'profile distinguishes actual qualified reach from capped XP');
 select is(jsonb_array_length(public.food_go_game_profile()->'activity'),12,'recent XP activity is bounded to twelve entries');

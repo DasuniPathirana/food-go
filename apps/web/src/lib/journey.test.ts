@@ -19,6 +19,13 @@ test("restaurant mutations cannot publish or change another organisation", () =>
   assert.ok(!partnerAction.safeParse({ action: "dish", venueId: id, dishId: id, name: "Pasta",
     description: "", price: -100, available: true }).success);
 });
+
+test("owner promotions select either deal category while legacy submissions remain valid", () => {
+  const offer = { action: "promo", venueId: id, id, title: "Lunch offer", description: "An individual meal offer.",
+    startsAt: "2026-11-16T00:00:00Z", endsAt: "2026-11-17T00:00:00Z" };
+  for (const kind of [undefined, "food", "restaurant"]) assert.ok(partnerAction.safeParse({ ...offer, ...(kind && { kind }) }).success);
+  for (const kind of ["premium", true, null]) assert.equal(partnerAction.safeParse({ ...offer, kind }).success, false);
+});
 test("signup selects an explorer or business interface and rejects privileged roles", () => {
   const account = { displayName: "New explorer", email: "explorer@example.test", password: "a sufficiently long password",
     acknowledgementVersion: "food-go-community-2026-11-15", acceptedAcknowledgement: true };

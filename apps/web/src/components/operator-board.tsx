@@ -62,6 +62,7 @@ function DecisionForm({ action,row,onClose,onSaved }: { action: Action;row: Oper
     if (action==="promo.create" || action==="promo.edit") Object.assign(payload,{
       venueId:action==="promo.create" ? row.id : row.venueId, title:text("title"), description:text("description"),
       startsAt:new Date(text("startsAt")).toISOString(), endsAt:new Date(text("endsAt")).toISOString(),
+      kind:text("kind"),
     });
     const signature=JSON.stringify(payload);
     if (identity.current?.signature!==signature) identity.current={signature,id:action==="promo.create" ? crypto.randomUUID() : row.id,requestId:crypto.randomUUID()};
@@ -84,6 +85,7 @@ function DecisionForm({ action,row,onClose,onSaved }: { action: Action;row: Oper
     {action==="venue.locate" && <div className={styles.pair}><label>Latitude<input name="latitude" type="number" step="any" min="-90" max="90" defaultValue={row.latitude ?? undefined} required/></label>
       <label>Longitude<input name="longitude" type="number" step="any" min="-180" max="180" defaultValue={row.longitude ?? undefined} required/></label></div>}
     {isOffer && <>
+      <label>Deal category<select name="kind" defaultValue={row.kind || "restaurant"}><option value="food">Food Deal: a meal, drink or combo</option><option value="restaurant">Restaurant Deal: venue-wide dining</option></select></label>
       <label>Offer title<input name="title" required minLength={2} maxLength={90} defaultValue={action==="promo.edit" ? row.name : ""}/></label>
       <label>Offer details<textarea name="description" required minLength={2} maxLength={400} defaultValue={action==="promo.edit" ? row.detail : ""}/></label>
       <p>Enter dates in your device’s local time zone.</p>

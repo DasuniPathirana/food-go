@@ -50,28 +50,28 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
   };
   for (const layer of layers) {
     const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    if (layer.type === "background") add(layer, "background-color", "#e9edf2", "#000000");
+    if (layer.type === "background") add(layer, "background-color", "#e6efd9", "#000000");
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
-      const landColour = sourceLayer === "water" || layer.id === "water" ? "#8fc9f4"
-        : sourceLayer === "park" || layer.id === "park" ? "#b7e3b9"
-          : layer.id.includes("wood") ? "#acd6b2"
-            : /grass|cemetery|pitch/u.test(layer.id) ? "#c7e8c5"
+      const landColour = sourceLayer === "water" || layer.id === "water" ? "#52bdf0"
+        : sourceLayer === "park" || layer.id === "park" ? "#8bd56e"
+          : layer.id.includes("wood") ? "#5dbb80"
+            : /grass|cemetery|pitch/u.test(layer.id) ? "#acd884"
               : layer.id.includes("wetland") ? "#c6e5d9"
                 : layer.id.includes("sand") ? "#f5ecd2"
                   : /ice|glacier/u.test(layer.id) ? "#f6fbff"
                     : layer.id.includes("hospital") ? "#f1e3e8"
                       : /school|track/u.test(layer.id) ? "#eee8d7"
-                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e7ebef"
-                          : sourceLayer === "building" ? "#e5e5df" : null;
+                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e4e9d4"
+                          : sourceLayer === "building" ? "#e6d4af" : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
       if (sourceLayer === "park" || /wood|grass|cemetery|pitch/u.test(layer.id)) add(layer, "fill-opacity", 0.95, 1);
       if (sourceLayer === "building") add(layer, "fill-outline-color", "#f9fbfc", layer.paint?.["fill-color"] ?? "#000000");
       if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
     }
     if (layer.type === "line") {
-      if (sourceLayer === "waterway") add(layer, "line-color", "#8fc9f4", "#000000");
-      if (sourceLayer === "park") add(layer, "line-color", "#abd6b1", "#000000");
+      if (sourceLayer === "waterway") add(layer, "line-color", "#52bdf0", "#000000");
+      if (sourceLayer === "park") add(layer, "line-color", "#75bf63", "#000000");
       if (sourceLayer === "boundary") {
         add(layer, "line-color", "#a3b3c1", "#000000"); add(layer, "line-opacity", 0.35, 1);
       }
@@ -109,7 +109,7 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       add(layer, "fill-extrusion-height", ["min", 22, ["max", 3.5, ["*", height, 0.42]]], 0);
       add(layer, "fill-extrusion-base", ["min", 20, ["max", 0, ["*", base, 0.42]]], 0);
       add(layer, "fill-extrusion-color", ["interpolate", ["linear"], height,
-        0, "#faf4e8", 15, "#f3e7d4", 40, "#e1eaf1", 100, "#c6ded9", 250, "#c1d5e9"], "#000000");
+        0, "#fff1cd", 15, "#eed9ad", 40, "#d5e4d2", 100, "#c6d7e9", 250, "#ebcaaf"], "#000000");
       add(layer, "fill-extrusion-opacity", 1, 1);
       add(layer, "fill-extrusion-vertical-gradient", true, true);
     }

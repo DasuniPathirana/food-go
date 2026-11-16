@@ -12,7 +12,7 @@ For worldwide satellite imagery, create an origin-restricted public MapTiler bro
 
 The selected setup uses the account's existing single `NEXT_PUBLIC_MAPTILER_KEY` for satellite tiles and direct browser place search. Allow `food-go-three.vercel.app`, `localhost` and `127.0.0.1`, one hostname per line, with the user-agent field blank. The owner accepts combined development/deployed use; remove local entries when testing ends. Do not copy this public key into `MAPTILER_SERVER_KEY`, which is an optional separate backend-only key, not required here. Confirm commercial-use entitlement before public commercial operation; the Free plan permits development/testing, not commercial launch. See [setup required now](setup-now.md).
 
-Apply `20261115150442_food_go_map_service_limits.sql` before using public Photon fallback search or default public foot routing. It provides a shared database lease across server instances, independently limiting each public service to one request per 1.1 seconds. It stores service names and timestamps only. A missing lease returns an unavailable response rather than bypassing provider limits. Direct browser MapTiler search follows the selected account's quota. See [world map operations](world-map.md) for provider setup, privacy and acceptance checks.
+Apply `20261116055307_food_go_map_service_limits.sql` before using public Photon fallback search or default public foot routing. It provides a shared database lease across server instances, independently limiting each public service to one request per 1.1 seconds. It stores service names and timestamps only. A missing lease returns an unavailable response rather than bypassing provider limits. Direct browser MapTiler search follows the selected account's quota. See [world map operations](world-map.md) for provider setup, privacy and acceptance checks.
 
 Use these values after supplying the server settings below and configuring the intended Auth provider:
 
@@ -45,6 +45,11 @@ Set `APP_ORIGIN=https://food-go-three.vercel.app` for the current hosting addres
 | `FOOD_GO_PARTNER_ENABLED` | Verified-account private venue draft workflow | Requires Auth and partner migration; does not publish or verify a business |
 | `FOOD_GO_PHONE_AUTH_ENABLED` | Australian phone-code request/verify routes | Requires Auth, Supabase phone settings and controlled SMS checks |
 | `FOOD_GO_SMS_ENABLED` | Enables the server's signed SMS delivery adapter | Keep false until provider/hook setup and delivery tests pass |
+| `FOOD_GO_EMAIL_ENABLED` | Enables the signed Supabase email hook and Brevo REST adapter | Keep false until the intended hook, verified sender and delivery checks are configured |
+| `SUPABASE_EMAIL_HOOK_SECRET` | Send Email Hook signing secret | Private; separate from the SMS signing secret |
+| `BREVO_API_KEY` | Brevo transactional REST authentication | Private API key, not an SMTP key |
+| `EMAIL_SENDER_NAME` | Approved Brevo sender display name | Owner selected `TaskRoof` temporarily |
+| `EMAIL_SENDER_ADDRESS` | Verified Brevo sender | Owner selected `support@taskroof.com.au` temporarily; must be approved in the provider account |
 | `SUPABASE_SMS_HOOK_SECRET` | Supabase Standard Webhooks signing secret | Secret supplied by the intended project's Send SMS Hook configuration |
 | `MOBILE_MESSAGE_API_USERNAME` | Mobile Message API authentication | Server secret from the provider |
 | `MOBILE_MESSAGE_API_PASSWORD` | Mobile Message API authentication | Server secret from the provider |
@@ -60,7 +65,7 @@ Only literal `true` enables a feature flag. The owner explicitly selected the ex
 ## Settings outside this application's environment
 
 - **Supabase:** exact Site URL, allowed callback URLs, email/phone/signup policy, token/OTP expiry, rate limits, hook registration and backups. The app currently creates callback URLs under `/auth/callback` for profile confirmation and password recovery. Follow the exact allowlist in the [identity guide](../security/identity.md).
-- **Brevo:** verified sender name/address, owned domain DNS authentication and SMTP username/key configured in Supabase Auth's custom SMTP dashboard. This path does not use an application Brevo API key. The sender was deferred by the owner.
+- **Brevo:** the selected transport is the signed Supabase Send Email Hook using a private REST API key. Verify the temporary TaskRoof sender/domain and configure the HTTP hook plus matching signing secret. SMTP credentials are not needed for this connection. See the [email setup](../integrations/messaging.md).
 - **Mobile Message:** approved sender, account credit/limits and owner-controlled Australian test phone. The signed hook endpoint is `https://<your-exact-origin>/api/webhooks/supabase/sms`; configure the actual HTTPS origin in Supabase and the matching hook secret in the host.
 - **Operations:** approved venues/content, moderation ownership, privacy/support details, monitoring and budget controls.
 

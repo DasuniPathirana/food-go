@@ -1,10 +1,10 @@
 # Website deployment handoff
 
-Updated 14 November 2026 for [Kalana8/Food_Go](https://github.com/Kalana8/Food_Go). This is a Next.js 16 website inside an npm workspace containing an Expo app and shared domain package. Deploy the web application with a Node.js server or a Next.js hosting adapter. GitHub Pages/static export cannot serve its server routes, cookies, authenticated calls and SMS hook.
+Updated 16 November 2026 for [Kalana8/Food_Go](https://github.com/Kalana8/Food_Go). This is a Next.js 16 website inside an npm workspace containing an Expo app and shared domain package. Deploy the web application with a Node.js server or a Next.js hosting adapter. GitHub Pages/static export cannot serve its server routes, cookies, authenticated calls and messaging hooks.
 
 The configured path below is Vercel. No hosting project, domain, provider secret or public deployment has been created by adding these files. The repository branch and PR are for review into `develop`; `main` is not the delivery target.
 
-Start with [setup required now](setup-now.md) for the 16 November hosted audit, exact owner/deployer inputs and provider configuration. It lists the pending database migrations and public-launch blockers; this handoff is not a readiness certificate.
+Start with [setup required now](setup-now.md) for the 16 November hosted audit, exact owner/deployer inputs and provider configuration. The four connection migrations are installed through `20261116055317`. The new adventure migration remains pending PostgreSQL/CI acceptance and hosted application. Provider credentials passed read-only checks, but hook setup, delivery tests and public account enablement remain outstanding; the deployed account endpoint still returned 503 and the catalogue was empty. This handoff is not a readiness certificate.
 
 ## 1. Reproduce the build from a clean checkout
 
@@ -38,7 +38,7 @@ Use the client's account and import the GitHub repository. Start with a **Previe
 
 `apps/web/vercel.json` commits the framework, install, build and output settings. Root Directory, outside-root access, project ownership, domains and environment scopes remain dashboard settings. Select the matching Root Directory rather than importing the repository root as a static site. Vercel runs the Next.js adapter; it does not need a custom production start command.
 
-After review, the owner may choose `develop` as the deployment branch for the demonstration project. Set that in the Vercel project's Git settings. Do not merge to or configure a deployment from `main` as a shortcut. Promoting a public production release is a separate decision from accepting a preview build.
+After review, the owner may choose `develop` as the deployment branch for this project. Set that in the Vercel project's Git settings. Do not merge to or configure a deployment from `main` as a shortcut. Promoting a public production release is a separate decision from accepting a preview build.
 
 Use the [environment manifest](environment.md), scoped to the intended Preview or Production environment. No server secret belongs in a `NEXT_PUBLIC_` variable. Keep personal `.env.local`, `.vercel` linkage files and provider credentials out of source control. Provide actual secrets through the hosting/provider dashboards. Apply the shared map-service lease migration and follow [world map operations](world-map.md) for worldwide search, satellite and pedestrian routing.
 
@@ -68,4 +68,4 @@ Do not upload only `.next/static` or the original `prototype` folder as the comp
 
 The owner selected the existing **Food go** project (`azccigsctzhbaxoajqst`) and the current Vercel site for the connected release. The deployer owns rollout. Follow the [release handoff](connected-release.md) for migrations, the first operator, environment settings and the live acceptance run. Run fixture tests only in the disposable CI stack once the project serves customers.
 
-Brevo sender/domain and SMTP credentials are still owner inputs. SMS sign-in requires Mobile Message credentials, approved sender, a public signed Supabase hook and controlled delivery tests. Keep account, production-readiness, phone and SMS flags closed until the corresponding release checks pass. The [environment manifest](environment.md), [messaging guide](../integrations/messaging.md) and [go-live checklist](../launch/go-live-checklist.md) describe the remaining work. Never enable a gate merely to make the demo appear connected.
+The selected email transport uses the owner's Brevo REST key and temporary TaskRoof sender through a signed Supabase Send Email Hook; configure the hook secret and verify the sender before delivery. It does not need an SMTP password. SMS sign-in requires Mobile Message credentials, approved sender, a public signed Supabase hook and controlled delivery tests. Keep account, production-readiness, email, phone and SMS gates closed until their configuration and corresponding checks pass. The [environment manifest](environment.md), [messaging guide](../integrations/messaging.md) and [go-live checklist](../launch/go-live-checklist.md) describe the remaining work. Never enable a gate merely to hide an unavailable state.

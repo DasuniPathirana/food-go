@@ -124,6 +124,10 @@ jobs:
         # CLI 3 targets local by default; --local is not a supported flag.
         run: npx --yes supabase@3.1.0 test db
 
+      - name: Check concurrent quest creation across venue managers
+        timeout-minutes: 2
+        run: node scripts/check-adventure-concurrency-local.mjs
+
       - name: Exercise signup, owner approval, collections and verified XP
         timeout-minutes: 8
         run: |

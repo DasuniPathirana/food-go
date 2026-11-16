@@ -1,6 +1,8 @@
 # Supabase foundation
 
-This directory contains versioned PostgreSQL migrations and integration tests. Committing these files does not create a Supabase project or apply a migration. The client's Sydney development project has the foundation, hardening, partner-draft and community migrations installed. All three database suites passed there using rollback-only fixtures on 13 November 2026. See [the latest community delivery](../docs/progress/07-bright-community.md) and [the earlier analysis](../docs/progress/04-project-analysis.md).
+This directory contains versioned PostgreSQL migrations and integration tests. Committing these files does not create a Supabase project or apply a migration. On 16 November 2026 the owner authorised applying the connection migrations to Food go (`azccigsctzhbaxoajqst`). They are recorded as `20261116055108`, `20261116055203`, `20261116055307` and `20261116055317`, bringing hosted history to ten entries. Private RLS and revoked direct client writes were verified; these checks do not establish full deployed flow acceptance.
+
+The separate `20261116060148_food_go_adventure.sql` adds quests, Outback, bounded 250-level progression and promotion categories. It remains pending disposable PostgreSQL/CI acceptance and hosted application in this record. Do not treat local PostgreSQL-WASM checks as proof of real PostgreSQL concurrency. Require the CI database suite and its separate-connection concurrency checks before the hosted release. See [current setup](../docs/deployment/setup-now.md) for remaining hooks, delivery, deployment and genuine content inputs, and [the earlier analysis](../docs/progress/04-project-analysis.md) for historical context.
 
 ## Apply safely
 
@@ -8,9 +10,9 @@ This directory contains versioned PostgreSQL migrations and integration tests. C
 2. Initialise Supabase in this checkout if `supabase/config.toml` is not present: `supabase init`.
 3. Start the isolated development stack: `supabase start`.
 4. Apply migrations to that disposable database: `supabase db reset`.
-5. Run `supabase test db`. CLI 3 targets the local stack by default. The suites contain 27 tenant, 29 partner and 46 community assertions. All roll their fixtures back.
-6. Review and configure authentication, redirect allowlists, external SMTP and account deletion before connecting a real environment.
-7. Apply reviewed migrations to a separate staging project before any production database.
+5. Run `supabase test db`. CLI 3 targets the local stack by default. Run all committed suites and record their actual TAP plans/results; historical counts below are not the current full-suite acceptance record. Fixtures roll back their data and temporary grants.
+6. Review authentication, exact redirect allowlists, the selected signed Brevo email hook, Mobile Message hook and remaining account security/retention requirements before public use. Credentials passing read-only checks do not prove email or SMS delivery.
+7. Recheck hosted history before any authorised migration application. The owner selected the current Food go project for the release; preserve its installed versions and records. Keep fixture tests in disposable environments.
 
 ## First installation checks
 
@@ -52,11 +54,11 @@ Nearby queries should use the indexed PostGIS `location` column and a server-enf
 
 ## Remaining backend work
 
-- Editing saved drafts, review submission, cross-account duplicate claims and durable infrastructure abuse limits.
-- Ownership evidence checks, administrative approval and immutable audit records.
+- Durable infrastructure abuse limits and handling disputed or duplicate business-authority claims.
+- Supply real independent ownership evidence and operational reviewers; the approval and immutable audit interfaces are implemented, but business authority is not established by signup.
 - Owner invitation acceptance with expiry, role checks and last-owner protection.
 - Venue-scoped upload authorisation, byte-level file inspection and controlled delivery.
-- Signed QR issuance, short expiry, replay protection, proximity checks and server-only reward transactions.
+- Complete deployed acceptance of the implemented short-lived verification codes, replay protection and server-owned rewards; location/proximity fraud controls remain separate from code possession and cosmetic map movement.
 - Offer capacity, redemption, booking and billing workflows.
 - Private data export, account deletion, organisation ownership transfer and retention jobs.
 - API rate limiting, monitoring, operational response and deployed-environment tests.

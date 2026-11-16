@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { readAuthConfig, type AuthConfig } from "./auth/config";
 import { runBounded } from "./community-handlers";
+import { achievementSchema } from "./adventure-contracts";
 
 export const gameProfileSchema = z.object({
-  xp: z.number().int().nonnegative(), level: z.number().int().positive(), nextLevelXp: z.number().int().positive(),
+  xp: z.number().int().nonnegative(), level: z.number().int().min(1).max(250), nextLevelXp: z.number().int().nonnegative(),
+  xpLevel: z.number().int().min(1).max(250).optional(),
+  tier: z.enum(["foundation", "community", "advanced", "mighty", "golden", "legendary"]).optional(),
+  achievements: achievementSchema.optional(), nextRequirements: achievementSchema.optional(),
   reachCount: z.number().int().nonnegative(),
   activity: z.array(z.object({ kind: z.enum(["post", "comment", "like", "reach"]), points: z.number().int().positive().max(25), at: z.iso.datetime({ offset: true }) })).max(12),
 });

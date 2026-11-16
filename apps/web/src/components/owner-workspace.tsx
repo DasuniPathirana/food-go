@@ -80,7 +80,7 @@ export function OwnerWorkspace({ venueId }: { venueId: string }) {
         <p><code>{proof.code}</code></p><p>Expires {new Date(proof.expiresAt).toLocaleTimeString("en-AU")}</p></div>}
     </section>
     <section className="content-panel"><h2>Promotions</h2>
-      {data.promotions.map(p => <p key={p.id}>{p.title} · {p.status} · Ends {new Date(p.ends_at).toLocaleDateString("en-AU")}</p>)}
+      {data.promotions.map(p => <p key={p.id}>{p.title} · {p.kind === "food" ? "Food deal" : "Restaurant deal"} · {p.status} · Ends {new Date(p.ends_at).toLocaleDateString("en-AU")}</p>)}
       {published ? <PromotionForm key={data.promotions.length} busy={busy} save={input => void act(input)}/> : <p>Publish your listing before submitting an offer.</p>}
     </section>
   </div>;
@@ -103,9 +103,10 @@ function PromotionForm({ busy, save }: { busy: boolean; save: (input: Record<str
   const [id] = useState(() => crypto.randomUUID());
   return <form onSubmit={event => {
     event.preventDefault(); const form = new FormData(event.currentTarget);
-    save({ action: "promo", id, title: form.get("title"), description: form.get("description"),
+    save({ action: "promo", id, title: form.get("title"), description: form.get("description"), kind: form.get("kind"),
       startsAt: new Date(String(form.get("start"))).toISOString(), endsAt: new Date(String(form.get("end"))).toISOString() });
   }}><fieldset disabled={busy}><legend>Submit an offer for review</legend>
+    <label>Deal category<select name="kind" defaultValue="restaurant"><option value="food">Food deal</option><option value="restaurant">Restaurant deal</option></select></label>
     <label>Title<input name="title" required minLength={2} maxLength={90}/></label>
     <label>Offer details<textarea name="description" required minLength={2} maxLength={400}/></label>
     <label>Starts<input name="start" type="datetime-local" required/></label><label>Ends<input name="end" type="datetime-local" required/></label>

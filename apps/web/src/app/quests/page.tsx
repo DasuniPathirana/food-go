@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { QuestCollection } from "@/components/quests";
-import { getCatalogue } from "@/lib/catalogue-server";
+import { QuestBoard } from "@/components/adventure/quest-board";
+import { getAuthState } from "@/lib/auth/server";
 
 export const metadata: Metadata = { title: "Quests & trails" };
 
 export default async function QuestsPage() {
-  return <QuestCollection catalogue={await getCatalogue()} />;
+  const account = await getAuthState();
+  return <QuestBoard signedIn={Boolean(account.user)}/>;
 }

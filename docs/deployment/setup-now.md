@@ -2,9 +2,11 @@
 
 Updated 16 November 2026. This is the immediate handoff for the website at `https://food-go-three.vercel.app` and Supabase **Food go**, project `azccigsctzhbaxoajqst`. The owner selected this existing project for the release. The final custom domain has not been chosen.
 
-Delivery remains a branch and PR into `develop`. The hosting team owns migration application, merge and deployment. Do not change `main`, reset the hosted database or deploy an unreviewed branch. This document records required setup; it does not certify that the service is ready.
+Delivery remains a branch and PR into `develop`. The owner separately authorised hosted migration application; the hosting team owns merge and deployment. Do not change `main`, reset the hosted database or deploy an unreviewed branch. This document records required setup; it does not certify that the service is ready.
 
 ## What the read-only audit found
+
+On 16 November 2026 the owner authorised and completed application of the four connection migrations to this same project. Hosted history contains ten entries through `20261116055317`; the new private tables have RLS enabled and no direct client write grants. Policy wrappers and private-original revocation were verified. Accounts, venues and policy receipts remained at zero. The new adventure migration is a separate pending release, subject to disposable database and CI checks before hosted application. Web deployment and email/SMS hook settings remain outstanding.
 
 | Check on 16 November | Observed result | Meaning |
 | --- | --- | --- |
@@ -12,23 +14,26 @@ Delivery remains a branch and PR into `develop`. The hosting team owns migration
 | Public `/api/auth/session` | HTTP 503, `configured:false` | The current deployment has account services closed or incompletely configured. |
 | Public `/api/venues?limit=1` | HTTP 200, ready, zero records | No public restaurant is available in the deployed catalogue. |
 | Aggregate hosted database count | Zero venues, zero published venues | Genuine approved restaurant content is required. |
-| Hosted migration history | Six applied, latest `20261113122412` | Four repository migrations below are pending. |
-| Operator, journey, map lease and policy receipt tables | Absent | Those connected features cannot work on this schema yet. |
+| Hosted migration history | Ten applied, latest `20261116055317` | The four connection migrations below are installed; do not rerun their former versions. |
+| Operator, journey, map lease and policy receipt tables | Present, RLS enabled and direct client writes revoked | Database installation is complete for these features; deployed flow acceptance is still required. |
+| Adventure migration | `20261116060148_food_go_adventure.sql` pending release | Require disposable PostgreSQL/CI acceptance and a separate hosted history check before application. |
+| Provider credentials and senders | Read-only checks accepted the configured providers; TaskRoof sender and Mobile Message sender/credit were checked | Credentials are available in the private handoff. No email/SMS delivery is established by these checks. |
+| Supabase email/SMS hook signing secrets | Missing from the private deployment environment | Create/configure each intended HTTP hook and copy its own generated signing secret before enabling delivery. |
 
-These were safe GETs, migration inspection and aggregate reads. No account, invitation, email, SMS, database fixture or deployment was created. The Vercel dashboard, actual SMTP settings and actual environment scopes were not inspected. A supplied key or a passing build does not prove that the deployed site uses it.
+Public health/catalogue and provider verification used read-only requests. Migration application was a separate owner-authorised action. No account, invitation, email, SMS, hosted database fixture or website deployment was created by those checks. Vercel environment scopes and hook registration still require deployer verification. A supplied key or a passing build does not prove that the deployed site uses it.
 
 The owner has supplied one browser MapTiler key and an openrouteservice key for private local configuration. Their values must stay out of this guide, commits, PR descriptions and logs. Local configuration does not update Vercel. The selected MapTiler setup uses that one public key for browser imagery and browser place search on the allowed local and deployed origins. No second or third MapTiler key is required for this setup.
 
-## Inputs to supply now
+## Available inputs and remaining deployer actions
 
 | Owner or deployer input | Secure destination | Used for |
 | --- | --- | --- |
 | Confirm MapTiler commercial-use entitlement and map/search capacity before public commercial launch | MapTiler account | Current Free plan covers development/testing, not public commercial operation; no plan purchase is performed by this PR |
 | Existing single browser MapTiler key, allowing the three hostnames below | Vercel `NEXT_PUBLIC_MAPTILER_KEY` before build, and ignored `apps/web/.env.local` for local use | Worldwide satellite tiles and browser place search with the same public key |
 | openrouteservice/HeiGIT API key and agreed usage capacity | Server-only `OPENROUTESERVICE_API_KEY` | Real pedestrian routes; existing supplied key still needs deployed verification |
-| Verified sender domain, sender email and sender name | Brevo domain/sender dashboard, then Supabase SMTP settings | Signup confirmation and password recovery |
-| Brevo SMTP login and generated SMTP key | Supabase custom SMTP dashboard | Email transport; no Brevo REST API key is needed for this path |
-| Mobile Message API username, password and approved sender ID | Server-only environment values below | SMS sign-in codes |
+| Supplied, provider-approved temporary TaskRoof sender | Brevo sender/domain dashboard | Owner selected `TaskRoof <support@taskroof.com.au>`; verify actual inbox delivery and domain authentication before launch |
+| Supplied Brevo REST API key and Send Email Hook signing secret | Server-only `BREVO_API_KEY` and `SUPABASE_EMAIL_HOOK_SECRET`; configure the signed HTTP hook in Supabase | Signup confirmation and recovery through Brevo REST; no SMTP password is needed |
+| Supplied Mobile Message API username/password and provider-approved sender | Server-only environment values below | Available in the private handoff; actual SMS delivery still needs controlled acceptance |
 | Supabase Send SMS Hook signing secret | Supabase hook settings and matching server secret | Authenticate the SMS webhook |
 | Controlled email inbox and Australian mobile for acceptance | Private test arrangement with account holder | Actual confirmation, recovery and SMS checks |
 | Approved restaurants, locations, menus, photos and offers | Verified owner workspace, reviewed by operator | Real catalogue, promotions and verified discovery |
@@ -69,14 +74,18 @@ Store the supplied routing key as `OPENROUTESERVICE_API_KEY` on the server. The 
 
 GPS needs HTTPS and the user's permission, not another API key. A user who declines may choose coordinates/search manually. Manual avatar travel is route preview and must not award real location or visit XP. Google Maps/external navigation links target the chosen coordinates and do not require a Google Maps API key in this implementation.
 
-## 2. Apply the pending database migrations
+## 2. Confirm installed migrations and validate the pending adventure release
 
-The deployer must review backup status and migration history, then apply repository migrations in order to the selected project. On 16 November the pending set was:
+**These four migrations are applied on Food go.** Do not run their former filenames again. The connector recorded the versions listed below, and repository filenames were aligned to those versions while preserving SQL contents and hosted history. Recheck history before future database pushes.
 
-1. `20261114211538_food_go_operator_promotions.sql`: operator grants, moderation and promotions.
-2. `20261115102348_food_go_connected_journeys.sql`: owner workspace, saved collections, verified venue/dish discovery and XP.
-3. `20261115150442_food_go_map_service_limits.sql`: shared public geocoding/routing leases.
-4. `20261115163751_food_go_community_acknowledgement.sql`: versioned, account-bound acknowledgement receipts and contribution checks.
+The installed connection migrations, applied on 16 November, are:
+
+1. `20261116055108_food_go_operator_promotions.sql`: operator grants, moderation and promotions.
+2. `20261116055203_food_go_connected_journeys.sql`: owner workspace, saved collections, verified venue/dish discovery and XP.
+3. `20261116055307_food_go_map_service_limits.sql`: shared public geocoding/routing leases.
+4. `20261116055317_food_go_community_acknowledgement.sql`: versioned, account-bound acknowledgement receipts and contribution checks.
+
+`20261116060148_food_go_adventure.sql` adds quest verification, Outback state, the 250-level progression curve and the two promotion categories. It remains pending CI acceptance and hosted application in this handoff. Require successful disposable PostgreSQL tests, including the security/economy regressions, before applying that reviewed migration. Record its eventual installed version separately rather than implying it is covered by the four completed migrations.
 
 Recheck history immediately before applying, since another authorised deployer may have progressed it. Preserve existing records and grants. Never reset this hosted project. Run fixture suites in the disposable CI/local Supabase stack; do not run destructive fixtures against a customer-serving database. Review the [database runbook](../../supabase/README.md) and [preflight SQL](../../supabase/preflight.sql) before executing migrations.
 
@@ -107,22 +116,23 @@ Confirm email/password authentication, permitted signups, required email confirm
 
 When the final domain is known, update Vercel, `APP_ORIGIN`, MapTiler origins, Supabase Site URL, exact callbacks and SMS hook together, then rebuild/retest. Set up a preview's exact origin separately if it needs accounts. Avoid broad redirect wildcards.
 
-## 4. Configure Brevo email now
+## 4. Configure the Brevo REST email hook now
 
-The sender was previously deferred. The owner must now select an owned sending domain, verified sender address and sender name. In Brevo add/authenticate the domain with its supplied DNS records and verify the sender. Under **Settings > SMTP & API > SMTP**, obtain the displayed SMTP login and generate an **SMTP key**.
+The owner supplied a Brevo **REST API key** and selected **TaskRoof <support@taskroof.com.au>** temporarily. Verify that sender and authenticate its domain in the selected Brevo account. This connection uses Supabase's Send Email Hook; it does not require an SMTP username/password.
 
-In Supabase **Authentication > Emails > SMTP Settings**, enable custom SMTP and enter:
+Set these server-only variables in Vercel:
 
-| Field | Value |
+| Variable | Value or source |
 | --- | --- |
-| Sender email | Owner's verified Brevo sender address |
-| Sender name | `Food Go`, subject to owner approval |
-| Host | `smtp-relay.brevo.com` |
-| Port | `587` with STARTTLS |
-| Username | SMTP login displayed in Brevo |
-| Password | Generated SMTP key, not a Brevo API key |
+| `BREVO_API_KEY` | Supplied private REST API key |
+| `EMAIL_SENDER_NAME` | `TaskRoof` |
+| `EMAIL_SENDER_ADDRESS` | `support@taskroof.com.au` |
+| `SUPABASE_EMAIL_HOOK_SECRET` | Generated secret from the intended Supabase Send Email Hook |
+| `FOOD_GO_EMAIL_ENABLED` | `true` only for the configured controlled delivery environment |
 
-Review matching Supabase/Brevo sending limits and sender-domain authentication. The built-in Supabase sender is unsuitable for public customer delivery. Test confirmation and recovery with the controlled inbox, including expired and reused links, in the browser that initiated each PKCE flow. Keep tokens and full email links out of screenshots and records. [Brevo setup](https://developers.brevo.com/docs/supabase-smtp-integration), [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp)
+After deploying the endpoint, open **Supabase Authentication > Hooks > Send Email**, choose HTTP, and set URL `https://food-go-three.vercel.app/api/webhooks/supabase/email`. Generate a signing secret, copy it verbatim to the matching environment variable, and enable the hook. Keep email/password and required confirmation enabled. With the Email provider and hook enabled, the hook sends authentication mail and SMTP is not used. Exact callback URLs remain those above.
+
+Review Supabase/Brevo limits, sender authentication and received links. Test signup/confirmation and password recovery with the controlled inbox, including expired and reused links, in the browser that initiated each PKCE flow. The hook uses stable provider idempotency to cover uncertain-send retries within Brevo's documented 30-minute window. Keep tokens and full email links out of screenshots and records. See [implementation and acceptance](../integrations/messaging.md), [Supabase hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook) and [Brevo REST API](https://developers.brevo.com/reference/send-transac-email).
 
 ## 5. Configure Mobile Message for sign-in codes
 
@@ -177,7 +187,7 @@ Use a real authorised owner/customer pair for the final visit/dish code check. M
 
 Record the deployed commit, origin, date, reviewer and outcome. Keep identities, tokens, codes and credentials in private operational records.
 
-- [ ] All four pending migrations are recorded on the target and CI/database suites pass.
+- [ ] Confirm the four installed connection versions above; require CI/database acceptance and record hosted application of the new adventure migration before enabling its flows.
 - [ ] `/api/health` succeeds; `/api/auth/session` reports configured with no leaked session token; public catalogue shows an approved real restaurant.
 - [ ] Explorer and owner signup, email confirmation, returning login, refresh, sign-out and password reset work on the exact deployed origin.
 - [ ] Streets and satellite load on desktop/mobile with correct attribution; world search works; a real pedestrian route follows streets; full-map open/close preserves state.

@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { RefreshCw, Sparkles, Users } from "lucide-react";
 import { gameProfileSchema, type GameProfile } from "@/lib/game-profile";
+import { playerProgressDisplay } from "@/lib/player-progress-display";
+import Link from "next/link";
 
 export function GameProgress() {
   const [profile, setProfile] = useState<GameProfile | null>(null);
@@ -19,5 +21,6 @@ export function GameProgress() {
       .catch(() => { if (!controller.signal.aborted) setStatus("Your progress could not load. Try again shortly."); });
     return () => controller.abort();
   }, [refresh]);
-  return <section className="profile-card" aria-label="Explorer progression"><h2><Sparkles size={22} />Your adventure</h2>{profile ? <><p><strong>Level {profile.level} · {profile.xp} XP</strong></p><progress aria-label="Progress to next level" value={profile.xp % 250} max={250} /><p>{profile.nextLevelXp - profile.xp} XP to your next level</p><p><Users size={17} /> {profile.reachCount} unique signed-in post views</p><p>Verified places +50, verified dishes +100 and the three-place challenge +100. Approved stories, replies, likes received and unique signed-in reach also earn XP.</p></> : <p role="status">{status}</p>}<button type="button" className="secondary-button" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={16} />Refresh progress</button></section>;
+  const display = profile ? playerProgressDisplay(profile) : null;
+  return <section className="profile-card" aria-label="Explorer progression"><h2><Sparkles size={22} />Your adventure</h2>{profile && display ? <><p><strong>Level {profile.level} of 250 · {profile.xp.toLocaleString("en-AU")} XP</strong></p><progress aria-label="Progress to next level" value={display.value} max={display.maximum} /><p>{display.text}</p>{display.missing.length > 0 && <p>Next milestones: {display.missing.join(", ")}.</p>}<p><Users size={17} /> {profile.reachCount} unique signed-in post views</p><p>Verified discoveries and genuine quests build your profile. After level 100, higher XP targets and varied achievements unlock the next levels.</p><Link href="/quests">View your quests and milestones</Link></> : <p role="status">{status}</p>}<button type="button" className="secondary-button" onClick={() => setRefresh(value => value + 1)}><RefreshCw size={16} />Refresh progress</button></section>;
 }

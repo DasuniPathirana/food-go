@@ -27,7 +27,7 @@ export const partnerAction = z.discriminatedUnion("action", [
     price: z.number().int().min(0).max(1000000), available: z.boolean() }),
   z.strictObject({ action: z.literal("issue"), venueId: z.uuid(), dishId: z.uuid().optional() }),
   z.strictObject({ action: z.literal("promo"), venueId: z.uuid(), id: z.uuid(), title: z.string().trim().min(2).max(90),
-    description: z.string().trim().min(2).max(400), startsAt: time, endsAt: time }),
+    description: z.string().trim().min(2).max(400), startsAt: time, endsAt: time, kind: z.enum(["food", "restaurant"]).optional() }),
 ]);
 export const workspaceSchema = z.object({
   venue: z.object({ id: z.uuid(), name: z.string(), description: z.string(), cuisine: z.string(), address: z.string(),
@@ -35,7 +35,7 @@ export const workspaceSchema = z.object({
     ownership_verified_at: z.string().nullable(), game_enabled: z.boolean(), updated_at: time }),
   dishes: z.array(z.object({ id: z.uuid(), name: z.string(), description: z.string(), price_aud_cents: z.number().nullable(),
     is_available: z.boolean(), updated_at: time })).max(100),
-  promotions: z.array(z.object({ id: z.uuid(), title: z.string(), status: z.string(), ends_at: time })).max(100),
+  promotions: z.array(z.object({ id: z.uuid(), title: z.string(), status: z.string(), ends_at: time, kind: z.enum(["food", "restaurant"]).default("restaurant") })).max(100),
   visits: z.number().int().nonnegative(), discoveries: z.number().int().nonnegative(),
 });
 export type Workspace = z.infer<typeof workspaceSchema>;

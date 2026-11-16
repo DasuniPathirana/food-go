@@ -18,6 +18,7 @@ const promotion = {
   suburb: "Brunswick",
   title: "Weekday lunch",
   description: "A seasonal lunch menu.",
+  kind: "restaurant" as const,
   startsAt: "2026-11-01T00:00:00+00:00",
   endsAt: "2026-12-01T12:30:00.123456+11:00",
 };
@@ -41,6 +42,14 @@ test("the storefront reads its anonymous RPC and exposes only public promotion f
 
 test("an empty active promotion list is a successful public read", async () => {
   assert.deepEqual(await loadPromotions(config, async () => Response.json([])), { status: "ready", promotions: [] });
+});
+
+test("food offers retain their category while older offers default to restaurant deals", async () => {
+  const { kind: _kind, ...legacy } = promotion;
+  const result = await loadPromotions(config, async () => Response.json([{ ...promotion, kind: "food" }, legacy]));
+  assert.equal(result.status, "ready");
+  assert.deepEqual(result.promotions.map(item => item.kind), ["food", "restaurant"]);
+  assert.equal((await loadPromotions(config, async () => Response.json([{ ...promotion, kind: "unknown" }]))).status, "unavailable");
 });
 
 test("demo configuration, provider failures and malformed records cannot become live offers", async () => {

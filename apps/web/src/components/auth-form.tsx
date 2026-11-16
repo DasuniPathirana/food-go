@@ -16,6 +16,7 @@ import { COMMUNITY_POLICY_VERSION } from "@/lib/community-policy";
 import { acknowledgementCheckbox } from "@/lib/community-policy-copy";
 import { CommunityAcknowledgement } from "./community-acknowledgement";
 import consentStyles from "./community-consent.module.css";
+import type { SignInDestination } from "@/lib/auth-return";
 
 const content = {
   "sign-in": {
@@ -51,7 +52,7 @@ export function AuthForm({
   mode: AuthMode;
   configured: boolean;
   notice?: "link-expired" | "password-updated";
-  destination?: "/profile" | "/admin" | "/partner/dashboard" | "/collect";
+  destination?: SignInDestination;
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");

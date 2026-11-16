@@ -8,7 +8,7 @@ Status: not cleared. The first milestone must not be advertised as production-re
 - [ ] Repeat cross-user, cross-organisation and anonymous access tests against staging APIs.
 - [ ] Confirm row-level security and restricted grants on every exposed table and RPC.
 - [ ] Ensure no service-role credential, database password or private token appears in client bundles, source history, logs or screenshots.
-- [ ] Use secure server-validated sessions, an explicit redirect allowlist and production SMTP.
+- [ ] Use secure server-validated sessions, an explicit redirect allowlist and verified production email delivery through the configured signed hook or SMTP transport.
 - [ ] Require MFA for operators and sensitive partner actions where appropriate.
 - [ ] Build an authenticated, transactional onboarding workflow. Never trust an organisation ID, role or verification flag supplied by the browser.
 - [ ] Add independent business-authority verification and duplicate-venue handling.
