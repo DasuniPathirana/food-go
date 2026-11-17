@@ -18,6 +18,8 @@ test("promotion decisions distinguish create, edit and publish and use explicit 
   const offer={id,requestId,reason:"Approved for publication",action:"promo.create",venueId:id,title:"Lunch special",
     description:"Weekday lunch",startsAt:"2026-11-14T09:00:00+11:00",endsAt:"2026-11-14T16:00:00+11:00"};
   assert.ok(operatorActionSchema.safeParse(offer).success);
+  assert.ok(operatorActionSchema.safeParse({ ...offer, kind: "food" }).success);
+  assert.equal(operatorActionSchema.safeParse({ ...offer, kind: "other" }).success, false);
   assert.ok(operatorActionSchema.safeParse({...offer,action:"promo.edit",version:decision.version}).success);
   for (const change of [{...offer,endsAt:offer.startsAt},{...offer,startsAt:"tomorrow"},{...offer,action:"promo.edit"},
     {...offer,action:"promo.publish"},{...offer,moderationStatus:"published"}]) {

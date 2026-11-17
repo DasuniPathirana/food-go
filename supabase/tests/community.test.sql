@@ -10,14 +10,15 @@ do $test_grants$ declare f record; begin
     join pg_extension e on e.oid=d.refobjid where e.extname='pgtap' and p.prokind='f'
   loop execute format('grant execute on function %I.%I(%s) to anon,authenticated',f.nspname,f.proname,f.args); end loop;
 end; $test_grants$;
-select plan(46);
+select plan(47);
 insert into auth.users(id,email,email_confirmed_at,phone,phone_confirmed_at,raw_user_meta_data) values
- ('81000000-0000-4000-8000-000000000001','community-a@example.invalid',now(),null,null,'{"display_name":"Alex"}'),
- ('81000000-0000-4000-8000-000000000002','community-b@example.invalid',now(),null,null,'{"display_name":"Blair"}'),
- ('81000000-0000-4000-8000-000000000003','community-c@example.invalid',now(),null,null,'{"display_name":"Casey"}'),
- ('81000000-0000-4000-8000-000000000004','community-unconfirmed@example.invalid',null,null,null,'{}'),
- ('81000000-0000-4000-8000-000000000005',null,null,'61412345678',now(),'{}'),
- ('81000000-0000-4000-8000-000000000006',null,null,'447123456789',now(),'{}');
+ ('81000000-0000-4000-8000-000000000001','community-a@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01","display_name":"Alex"}'),
+ ('81000000-0000-4000-8000-000000000002','community-b@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01","display_name":"Blair"}'),
+ ('81000000-0000-4000-8000-000000000003','community-c@example.invalid',now(),null,null,'{"date_of_birth":"1990-01-01","display_name":"Casey"}'),
+ ('81000000-0000-4000-8000-000000000004','community-unconfirmed@example.invalid',null,null,null,'{"date_of_birth":"1990-01-01"}'),
+ ('81000000-0000-4000-8000-000000000005',null,null,'61412345678',now(),'{"date_of_birth":"1990-01-01"}'),
+ ('81000000-0000-4000-8000-000000000006',null,null,'447123456789',now(),'{"date_of_birth":"1990-01-01"}');
+insert into auth.sessions(id,user_id) select id,id from auth.users where id::text like '81000000-%';
 insert into private.community_policy_acceptances(user_id,policy_version)
 select id,'food-go-community-2026-11-15' from auth.users where id::text like '81000000-%';
 select set_config('food_go.actor_a',(select id::text from private.community_authors where user_id='81000000-0000-4000-8000-000000000001'),true);
@@ -36,30 +37,34 @@ insert into private.community_shares(author_id,post_id) values(current_setting('
 set local role anon;
 select throws_ok($$select public.food_go_community_write('{"action":"like","postId":"82000000-0000-4000-8000-000000000001","liked":true}')$$,'42501',null,'anonymous users cannot write');
 select throws_ok('select * from private.community_posts','42501',null,'anonymous users cannot bypass presentation RPC');
+select throws_ok('select public.food_go_community_feed()','42501',null,'anonymous users cannot read Feed content');
+select throws_ok($$select public.food_go_community_feed(p_wall=>'me')$$,'42501',null,'anonymous user cannot open an account wall');
+reset role;
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000003","session_id":"81000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+set local role authenticated;
 select is(jsonb_array_length(public.food_go_community_feed()->'posts'),3,'public feed contains only approved public posts');
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000004')->'posts'),0,'private post IDs are not public permalinks');
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000005')->'posts'),0,'pending post IDs are not public permalinks');
 select ok(public.food_go_community_feed()::text !~ 'user_id|email|phone|81000000|moderation_status','public DTO excludes private identities and moderation columns');
-select is(public.food_go_community_feed()->'viewer','null'::jsonb,'anonymous reader has no viewer identity');
+select is(public.food_go_community_feed()->'viewer'->>'id',current_setting('food_go.actor_c'),'eligible reader receives only their public author alias');
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000001')->'posts'->0->'comments'),20,'comment previews are bounded');
 select ok(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000001')->'posts'->0->>'commentsNextCursor' is not null,'comment continuation is provided');
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000001',p_comments_cursor=>public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000001')->'posts'->0->>'commentsNextCursor')->'posts'->0->'comments'),2,'comment continuation reaches remaining replies');
 select throws_ok($$select public.food_go_community_feed(p_cursor=>'not a cursor')$$,'22023',null,'direct query rejects malformed cursor');
-select throws_ok($$select public.food_go_community_feed(p_wall=>'me')$$,'42501',null,'anonymous user cannot open an account wall');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000004","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000004","session_id":"81000000-0000-4000-8000-000000000004","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$select public.food_go_community_write('{"action":"create","body":"An unconfirmed post","visibility":"public","requestId":"83000000-0000-4000-8000-000000000001"}')$$,'42501',null,'unconfirmed identity cannot submit content');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000005","session_id":"81000000-0000-4000-8000-000000000005","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.food_go_community_write('{"action":"create","body":"My private phone thought","visibility":"private","requestId":"83000000-0000-4000-8000-000000000001"}')$$,'verified Australian phone identity can submit');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000006","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000006","session_id":"81000000-0000-4000-8000-000000000006","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$select public.food_go_community_write('{"action":"create","body":"Foreign phone post","visibility":"public","requestId":"83000000-0000-4000-8000-000000000001"}')$$,'42501',null,'foreign phone does not bypass confirmed AU identity scope');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","session_id":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select is(public.food_go_community_write('{"action":"create","body":"My new experience","visibility":"public","requestId":"83000000-0000-4000-8000-000000000001"}')->>'status','pending','new public posts cannot publish themselves');
 select is(public.food_go_community_write('{"action":"create","body":"My new experience","visibility":"public","requestId":"83000000-0000-4000-8000-000000000001"}')->>'id',public.food_go_community_write('{"action":"create","body":"My new experience","visibility":"public","requestId":"83000000-0000-4000-8000-000000000001"}')->>'id','same submission key returns the original post');
@@ -84,24 +89,24 @@ select lives_ok($$select public.food_go_community_write(jsonb_build_object('acti
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000002')->'posts'),0,'blocked author post disappears even through guessed permalink');
 select is(jsonb_array_length(public.food_go_community_feed(p_wall=>current_setting('food_go.actor_b'))->'posts'),0,'blocked wall cannot leak a third-party original through a reshare');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000002","session_id":"81000000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select is(jsonb_array_length(public.food_go_community_feed(p_wall=>current_setting('food_go.actor_a'))->'posts'),0,'block is mutual for wall reads');
 select throws_ok($$select public.food_go_community_write('{"action":"like","postId":"82000000-0000-4000-8000-000000000001","liked":true}')$$,'FC004',null,'blocked actor cannot react to the blocker');
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000004')->'posts'),0,'different authenticated account cannot read private thought');
 reset role;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","session_id":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select lives_ok($$select public.food_go_community_write('{"action":"delete","postId":"82000000-0000-4000-8000-000000000001"}')$$,'author can remove own experience');
 reset role;
-select set_config('request.jwt.claims','{"role":"anon"}',true);
-set local role anon;
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000003","session_id":"81000000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+set local role authenticated;
 select is(jsonb_array_length(public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000001')->'posts'),0,'deleted original and all its comments disappear from public read');
 select is((public.food_go_community_feed(p_post=>'82000000-0000-4000-8000-000000000002')->'posts'->0->>'commentCount')::integer,0,'pending reply never enters another reader count');
 reset role;
 insert into private.community_posts(author_id,body,visibility)
 select current_setting('food_go.actor_a')::uuid,'Daily limit fixture '||i,'private' from generate_series(1,20) i;
-select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"81000000-0000-4000-8000-000000000001","session_id":"81000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$select public.food_go_community_write('{"action":"create","body":"Too many posts","visibility":"public","requestId":"83000000-0000-4000-8000-000000000003"}')$$,'FC002',null,'daily post limit is enforced by database direct calls');
 select lives_ok($$select public.food_go_community_write('{"action":"create","body":"My new experience","visibility":"public","requestId":"83000000-0000-4000-8000-000000000001"}')$$,'unchanged successful retry still works after reaching the cap');

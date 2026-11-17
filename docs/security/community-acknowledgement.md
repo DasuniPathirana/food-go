@@ -38,6 +38,6 @@ Project administrators manage Auth account suspensions through their existing Su
 
 ## Deployment and verification
 
-Apply `20261115163751_food_go_community_acknowledgement.sql` after earlier pending migrations. Deploy the matching application version. If the migration is missing or the current version differs, acknowledgement checks and contribution writes fail closed. No existing account is silently marked accepted. The release remains PR-only; no hosted migration was applied for this change.
+Apply `20261116055317_food_go_community_acknowledgement.sql` after earlier pending migrations. Deploy the matching application version. If the migration is missing or the current version differs, acknowledgement checks and contribution writes fail closed. No existing account is silently marked accepted. The release remains PR-only; no hosted migration was applied for this change.
 
 The API has trusted-origin checks, body/operation deadlines, no-store responses and bounded strict input. SQL tests cover caller isolation, explicit/current-version acceptance, metadata forgery, idempotent timestamps, direct-table/function bypass, consent gates, banned-account writes, and safety actions before acceptance. The isolated signup-to-XP workflow checks rejection before consent, first acceptance and retry receipts, then the existing post moderation and social XP journey.

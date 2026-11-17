@@ -7,11 +7,12 @@ import type { CatalogueState } from "@/lib/catalogue-contracts";
 import { SignOutButton } from "./auth-form";
 import { GameProgress } from "./game-progress";
 import { AvatarWardrobe } from "./avatar-customizer";
-import { CommunityFeed } from "./community-feed";
+import { AgeRestrictedFeed } from "./feed-access";
 import { useJourney } from "./journey-provider";
 import { AvatarIllustration } from "./explorer-avatar";
 import { useAvatarPreferences } from "@/lib/avatar-preferences";
 import styles from "./passport-wall.module.css";
+import { playerProgressDisplay } from "@/lib/player-progress-display";
 
 export function ExplorerProfile({ account }: { account?: {
   displayName: string; email: string | null; phone?: string | null; accountType?: "explorer" | "partner";
@@ -31,24 +32,25 @@ export function ExplorerProfile({ account }: { account?: {
   }
   const visits = journey?.data?.visits.length ?? 0, dishes = journey?.data?.discoveries.length ?? 0;
   const progress = journey?.data?.progress;
+  const progressDisplay = progress ? playerProgressDisplay(progress) : null;
   return <div className={styles.page}><header className={styles.profileHeading}><div><h1>Passport</h1><p>Your food story, all in one place.</p></div>
     <Link href="/collect" className={styles.collectLink}><MapPin size={17}/>Collect a discovery<ArrowRight size={16}/></Link></header>
-    <section className={styles.personalCover} aria-label="Your explorer identity">
+    <section className={styles.personalCover} data-tier={progress?.tier} aria-label="Your explorer identity">
       <div className={styles.personalIdentity}><span className={styles.personalPortrait}><AvatarIllustration avatarId={avatar.preferences.avatarId}/></span><div>
         <h2>{account?.displayName || "Make yourself at home."}</h2>
         <p>{account ? account.accountType === "partner" ? "Restaurant partner and food explorer" : "Food explorer" : "Save your favourites. Collect your discoveries. Share your story."}</p>
         {account ? <div className={styles.identityActions}><Link href="/" ><Compass size={15}/>Back to the map<ArrowRight size={14}/></Link><SignOutButton/></div> :
           <div className={styles.guestActions}><Link href="/auth/register">Create your Passport<ArrowRight size={16}/></Link><Link href="/auth/sign-in">Sign in</Link></div>}
       </div></div>
-      {account && <div className={styles.personalProgress}>{progress ? <><div><span><Sparkles size={16}/>Level {progress.level}</span><strong>{progress.xp.toLocaleString("en-AU")} <small>XP</small></strong></div>
-        <progress aria-label="Progress to next level" value={progress.xp % 250} max={250}/><p>{progress.nextLevelXp - progress.xp} XP to your next level</p></> : <p role="status">{journey?.error ? "Your progress could not load." : "Loading your progress…"}</p>}</div>}
+      {account && <div className={styles.personalProgress}>{progress ? <><div><span><Sparkles size={16}/>Level {progress.level}{progress.tier && ["mighty","golden","legendary"].includes(progress.tier) ? ` · ${progress.tier[0].toUpperCase()}${progress.tier.slice(1)}` : ""}</span><strong>{progress.xp.toLocaleString("en-AU")} <small>XP</small></strong></div>
+        {progressDisplay && <><progress aria-label="Progress to next level" value={progressDisplay.value} max={progressDisplay.maximum}/><p>{progressDisplay.text}</p>{progressDisplay.missing.length > 0 && <Link href="/quests">View next milestones<ArrowRight size={14}/></Link>}</>}</> : <p role="status">{journey?.error ? "Your progress could not load." : "Loading your progress…"}</p>}</div>}
     </section>
     {account && <><nav className={styles.discoveryLinks} aria-label="Your discoveries">
       <Link href="/venue-dex"><Bookmark size={19}/><span>Saved places</span>{journey?.data && <strong>{journey.data.savedVenues.length}</strong>}<ArrowRight size={15}/></Link>
       <Link href="/venue-dex"><MapPin size={19}/><span>Verified places</span>{journey?.data && <strong>{visits}</strong>}<ArrowRight size={15}/></Link>
       <Link href="/food-dex"><Utensils size={19}/><span>Verified dishes</span>{journey?.data && <strong>{dishes}</strong>}<ArrowRight size={15}/></Link>
     </nav>
-    <section className={styles.connectedWall} aria-label="Your posts"><CommunityFeed initialWall="me" presentation="passport" basePath="/feed"/></section>
+    <section className={styles.connectedWall} aria-label="Your posts"><AgeRestrictedFeed initialWall="me" presentation="passport" basePath="/feed"/></section>
     <details className={styles.details}><summary><Sparkles size={18}/>Achievements, avatar and account<ChevronDown size={18}/></summary><div className={styles.detailsBody}>
       <GameProgress/>
       <section className="content-panel"><h2>Your achievements</h2><div className="badge-grid">

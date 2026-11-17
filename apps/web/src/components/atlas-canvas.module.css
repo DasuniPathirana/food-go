@@ -126,7 +126,7 @@
 }
 .credit { right: 0; }
 .credit a { text-decoration: underline; text-underline-offset: 2px; }
-.provider { left: 0; bottom: 20px; }
+.provider { left: 12px; bottom: 48px; z-index: 4; border-radius: 4px; }
 .provider img { width: 75px; height: 18px; object-fit: contain; }
 @media (max-width: 700px), (max-height: 520px) {
   .tools { grid-template-columns: repeat(2, 44px); }

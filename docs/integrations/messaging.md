@@ -26,17 +26,38 @@ The screen provides a 60-second resend cooldown for usability. It is not a distr
 
 Sources: [Supabase phone sign-in](https://supabase.com/docs/guides/auth/phone-login), [requesting OTPs](https://supabase.com/docs/reference/javascript/auth-signinwithotp) and [verifying OTPs](https://supabase.com/docs/reference/javascript/auth-verifyotp).
 
-## Brevo email through Supabase
+## Brevo REST email through the Supabase Send Email Hook
 
-Use Supabase Auth's custom SMTP configuration so Supabase creates confirmation and recovery links and Brevo delivers the mail. Application code does not need a Brevo API key for this path.
+The selected connection uses the supplied **Brevo REST API key**, not an SMTP password. Supabase creates account tokens and calls the signed Food Go email hook; the server sends the email through Brevo's fixed transactional REST endpoint. When this hook is enabled, Supabase does not use SMTP for these emails. The owner's temporary sender is **TaskRoof <support@taskroof.com.au>**. Verify that sender/domain in the selected Brevo account before delivery.
 
-1. Authenticate the sending domain in Brevo with its supplied DNS records and verify the sender address.
-2. Obtain the SMTP username and an SMTP key from Brevo's SMTP settings. The SMTP key is different from a Brevo API key.
-3. In the intended Supabase development project's Authentication email settings, enable custom SMTP. Use host `smtp-relay.brevo.com`, port `587` with STARTTLS, the SMTP credentials and verified sender. Enter secrets in the dashboard or approved secret store.
-4. Set the exact app origin and callback allowlist described in [the identity guide](../security/identity.md). Configure confirmation, password rules, provider limits and email templates.
-5. Use a controlled test account to verify confirmation, sign-in, reset, expiry, replay rejection and delivery logs. Check received links and sender identity without recording tokens in screenshots or documentation.
+Configure these server-only values through the hosting dashboard or ignored local environment:
 
-Source: [Brevo's Supabase SMTP guide](https://developers.brevo.com/docs/supabase-smtp-integration) and [Supabase custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
+| Variable | Value or source |
+| --- | --- |
+| `FOOD_GO_EMAIL_ENABLED` | Keep `false` until the intended hook and sender are configured; set `true` for controlled delivery checks. |
+| `BREVO_API_KEY` | The owner's Brevo REST key, kept private. An SMTP key cannot substitute for it. |
+| `EMAIL_SENDER_NAME` | `TaskRoof`, the owner's selected temporary sender. |
+| `EMAIL_SENDER_ADDRESS` | `support@taskroof.com.au`, verified in that Brevo account. |
+| `SUPABASE_EMAIL_HOOK_SECRET` | Signing secret from the intended project's Send Email Hook, retaining `v1,whsec_`/`whsec_` format. Separate from the SMS hook secret. |
+| `APP_ORIGIN` and `SUPABASE_URL` | Exact intended website and project origins. |
+
+Deploy the reviewed endpoint, then in **Supabase Authentication > Hooks > Send Email**, select an HTTP hook and enter:
+
+```text
+https://food-go-three.vercel.app/api/webhooks/supabase/email
+```
+
+Generate the hook signing secret and copy it verbatim into `SUPABASE_EMAIL_HOOK_SECRET` in the corresponding web environment. Save/enable the hook. Keep the Email provider enabled, email/password enabled and confirmation required. Site URL and exact callback entries remain those in [setup required now](../deployment/setup-now.md); do not point the callback directly at the reset screen. No SMTP username, SMTP password or Brevo email-template ID is required by this connection.
+
+The endpoint verifies Standard Webhooks signatures and five-minute timestamp tolerance against the exact raw body, caps input and provider responses at 32 KB, and accepts only known account email actions. It builds links through the configured Supabase `/auth/v1/verify` endpoint, with a validated same-origin confirmation/recovery callback. Supabase performs token verification and redirects with its PKCE code; the existing Food Go callback exchanges that code and grants recovery permission only for a recovery flow. Open confirmation/recovery mail in the browser that initiated it. Secure email changes send the current and new addresses their correctly mapped hashes in one Brevo batch.
+
+Each signed event deterministically produces one UUID in Brevo's `headers.idempotencyKey`. A timeout or webhook retry reuses that UUID; the application does not retry inline. Brevo documents a 30-minute deduplication window. Explicit provider idempotency duplicates are acknowledged without another send; other failures remain unavailable. Keep API credentials/sender configuration stable while retries are outstanding. This provider window does not establish permanent replay protection or delivery to an inbox. There is no process-local deduplication claim.
+
+The hook returns an empty HTTP 200 only for a valid accepted batch or an explicit idempotency duplicate. It never logs tokens, links, recipients, provider bodies or exceptions. Public errors are generic. Account security notifications and reauthentication codes have bounded fixed copy. App account gates remain separate from delivery configuration.
+
+Use an authorised inbox to test signup, confirmation, recovery, wrong/expired/replayed links and delivery failure on the deployed origin. Verify sender-domain authentication and actual received links; disable click-tracking/link rewriting for authentication mail. Automated tests use fake fetch only and do not send email. SMTP remains an optional alternative transport if the owner deliberately chooses it later; do not configure both as competing delivery paths.
+
+Sources: [Supabase Send Email Hook and hash mapping](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook), [Brevo transactional REST API](https://developers.brevo.com/reference/send-transac-email), [Brevo idempotency](https://developers.brevo.com/docs/heterogenous-versions-batch-emails).
 
 ## Mobile Message SMS hook
 

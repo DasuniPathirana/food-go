@@ -4,13 +4,19 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
+The [17 November update](docs/progress/20-clean-ui-and-feed-age.md) removes decorative icon badges, colours real map buildings, adds private signup age capture and enforces 16+ access to Feed and personal walls. It also fixes the false inbox success after Supabase rejected signup. Follow [the missing-email repair](docs/deployment/email-signup-repair.md) for the required hosted signup and Brevo hook settings.
+
+The latest [five-section delivery](docs/progress/19-five-sections-and-outback.md) adds Feed, Quests, Explore, Deals and Outback, a brighter real-world Game map, two offer categories, genuine reviewed partner quests, a 250-level server-derived ladder and an original playable Australian village. Passport retains the personal wall. The original standalone prototype is unchanged.
+
+All eleven migrations are installed on the owner-selected Supabase project, including adventure at `20261116181558`. Real disposable Supabase CI passed 360 SQL assertions, a deterministic concurrent-manager test and 47 adventure API assertions alongside the existing customer/owner/operator journeys. The current website still needs the deployer to install this PR, configure the two signed messaging hooks and verify real delivery. The hosted catalogue has no published restaurants yet. Start with [setup required now](docs/deployment/setup-now.md); these results do not certify public readiness.
+
 The website now uses connected signup, customer collections, venue-issued verification and server-derived XP. Explorers land on Explore and restaurant owners land on their dashboard. Owners can manage listing details and menus, submit promotions and issue discovery codes after approval. The website's demo and preview routes have been retired. See the [connected release handoff](docs/deployment/connected-release.md) for rollout and verification.
 
 The [connected release handoff](docs/deployment/connected-release.md) covers the operator portal, authenticator sign-in, restaurant and promotion publication, Feed, Passport and the revised Explore controls. It includes the deployment order and acceptance checks for the existing Vercel site.
 
 Community participation now requires an explicit, versioned acknowledgement recorded for the verified account. Reporting, blocking and browsing remain available without acceptance. See [the consent flow and verification](docs/progress/16-community-acknowledgement.md) and [the wording and enforcement policy](docs/security/community-acknowledgement.md).
 
-The latest [connected UI refinement](docs/progress/17-connected-ui-refinement.md) improves the map's visual hierarchy, navigation, Feed, Passport, collections, offers and signup. [Research and design decisions](docs/research/17-ui-refinement.md) document the direction and measured checks.
+The earlier [connected UI refinement](docs/progress/17-connected-ui-refinement.md) improves the map's visual hierarchy, navigation, Feed, Passport, collections, offers and signup. [Research and design decisions](docs/research/17-ui-refinement.md) document the direction and measured checks.
 
 Explore now has worldwide streets, available 3D buildings and an interactive avatar. Search a place or type coordinates, position the explorer manually, follow a real pedestrian route, or enable live location. Worldwide satellite requires an origin-restricted provider key; bundled Melbourne imagery stays clearly labelled. A 2D world map preserves interactions without WebGL. Feed, collections, Deals and Passport share the light market-signage design. [World explorer delivery](docs/progress/15-world-explorer.md) and [map deployment requirements](docs/deployment/world-map.md).
 
@@ -53,7 +59,7 @@ npm ci
 npm run dev
 ```
 
-Open the printed local URL, normally `http://127.0.0.1:3000`. No keys or paid services are needed for the preview. The development server binds only to loopback.
+Open the printed local URL, normally `http://127.0.0.1:3000`. Worldwide streets work without a map key; connected records/accounts and optional satellite/routing require the documented environment settings. Historical demo routes return 404. The development server binds only to loopback.
 
 For the Expo mobile project:
 
@@ -65,7 +71,7 @@ See [the mobile README](apps/mobile/README.md) for Expo and device requirements.
 
 ## Deploy the website
 
-Use the [deployment handoff](docs/deployment/README.md) for the GitHub-to-Vercel path, exact monorepo settings, clean-checkout commands and rollout checks. The web project includes `apps/web/vercel.json`; choose `apps/web` as its Vercel Root Directory and Node.js 24. The `/demo` presentation works with provider services disabled. [Environment settings](docs/deployment/environment.md) separate the demo values from the later connected-account release.
+Use the [deployment handoff](docs/deployment/README.md) for the GitHub-to-Vercel path, exact monorepo settings, clean-checkout commands and rollout checks. The web project includes `apps/web/vercel.json`; choose `apps/web` as its Vercel Root Directory and Node.js 24. The entry route is `/`. [Environment settings](docs/deployment/environment.md) describe the connected services and gates; [current setup](docs/deployment/setup-now.md) records installed migrations and remaining launch actions. Review and merge through `develop`, leaving `main` untouched.
 
 For a Node.js host, build from the repository root with `npm ci` and `npm run build:web`, then run `npm run start:web`. Set `PORT` in the host process environment. For local production-build QA, use `npm run start:web:local`, which binds to loopback. Public deployment and real-user activation still require the owner's hosting settings and [release checks](docs/deployment/release-checklist.md).
 
@@ -95,9 +101,9 @@ For a configured local Supabase project, run `npm run check:supabase`. This load
 
 ## Security boundaries
 
-- The demo has no working privileged write endpoint. `POST /api/partner/venues` rejects untrusted origins and otherwise remains unavailable.
-- The database migration enables row-level security on all application tables, restricts editable columns, keeps venue contacts private and reserves verification/reward decisions for future server workflows.
-- The web app has a per-request nonce Content Security Policy and restrictive browser headers. Local photos and vector maps make no third-party image/map request.
+- Browser writes require a trusted origin, verified session and the appropriate account gate. Checked database functions enforce ownership, independent operator review and once-only rewards.
+- Application tables use row-level security and restricted grants. Private contacts, village balances, quest proof and social reward ledgers are not directly accessible to clients.
+- The web app has a per-request nonce Content Security Policy and restrictive browser headers. Worldwide map tiles, optional geocoding/imagery and routing contact their documented providers; live location remains opt-in.
 - Environment files, signing materials and dependency caches are ignored by Git. Use `apps/web/.env.example` as the template; never put server credentials in public variables.
 - Account routes validate inputs, require an exact trusted origin for browser writes and use server-verified identities and HttpOnly cookies. Production account services require an explicit release gate.
 - No software is guaranteed unhackable. Connected account and database tests, CAPTCHA integration, durable single-use recovery handling, account deletion, abuse limits, monitoring and independent security review are launch requirements.
@@ -108,6 +114,6 @@ Use dark ink on warm paper, a saffron masthead, petrol place signs and mandarin 
 
 ## Documentation
 
-Start with the [geographic map and UI delivery](docs/progress/14-melbourne-geography.md), [UI research](docs/research/10-distinctive-ui-research.md), [go-live requirements](docs/launch/go-live-checklist.md) and [email and SMS setup](docs/integrations/messaging.md). The earlier [complete project analysis](docs/progress/04-project-analysis.md) and [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explain the foundation, subscriptions and client actions at their delivery dates. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
+Start with the [five-section delivery](docs/progress/19-five-sections-and-outback.md), [immediate deployer setup](docs/deployment/setup-now.md), [go-live requirements](docs/launch/go-live-checklist.md) and [email and SMS setup](docs/integrations/messaging.md). The earlier [complete project analysis](docs/progress/04-project-analysis.md) and [illustrated Word report](docs/deliverables/Food-Go-Development-Report.docx) explain the foundation, subscriptions and client actions at their delivery dates. [Visual asset credits](docs/assets.md) identify illustrative photography and licences.
 
-Next, complete the Mobile Message hook and sender setup for controlled SMS sign-in testing. Configure Brevo when the verified sender is ready. Complete account safeguards and operator ownership review before opening registration or publishing real venues. See the latest analysis for the tested state and remaining national marketplace, game and native-app work.
+Supplied Brevo and Mobile Message credentials have passed read-only provider checks. Connect both signed Supabase HTTP hooks after deployment, copy their generated signing secrets and verify real email/SMS delivery. Provision the first confirmed operator and approve genuine restaurant content before public launch. The sitemap's later game, media, marketplace and native-app phases are recorded separately from the tested browser delivery.

@@ -3441,3 +3441,9 @@ h1,h2,h3 { font-optical-sizing: auto; }
   .header-actions .account-entry { max-width: 92px; padding-inline: 9px; }
   .header-actions .xp-entry { max-width: 86px; font-size: 12px; }
 }
+/* Private one-time age declaration uses the normal document scroll. */
+.feed-age-notice { max-width: 46rem; margin: 1.5rem auto; }
+.feed-age-notice form { display: grid; gap: .75rem; max-width: 26rem; }
+.feed-age-notice label { font-weight: 700; }
+.feed-age-notice input { min-height: 44px; padding: .7rem; border: 1px solid var(--line, #cfc7bb); border-radius: 8px; color: var(--ink); background: white; width: 100%; box-sizing: border-box; }
+.feed-age-notice input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

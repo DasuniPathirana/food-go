@@ -1,22 +1,26 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { AVATAR_PREFERENCES_KEY, createAvatarPreferences, isAvatarId, parseAvatarPreferences, type AvatarId, type AvatarPreferences } from "@food-go/domain/avatar";
+import { AVATAR_PREFERENCES_KEY, avatarPreferencesSchema, createAvatarPreferences, isAvatarId, type AvatarId, type AvatarPreferences } from "@food-go/domain/avatar";
 export * from "@food-go/domain/avatar";
 
 type Snapshot = { preferences: AvatarPreferences; ready: boolean; persistent: boolean };
-const initial: Snapshot = { preferences: createAvatarPreferences(), ready: false, persistent: true };
+const freshBrowserPreferences = (): AvatarPreferences => ({ ...createAvatarPreferences(), avatarId: "foodie" });
+const initial: Snapshot = { preferences: freshBrowserPreferences(), ready: false, persistent: true };
 let snapshot = initial;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
 
-function fromString(value: string | null) {
-  if (!value || value.length > 512) return createAvatarPreferences();
-  try { return parseAvatarPreferences(JSON.parse(value)); } catch { return createAvatarPreferences(); }
+export function readBrowserAvatarPreferences(value: string | null): AvatarPreferences {
+  if (!value || value.length > 512) return freshBrowserPreferences();
+  try {
+    const parsed = avatarPreferencesSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : freshBrowserPreferences();
+  } catch { return freshBrowserPreferences(); }
 }
 function hydrate() {
   if (snapshot.ready || typeof window === "undefined") return;
-  try { snapshot = { preferences: fromString(window.localStorage.getItem(AVATAR_PREFERENCES_KEY)), ready: true, persistent: true }; }
+  try { snapshot = { preferences: readBrowserAvatarPreferences(window.localStorage.getItem(AVATAR_PREFERENCES_KEY)), ready: true, persistent: true }; }
   catch { snapshot = { ...initial, ready: true, persistent: false }; }
   emit();
 }
@@ -24,7 +28,7 @@ function storage(event: StorageEvent) {
   if (event.key !== AVATAR_PREFERENCES_KEY && event.key !== null) return;
   try { if (event.storageArea && event.storageArea !== window.localStorage) return; }
   catch { return; }
-  snapshot = { preferences: fromString(event.key === null ? null : event.newValue), ready: true, persistent: true };
+  snapshot = { preferences: readBrowserAvatarPreferences(event.key === null ? null : event.newValue), ready: true, persistent: true };
   emit();
 }
 function subscribe(listener: () => void) {
@@ -52,7 +56,7 @@ function setIdleMotion(enabled: boolean) {
   hydrate();
   save({ ...snapshot.preferences, idleMotion: enabled });
 }
-function resetAvatar() { save(createAvatarPreferences(), true); }
+function resetAvatar() { save(freshBrowserPreferences(), true); }
 
 /** Shared cosmetic preference only. Renderers must also respect reduced motion. */
 export function useAvatarPreferences() {

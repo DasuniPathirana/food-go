@@ -15,6 +15,7 @@ import { createAuthClient } from "./server";
 import { canResetPassword, recoveryCookieName } from "./recovery";
 import { australianMobile } from "../phone-number";
 import { accountLanding } from "./landing";
+import { emailProviderStatus } from "./email-provider-status";
 
 type AuthClientFactory = typeof createAuthClient;
 
@@ -128,15 +129,19 @@ export async function signIn(request: Request) {
 }
 
 export async function register(request: Request) {
+  return registerWithClient(request, createAuthClient);
+}
+
+export async function registerWithClient(request: Request, createClient: AuthClientFactory) {
   const input = await readAuthRequest(request, registerSchema);
   if (!input.ok) return input.response;
   try {
-    const client = await createAuthClient(input.config);
+    const client = await createClient(input.config);
     const { data, error } = await client.auth.signUp({
       email: input.data.email,
       password: input.data.password,
       options: {
-        data: { display_name: input.data.displayName, account_type: input.data.accountType },
+        data: { display_name: input.data.displayName, account_type: input.data.accountType, date_of_birth: input.data.birthDate },
         emailRedirectTo: `${input.config.origin}/auth/callback?next=/profile`,
       },
     });
@@ -152,8 +157,8 @@ export async function register(request: Request) {
         503,
       );
     }
-    if (error?.status === 429 || (error?.status && error.status >= 500))
-      return failure(error.status);
+    const providerStatus = emailProviderStatus(error, "register");
+    if (providerStatus) return failure(providerStatus);
     // Use the same public result for existing and newly registered addresses.
     return authJson({
       message:
@@ -175,8 +180,8 @@ export async function forgotPassword(request: Request) {
         redirectTo: `${input.config.origin}/auth/callback?next=/auth/reset-password`,
       },
     );
-    if (error?.status === 429 || (error?.status && error.status >= 500))
-      return failure(error.status);
+    const providerStatus = emailProviderStatus(error, "recovery");
+    if (providerStatus) return failure(providerStatus);
     return authJson({
       message:
         "If an account matches that address, a reset email will arrive shortly. Open its link in this browser.",

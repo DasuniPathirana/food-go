@@ -18,7 +18,7 @@ check(catalogueResponse.headers.get("cache-control") === "no-store", "Catalogue 
 for (const venue of catalogue.data) {
   check(venue.source === "supabase" && !["email","phone","organization_id"].some(key => key in venue), "Catalogue excludes fictional venues and private contacts");
 }
-for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/venue-dex","/quests",
+for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/venue-dex","/quests","/outback",
   "/partner","/partner/dashboard","/partner/onboarding","/admin","/admin/security",
   "/auth/register","/auth/sign-in","/auth/forgot-password","/auth/reset-password","/auth/phone","/help","/acknowledgement"]) {
   const response = await request(path), html = await response.text();
@@ -33,6 +33,8 @@ for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/ven
     check(html.includes("Streets") && html.includes("Enable live location") && html.includes("Avatar options"), "Explore exposes worldwide maps, opt-in location and the avatar");
     check((response.headers.get("permissions-policy") || "").includes("geolocation=(self)"), "Geolocation is permitted for this site's explicit request");
   }
+  if (path === "/deals") check(html.includes("Food Deals") && html.includes("Restaurant Deals"), "Deals separates food and restaurant offers");
+  if (path === "/outback") check(html.includes("Outback") && html.includes("/auth/sign-in?next=/outback"), "Outback provides a returning account entry");
 }
 for (const path of ["/demo","/demo/explore","/demo/passport","/explore-preview","/feed-preview","/explore-preview/venues/finch-and-field"]) {
   check((await request(path)).status === 404, `${path} is retired`);
@@ -44,14 +46,20 @@ for (const query of ["q=a&q=b","limit=1000","state=other","status=draft"]) {
 for (const path of ["/api/map/search?q=a","/api/map/search?q=A&q=B","/api/map/route?from=1,2&to=999,3"]) {
   check((await request(path)).status === 400, "Map services reject invalid or ambiguous input");
 }
-for (const path of ["/api/journey","/api/game","/api/partner/venues","/api/community/policy"]) {
+for (const path of ["/api/journey","/api/game","/api/adventure","/api/partner/venues","/api/community/policy"]) {
   check((await request(path)).status === 503, `${path} is disabled when Auth is unconfigured`);
 }
-for (const path of ["/api/journey","/api/partner/manage","/api/admin","/api/admin/security",
+for (const path of ["/api/account/age","/api/journey","/api/adventure","/api/partner/manage","/api/admin","/api/admin/security",
   "/api/community","/api/community/policy","/api/auth/register","/api/auth/sign-in","/api/auth/sign-out","/api/auth/forgot-password","/api/auth/reset-password"]) {
   check((await request(path, { method: "POST" })).status === 403, `${path} requires the trusted origin`);
   const response = await request(path, { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: "{}" });
   check(response.status === 503 && response.headers.get("cache-control") === "no-store", `${path} respects the closed account configuration`);
+}
+for (const channel of ["email", "sms"]) {
+  const response = await request(`/api/webhooks/supabase/${channel}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+  });
+  check([401, 503].includes(response.status) && response.headers.get("cache-control") === "no-store", `${channel} hook rejects unsigned delivery requests`);
 }
 const first = await request("/"), second = await request("/");
 const nonce = response => /'nonce-([^']+)'/u.exec(response.headers.get("content-security-policy") || "")?.[1];

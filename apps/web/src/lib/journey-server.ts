@@ -14,6 +14,7 @@ export async function journeyClient() {
   return { client, config };
 }
 export function journeyFailure(code?: string) {
+  if (code === "FA016") return authJson({ error: "This quest uses Feed, which is available from age 16. Check your age in Passport." }, 403);
   const status = code === "42501" ? 403 : code === "FG404" ? 404 : code === "FG409" || code === "23505" ? 409 : code === "FG429" ? 429 :
     ["22023","22P02","22007","22008","23514","23502"].includes(code ?? "") ? 400 : 503;
   const message = status === 403 ? "This account cannot perform that action." : status === 404 ? "The item or verification code is unavailable or expired." :

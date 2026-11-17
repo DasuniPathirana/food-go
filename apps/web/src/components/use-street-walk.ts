@@ -76,13 +76,13 @@ export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: bo
       if (!parsed) throw new Error("The walking route could not be read. Try another destination.");
       const walk = prepareWalk(parsed.geometry);
       if (!walk) throw new Error("Choose a destination further along the street.");
-      const first = walkPosition(walk, 0).point, last = walkPosition(walk, walk.distance).point;
+      const firstStep = walkPosition(walk, 0), first = firstStep.point, last = walkPosition(walk, walk.distance).point;
       if (mapDistance(origin, first) > 250 || mapDistance(destination, last) > 250)
         throw new Error("The nearest walkable street is too far from that point. Choose a point on a street.");
       if (attempt !== revision.current || (simulate && !allowed.current)) return;
       prepared.current = walk; distance.current = 0;
       if (simulate) move(first);
-      setRoute(parsed.geometry); setTotalDistance(walk.distance); setTravelled(0); setAttribution(parsed.attribution);
+      setRoute(parsed.geometry); setTotalDistance(walk.distance); setTravelled(0); setHeading(firstStep.heading); setAttribution(parsed.attribution);
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const paused = !simulate || document.visibilityState === "hidden" || reduced;
       setPhase(paused ? "paused" : "walking");
@@ -112,7 +112,7 @@ export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: bo
   useEffect(() => {
     if (phase !== "walking" || !enabled || !prepared.current) return;
     let frame = 0, previous = 0, published = 0;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const tick = (time: number) => {
       const walk = prepared.current;
       if (!walk) return;
@@ -121,7 +121,7 @@ export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: bo
       const before = distance.current;
       distance.current = Math.min(walk.distance, before + elapsed * 1.4 * speed);
       sessionDistance.current += distance.current - before;
-      if (time - published >= (reduced ? 300 : 50) || distance.current === walk.distance) {
+      if (time - published >= (motionPreference.matches ? 300 : 50) || distance.current === walk.distance) {
         const next = walkPosition(walk, distance.current);
         move(next.point); setHeading(next.heading); setTravelled(distance.current);
         setSessionMetres(sessionDistance.current); published = time;
@@ -137,8 +137,15 @@ export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: bo
         setPhase("paused"); setMessage("Street walk paused while this page is hidden.");
       }
     };
+    const reduceMotion = () => {
+      if (motionPreference.matches) {
+        cancelAnimationFrame(frame);
+        setPhase("paused"); setMessage("Street walk paused for reduced motion. Resume when ready.");
+      }
+    };
     document.addEventListener("visibilitychange", hidden);
-    return () => { cancelAnimationFrame(frame); document.removeEventListener("visibilitychange", hidden); };
+    motionPreference.addEventListener("change", reduceMotion);
+    return () => { cancelAnimationFrame(frame); document.removeEventListener("visibilitychange", hidden); motionPreference.removeEventListener("change", reduceMotion); };
   }, [phase, enabled, speed, move]);
 
   return { position, route, phase, heading, travelled, totalDistance, sessionMetres, speed, setSpeed, walkTo, planTo, pause, resume, cancel, place, message, attribution };

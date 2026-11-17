@@ -23,12 +23,13 @@ export function communityJson(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store", Pragma: "no-cache" } });
 }
 export class CommunityProviderError extends Error {
-  constructor(public readonly code: "invalid" | "identity" | "limit" | "retry" | "missing" | "acknowledgement" | "unavailable") { super(code); }
+  constructor(public readonly code: "invalid" | "identity" | "age" | "limit" | "retry" | "missing" | "acknowledgement" | "unavailable") { super(code); }
 }
 function failure(error: unknown) {
   const code = error instanceof CommunityProviderError ? error.code : "unavailable";
   const responses = {
     invalid: [400, "Check the post or comment details."], identity: [401, "Sign in with a verified account to take part."],
+    age: [403, "Feed and personal walls are available to account holders aged 16 and over. Check your age in Passport."],
     limit: [429, "You have reached today's posting limit. Try again tomorrow."],
     retry: [409, "That submission key belongs to different text. Start a new submission."],
     acknowledgement: [403, "Review and accept the Food Go acknowledgement before posting or interacting."],

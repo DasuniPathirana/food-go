@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import { AVATARS, type AvatarId } from "@food-go/domain/avatar";
+import { avatarDistanceAt, avatarLegPose, avatarMapYaw, AVATAR_STRIDE_METRES, retargetAvatarDistance, shortestAvatarTurn, type AvatarDistanceTransition } from "@/lib/avatar-motion";
 
 export type AvatarAction = "idle" | "wave" | "cheer" | "look";
-export type AvatarMotion = { animate: boolean; walking: boolean; action: AvatarAction; actionToken: number; reduced?: boolean };
+export type AvatarMotion = { animate: boolean; walking: boolean; action: AvatarAction; actionToken: number; reduced?: boolean;
+  heading?: number; mapBearing?: number; distanceMetres?: number; distanceTransitionMs?: number };
 
 /** Original, low-poly character rig. No model, texture or external network fetch. */
 function character(avatarId: AvatarId) {
@@ -24,7 +26,7 @@ function character(avatarId: AvatarId) {
     mesh.position.set(...at); parent.add(mesh); return mesh;
   }
   const body = new THREE.Group(); root.add(body);
-  ball(body, p.shirt, [.29, .39, .205], [0, 1.08, 0]);
+  const torso = ball(body, p.shirt, [.29, .39, .205], [0, 1.08, 0]);
   ball(body, p.trousers, [.235, .17, .18], [0, .77, 0]);
   capsule(body, p.skin, .1, .13, [0, 1.49, 0]);
   // Raised pocket, shoulder straps and a small enamel pin make the outfit legible.
@@ -35,11 +37,15 @@ function character(avatarId: AvatarId) {
     const strap = new THREE.Mesh(new THREE.BoxGeometry(.035, .43, .026), material(p.accent));
     strap.position.set(x, 1.18, .17); strap.rotation.z = x * -.27; body.add(strap);
   }
+  const knees: THREE.Group[] = [], feet: THREE.Group[] = [];
   const legs = [-1, 1].map((side) => {
     const leg = new THREE.Group(); leg.position.set(side * .14, .79, 0); body.add(leg);
-    capsule(leg, p.trousers, .105, .36, [0, -.27, 0]);
-    ball(leg, p.shoes, [.132, .09, .205], [0, -.65, .065]);
-    ball(leg, "#28394b", [.135, .025, .205], [0, -.708, .065]);
+    capsule(leg, p.trousers, .105, .15, [0, -.175, 0]);
+    const knee = new THREE.Group(); knee.position.y = -.35; leg.add(knee); knees.push(knee);
+    capsule(knee, p.trousers, .095, .16, [0, -.175, 0]);
+    const foot = new THREE.Group(); foot.position.y = -.35; knee.add(foot); feet.push(foot);
+    ball(foot, p.shoes, [.132, .09, .205], [0, 0, .065]);
+    ball(foot, "#28394b", [.135, .025, .205], [0, -.058, .065]);
     return leg;
   });
   const arms = [-1, 1].map((side) => {
@@ -100,7 +106,7 @@ function character(avatarId: AvatarId) {
     const scarf = new THREE.Mesh(new THREE.TorusGeometry(.113, .03, 6, 18), material(p.accent));
     scarf.rotation.x = Math.PI / 2; scarf.position.set(0, 1.49, 0); body.add(scarf);
   }
-  return { root, body, head, arms, legs, eyes };
+  return { root, body, torso, head, arms, legs, knees, feet, eyes };
 }
 
 export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId, onFailure: () => void) {
@@ -120,19 +126,31 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
   shadow.rotation.x = -Math.PI / 2; shadow.scale.y = .65; shadow.position.y = .01; scene.add(shadow);
   let motion: AvatarMotion = { animate: false, walking: false, action: "idle", actionToken: 0 };
   let disposed = false, failed = false, frame = 0, time = 0, previous = 0, gestureTime = -100;
+  let facing = -.13, targetFacing = -.13, facingKnown = false, walkBlend = 0, walkDistance = 0;
+  let distanceTransition: AvatarDistanceTransition | null = null;
   function pose() {
     const moving = motion.animate && !motion.reduced;
     const phase = time - gestureTime;
     const gesture = motion.action !== "idle" && phase >= 0 && phase < 2.4;
     const envelope = gesture ? Math.sin(Math.PI * phase / 2.4) : 0;
-    rig.root.position.y = moving ? Math.sin(time * 2.2) * .009 : 0;
-    rig.root.rotation.y = -.13 + (moving ? Math.sin(time * .65) * .035 : 0);
-    rig.body.scale.y = 1 + (moving ? Math.sin(time * 2.2) * .012 : 0);
-    rig.head.position.y = 1.85 + (moving ? Math.sin(time * 2.2) * .007 : 0);
-    rig.head.rotation.set(0, moving ? Math.sin(time * .43) * .12 : 0, 0);
-    const walk = moving && motion.walking ? Math.sin(time * 8) * .35 : 0;
-    rig.legs.forEach((leg, i) => { leg.rotation.x = walk * (i ? 1 : -1); });
-    rig.arms.forEach((arm, i) => { arm.rotation.set(-walk * (i ? 1 : -1) * .7, 0, i ? .08 : -.08); });
+    const stride = walkDistance / AVATAR_STRIDE_METRES * Math.PI * 2;
+    const walking = moving ? walkBlend : 0;
+    const bodyBob = walking * (Math.cos(stride * 2) * .015);
+    // Lower the hips into the walk so a bent supporting leg keeps its sole on
+    // the same ground plane as the straight-legged idle pose.
+    rig.root.position.y = bodyBob - .05 * walking + (moving ? Math.sin(time * 2.2) * .007 * (1 - walking) : 0);
+    rig.root.rotation.y = facing + (moving ? Math.sin(time * .65) * .025 * (1 - walking) : 0);
+    rig.body.rotation.set(0, Math.sin(stride) * .035 * walking, Math.cos(stride) * .018 * walking);
+    rig.torso.scale.y = .39 * (1 + (moving ? Math.sin(time * 2.2) * .012 : 0));
+    rig.head.position.y = 1.85 + (moving ? Math.sin(time * 2.2) * .007 * (1 - walking) : 0);
+    rig.head.rotation.set(0, moving ? Math.sin(time * .43) * .10 * (1 - walking) : 0, -Math.cos(stride) * .012 * walking);
+    rig.legs.forEach((leg, i) => {
+      const step = avatarLegPose(walkDistance, i as 0 | 1, bodyBob);
+      leg.rotation.x = step.hip * walking;
+      rig.knees[i].rotation.x = step.knee * walking;
+      rig.feet[i].rotation.x = step.foot * walking;
+    });
+    rig.arms.forEach((arm, i) => { arm.rotation.set(Math.sin(stride) * (i ? 1 : -1) * .32 * walking, 0, i ? .08 : -.08); });
     const blink = moving ? time % 5.2 : 0;
     const eyeScale = blink > 4.98 ? 1 - .94 * Math.sin((blink - 4.98) / .22 * Math.PI) : 1;
     rig.eyes.forEach((eye) => { eye.scale.y = eyeScale; });
@@ -155,9 +173,20 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
     try { pose(); renderer.render(scene, camera); } catch { failed = true; cancelAnimationFrame(frame); onFailure(); }
   }
   function tick(timestamp: number) {
+    frame = 0;
     if (disposed || failed || !motion.animate || motion.reduced) return;
-    time += previous ? Math.min((timestamp - previous) / 1000, .05) : 0; previous = timestamp;
-    draw(); frame = requestAnimationFrame(tick);
+    const elapsed = previous ? Math.min((timestamp - previous) / 1000, .05) : 0; previous = timestamp;
+    time += elapsed;
+    facing += shortestAvatarTurn(facing, targetFacing) * (1 - Math.exp(-elapsed * 12));
+    const before = walkDistance;
+    if (Number.isFinite(motion.distanceMetres) && distanceTransition) walkDistance = avatarDistanceAt(distanceTransition, timestamp);
+    else if (motion.walking) walkDistance += elapsed * 1.4;
+    // GPS status can remain "walking" between fixes. Only visible travel drives
+    // the gait, so settled distance returns naturally to the standing pose.
+    const stepping = walkDistance - before > 0.00001;
+    walkBlend += ((stepping ? 1 : 0) - walkBlend) * (1 - Math.exp(-elapsed * 14));
+    draw();
+    if (!disposed && !failed && motion.animate && !motion.reduced) frame = requestAnimationFrame(tick);
   }
   const contextLost = (event: Event) => { event.preventDefault(); failed = true; cancelAnimationFrame(frame); onFailure(); };
   canvas.addEventListener("webglcontextlost", contextLost);
@@ -171,8 +200,20 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
     },
     setMotion(next: AvatarMotion) {
       if (next.actionToken !== motion.actionToken || next.action !== motion.action) gestureTime = time;
-      motion = next; cancelAnimationFrame(frame); previous = 0; draw();
-      if (motion.animate && !motion.reduced && !disposed && !failed) frame = requestAnimationFrame(tick);
+      targetFacing = avatarMapYaw(next.heading, next.mapBearing);
+      if (!facingKnown || !next.animate || next.reduced) { facing = targetFacing; facingKnown = true; }
+      if (Number.isFinite(next.distanceMetres)) {
+        const reset = !Number.isFinite(motion.distanceMetres) || !next.animate || next.reduced
+          || next.distanceTransitionMs !== motion.distanceTransitionMs;
+        distanceTransition = retargetAvatarDistance(reset ? null : distanceTransition, next.distanceMetres!, performance.now(), next.distanceTransitionMs ?? 80);
+        if (reset || !distanceTransition.durationMs) walkDistance = distanceTransition.target;
+      } else distanceTransition = null;
+      motion = next;
+      if (!motion.animate || motion.reduced) {
+        cancelAnimationFrame(frame); frame = 0; previous = 0; walkBlend = 0; draw();
+      } else if (!frame && !disposed && !failed) {
+        previous = 0; draw(); frame = requestAnimationFrame(tick);
+      }
     },
     dispose() {
       disposed = true; cancelAnimationFrame(frame); canvas.removeEventListener("webglcontextlost", contextLost);

@@ -27,6 +27,14 @@ const photon = z.object({ features: z.array(z.object({
     country: z.string().max(250).optional(), extent: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(),
   }),
 })).max(10) });
+const mapTilerGeocoding = z.object({ features: z.array(z.object({
+  id: z.union([z.string().max(200), z.number().finite()]).optional(),
+  geometry: z.object({ type: z.literal("Point"), coordinates: coordinate }),
+  place_name: z.string().trim().min(1).max(500),
+  bbox: z.tuple([z.number().finite(), z.number().finite(), z.number().finite(), z.number().finite()]).optional(),
+})).max(10) });
+const photonAttribution = "Place search by Photon using OpenStreetMap data";
+const mapTilerAttribution = "Place search by MapTiler | OpenStreetMap contributors";
 const userAgent = "FoodGo/1.0";
 
 export function mapDistance(from: MapCoordinate, to: MapCoordinate) {
@@ -85,7 +93,7 @@ async function boundedJson(response: Response) {
 export function createMapServices(dependencies: Dependencies) {
   const fetcher = dependencies.fetch || fetch;
   const now = dependencies.now || Date.now;
-  const searchCache = new Map<string, { expires: number; results: MapSearchResult[] }>();
+  const searchCache = new Map<string, { expires: number; results: MapSearchResult[]; attribution: string }>();
   const routeCache = new Map<string, { expires: number; route: MapWalkingRoute }>();
   function remember<T>(cache: Map<string, T>, key: string, value: T) {
     if (cache.size >= 100) cache.delete(cache.keys().next().value!);
@@ -101,10 +109,31 @@ export function createMapServices(dependencies: Dependencies) {
       const query = params.get("q")?.trim() || "";
       if ([...params.keys()].length !== 1 || !params.has("q") || query.length < 2 || query.length > 120 ||
         /[\u0000-\u001f\u007f]/u.test(query)) return json({ error: "Enter a place name between 2 and 120 characters." }, 400);
-      const key = query.toLocaleLowerCase("en-AU");
+      const mapTilerKey = dependencies.env.MAPTILER_SERVER_KEY?.trim();
+      const provider = mapTilerKey ? "maptiler" : "photon:" + (dependencies.env.FOOD_GO_PHOTON_ENDPOINT || "default");
+      const key = provider + ":" + query.toLocaleLowerCase("en-AU");
       const cached = searchCache.get(key);
-      if (cached && cached.expires > now()) return json({ results: cached.results, attribution: "Place search by Photon using OpenStreetMap data" });
+      if (cached && cached.expires > now()) return json({ results: cached.results, attribution: cached.attribution });
       try {
+        if (mapTilerKey) {
+          const url = new URL("https://api.maptiler.com/geocoding/" + encodeURIComponent(query) + ".json");
+          url.search = new URLSearchParams({ key: mapTilerKey, limit: "6", language: "en", autocomplete: "false" }).toString();
+          const response = await request(url);
+          if (response.status === 429) return busy();
+          if (!response.ok) return unavailable();
+          const parsed = mapTilerGeocoding.safeParse(await boundedJson(response));
+          if (!parsed.success) return unavailable();
+          const results = parsed.data.features.slice(0, 6).map((feature, index): MapSearchResult => {
+            const [longitude, latitude] = feature.geometry.coordinates;
+            const box = feature.bbox;
+            const bounds = box && box[0] >= -180 && box[2] <= 180 && box[1] >= -90 && box[3] <= 90
+              && box[0] <= box[2] && box[1] <= box[3] ? box : undefined;
+            return { id: `maptiler-${feature.id ?? index}-${longitude}-${latitude}`, name: feature.place_name,
+              longitude, latitude, ...(bounds && { bounds }) };
+          });
+          remember(searchCache, key, { results, attribution: mapTilerAttribution, expires: now() + 300000 });
+          return json({ results, attribution: mapTilerAttribution });
+        }
         const url = endpoint(dependencies.env.FOOD_GO_PHOTON_ENDPOINT, "https://photon.komoot.io/api/");
         const isPublic = url.origin === "https://photon.komoot.io";
         if (isPublic && !await dependencies.acquireLease("geocoding")) return busy();
@@ -125,8 +154,8 @@ export function createMapServices(dependencies: Dependencies) {
             ? [extent[0], extent[3], extent[2], extent[1]] as [number, number, number, number] : undefined;
           return { id: `osm-${p.osm_type || "place"}-${p.osm_id || index}-${longitude}-${latitude}`, name, longitude, latitude, ...(bounds && { bounds }) };
         });
-        remember(searchCache, key, { results, expires: now() + 300000 });
-        return json({ results, attribution: "Place search by Photon using OpenStreetMap data" });
+        remember(searchCache, key, { results, attribution: photonAttribution, expires: now() + 300000 });
+        return json({ results, attribution: photonAttribution });
       } catch { return unavailable(); }
     },
     async route(requestInput: Request) {
@@ -143,8 +172,8 @@ export function createMapServices(dependencies: Dependencies) {
         let route: MapWalkingRoute;
         const orsKey = dependencies.env.OPENROUTESERVICE_API_KEY?.trim();
         if (orsKey) {
-          const response = await request(new URL("https://api.openrouteservice.org/v2/directions/foot-walking/geojson"), {
-            method: "POST", headers: { Authorization: orsKey, "Content-Type": "application/json" },
+          const response = await request(new URL("https://api.heigit.org/openrouteservice/v2/directions/foot-walking/geojson"), {
+            method: "POST", headers: { Authorization: orsKey, "Content-Type": "application/json", Accept: "application/geo+json" },
             body: JSON.stringify({ coordinates: [from, to], instructions: false }),
           });
           if (response.status === 429) return busy();

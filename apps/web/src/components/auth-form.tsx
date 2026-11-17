@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { ArrowRight, Check, Coffee, LoaderCircle, MapPin, Utensils } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 import {
   signInSchema,
   registerSchema,
@@ -16,6 +16,8 @@ import { COMMUNITY_POLICY_VERSION } from "@/lib/community-policy";
 import { acknowledgementCheckbox } from "@/lib/community-policy-copy";
 import { CommunityAcknowledgement } from "./community-acknowledgement";
 import consentStyles from "./community-consent.module.css";
+import type { SignInDestination } from "@/lib/auth-return";
+import { sydneyToday } from "@/lib/age-contracts";
 
 const content = {
   "sign-in": {
@@ -51,10 +53,11 @@ export function AuthForm({
   mode: AuthMode;
   configured: boolean;
   notice?: "link-expired" | "password-updated";
-  destination?: "/profile" | "/admin" | "/partner/dashboard" | "/collect";
+  destination?: SignInDestination;
 }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
   const [accountType, setAccountType] = useState<"explorer" | "partner">("explorer");
   const [acceptedAcknowledgement, setAcceptedAcknowledgement] = useState(false);
   const [email, setEmail] = useState("");
@@ -86,7 +89,7 @@ export function AuthForm({
             : signInSchema;
     const input =
       mode === "register"
-        ? { displayName, email, password, accountType, acceptedAcknowledgement, acknowledgementVersion: COMMUNITY_POLICY_VERSION }
+        ? { displayName, email, password, birthDate, accountType, acceptedAcknowledgement, acknowledgementVersion: COMMUNITY_POLICY_VERSION }
         : mode === "forgot-password"
           ? { email }
           : mode === "reset-password"
@@ -161,8 +164,7 @@ export function AuthForm({
         </Link>
         <h1>{copy.title}</h1>
         <p>{copy.description}</p>
-        {(mode === "register" || mode === "sign-in") && <div className="auth-art" aria-hidden="true"><span className="auth-art-plate"/><Image src="/images/adventure/explorer.svg" alt="" width={122} height={168} unoptimized/>
-          <span className="auth-art-food"><Utensils size={28}/></span><span className="auth-art-coffee"><Coffee size={27}/></span><span className="auth-art-pin"><MapPin size={25}/></span></div>}
+        {(mode === "register" || mode === "sign-in") && <div className="auth-art" aria-hidden="true"><span className="auth-art-plate"/><Image src="/images/adventure/explorer.svg" alt="" width={122} height={168} unoptimized/></div>}
         <p>You can keep browsing without an account.</p>
       </div>
       <div className="auth-panel">
@@ -188,7 +190,6 @@ export function AuthForm({
         )}
         {message ? (
           <div className="auth-message" role="status">
-            <Check size={24} />
             <h2>Check your inbox</h2>
             <p>{message}</p>
             <Link href="/auth/sign-in" className="secondary-button">
@@ -226,6 +227,14 @@ export function AuthForm({
                 )}
               </div>
             )}
+            {mode === "register" && <div className="form-field">
+              <label htmlFor="auth-field-birthDate">Date of birth</label>
+              <input id="auth-field-birthDate" name="birthDate" type="date" autoComplete="bday" max={sydneyToday()}
+                value={birthDate} onChange={event => setBirthDate(event.target.value)} required disabled={!configured || pending}
+                aria-invalid={Boolean(fields.birthDate)} aria-describedby={`birth-date-help${fields.birthDate ? " auth-error-birthDate" : ""}`}/>
+              <p id="birth-date-help" className="field-hint">Your date of birth stays private. Feed and personal walls are available from age 16. It cannot be changed in the app.</p>
+              {fields.birthDate && <p className="field-error" id="auth-error-birthDate">{fields.birthDate}</p>}
+            </div>}
             {hasEmail && (
               <div className="form-field">
                 <label htmlFor="auth-field-email">Email address</label>

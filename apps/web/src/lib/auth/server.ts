@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import { readAuthConfig, type AuthConfig } from "./config";
 import { hasVerifiedIdentity } from "./contracts";
 import { australianMobile } from "../phone-number";
+import { ageStatusSchema, type AgeStatus } from "../age-contracts";
 
 export type SafeAccount = {
   id: string;
@@ -12,6 +13,7 @@ export type SafeAccount = {
   email: string | null;
   phone?: string | null;
   accountType: "explorer" | "partner";
+  ageStatus: AgeStatus | null;
 };
 export type AuthState = { configured: boolean; user: SafeAccount | null };
 
@@ -82,10 +84,13 @@ export const getAuthState = cache(async (): Promise<AuthState> => {
       return { configured: true, user: null };
     const rawName: unknown = data.user.user_metadata?.display_name;
     const profile = await client.from("profiles").select("account_type,display_name").eq("id", data.user.id).single();
+    const ageResult = await client.rpc("food_go_age_status").abortSignal(AbortSignal.timeout(5000));
+    const age = ageResult.error ? null : ageStatusSchema.safeParse(ageResult.data);
     return {
       configured: true,
       user: {
         id: data.user.id,
+        ageStatus: age?.success ? age.data : null,
         accountType: profile.data?.account_type === "partner" ? "partner" : "explorer",
         displayName:
           profile.data?.display_name || (typeof rawName === "string" && rawName.trim()

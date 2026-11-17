@@ -7,7 +7,7 @@ const dateTime = z.iso.datetime({ offset: true });
 const textField = (min: number, max: number) => z.string().trim().min(min).max(max);
 const changeFields = { id: z.uuid(), requestId: z.uuid(), reason: textField(3, 240) };
 const dated = { ...changeFields, version: dateTime };
-const offer = { venueId: z.uuid(), title: textField(2, 90), description: textField(2, 400), startsAt: dateTime, endsAt: dateTime };
+const offer = { venueId: z.uuid(), title: textField(2, 90), description: textField(2, 400), startsAt: dateTime, endsAt: dateTime, kind: z.enum(["food", "restaurant"]).optional() };
 export const operatorActionSchema = z.discriminatedUnion("action", [
   z.strictObject({ ...dated, action: z.enum(["venue.verify","venue.publish","venue.suspend","venue.revoke","promo.publish","promo.withdraw"]) }),
   z.strictObject({ ...dated, action: z.literal("venue.locate"), latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }),
@@ -21,6 +21,7 @@ export const operatorRowSchema = z.object({
   id: z.uuid(), name: z.string(), detail: z.string(), state: z.string(), version: z.string().optional(),
   verified: z.boolean().optional(), venueId: z.uuid().optional(), venueName: z.string().optional(),
   startsAt: dateTime.optional(), endsAt: dateTime.optional(), at: dateTime.optional(),
+  kind: z.enum(["food", "restaurant"]).optional(),
   actor: z.uuid().optional(), organisation: z.string().optional(), context: z.string().optional(),
   contactEmail: z.string().nullable().optional(), contactPhone: z.string().nullable().optional(),
   latitude: z.number().nullable().optional(), longitude: z.number().nullable().optional(),

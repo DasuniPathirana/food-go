@@ -9,6 +9,7 @@ const promotionSchema = z.object({
   suburb: z.string().max(100),
   title: z.string().min(2).max(90),
   description: z.string().min(2).max(400),
+  kind: z.enum(["food", "restaurant"]).default("restaurant"),
   startsAt: z.iso.datetime({ offset: true }),
   endsAt: z.iso.datetime({ offset: true }),
 });

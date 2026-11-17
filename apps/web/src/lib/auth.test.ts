@@ -214,11 +214,14 @@ test("account input cannot assign roles and password whitespace is preserved", (
     acknowledgementVersion: "food-go-community-2026-11-15",
     acceptedAcknowledgement: true,
     displayName: "  Sam Lee  ",
+    birthDate: "1990-01-01",
     email: " SAM@EXAMPLE.COM ",
     password: "a quiet Sunday morning",
   };
   assert.equal(registerSchema.parse(valid).displayName, "Sam Lee");
   assert.equal(registerSchema.parse(valid).email, "sam@example.com");
+  assert.equal(registerSchema.safeParse({ ...valid, birthDate: undefined }).success, false);
+  assert.equal(registerSchema.safeParse({ ...valid, birthDate: "2990-01-01" }).success, false);
   for (const change of [{ ...valid, acceptedAcknowledgement: false }, { ...valid, acceptedAcknowledgement: "true" },
     { ...valid, acknowledgementVersion: "old" }, { ...valid, acceptedAcknowledgement: undefined }])
     assert.equal(registerSchema.safeParse(change).success, false);

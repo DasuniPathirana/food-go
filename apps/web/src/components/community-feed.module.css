@@ -1,8 +1,6 @@
 .community { color: var(--ink, #252522); font-family: var(--font-body); max-width: 1120px; margin-inline: auto; }
 .community p { margin: 0; }
 .pageHeading { display: flex; align-items: center; gap: 17px; margin: 0 0 26px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
-.conversationMark { position: relative; flex: 0 0 auto; display: grid; place-items: center; width: 64px; aspect-ratio: 1; border-radius: 20px 20px 20px 7px; background: #ff733f; color: var(--ink); }
-.conversationMark svg { width: 30px; height: 30px; stroke-width: 2; }
 .headingCopy { flex: 1; min-width: 0; }
 .community .pageHeading h1 { font: 800 56px/.98 var(--font-display); letter-spacing: -.025em; margin: 0 0 6px; }
 .community .pageHeading p { color: var(--muted); font-size: 16px; line-height: 1.45; }
@@ -15,7 +13,6 @@
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 28%); gap: 36px; align-items: start; }
 .feedColumn { min-width: 0; }
 .guestComposer { display: flex; align-items: flex-start; gap: 15px; padding: 2px 0 25px; margin-bottom: 27px; border-bottom: 1px solid var(--line); }
-.guestComposer > svg { flex-shrink: 0; width: 48px; height: 48px; padding: 12px; background: #ffe2ce; color: #773c24; border-radius: 17px 17px 17px 5px; }
 .guestComposer > div { min-width: 0; }
 .community .guestComposer h2 { margin: 0 0 8px; color: var(--ink); font: 800 31px/1.08 var(--font-display); }
 .community .guestComposer p { max-width: 48ch; color: var(--muted); font-size: 16px; line-height: 1.55; }
@@ -105,7 +102,6 @@
 .community .wallIdentity p { color: var(--muted); font-size: 14px; line-height: 1.4; }
 .wallIdentity > button { display: grid; place-items: center; min-width: 44px; min-height: 44px; background: transparent; }
 .empty { display: grid; justify-items: start; gap: 13px; padding: 27px 26px; margin-bottom: 20px; border: 1px solid #dbe3d4; border-radius: 18px; background: #f0f5ea; }
-.empty > svg { width: 47px; height: 47px; padding: 10px; border-radius: 15px; background: #dce9d7; color: #175948; }
 .community .empty h3 { margin: 0; font: 800 31px/1.1 var(--font-display); color: var(--ink); }
 .community .empty p { max-width: 60ch; color: #455d4d; font-size: 16px; line-height: 1.6; }
 .empty > div { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -141,8 +137,6 @@
 @media(max-width:1000px) { .community { max-width: 790px; } .layout { grid-template-columns: 1fr; } .discoveryRail { display: none; } }
 @media(max-width:700px) {
   .pageHeading { margin-bottom: 14px; padding-bottom: 12px; gap: 12px; }
-  .conversationMark { width: 44px; }
-  .conversationMark svg { width: 23px; height: 23px; }
   .community .pageHeading h1 { font-size: 38px; margin-bottom: 3px; }
   .community .pageHeading p { font-size: 14px; }
   .exploreLink { display: none; }
@@ -153,7 +147,6 @@
   .previewNotice > a { display: none; }
   .composer { padding: 11px 13px; margin-bottom: 19px; }
   .guestComposer { gap: 11px; margin-bottom: 23px; padding-bottom: 21px; }
-  .guestComposer > svg { width: 40px; height: 40px; padding: 9px; border-radius: 13px 13px 13px 5px; }
   .community .guestComposer h2 { font-size: 27px; }
   .community .guestComposer p { font-size: 15px; }
   .guestComposer > div > div { gap: 6px 12px; margin-top: 12px; }

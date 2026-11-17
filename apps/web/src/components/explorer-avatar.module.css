@@ -9,7 +9,7 @@
 .canvas, .artwork, .illustration, .original { display: block; width: 100%; height: 100%; }
 .canvas { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .canvasReady { opacity: 1; }
-.artwork { position: absolute; inset: 0; transform-origin: 50% 90%; }
+.artwork { position: absolute; inset: 0; transform-origin: 50% 90%; scale: var(--avatar-direction, 1) 1; }
 .artworkHidden { visibility: hidden; animation: none !important; }
 .artworkHidden * { animation: none !important; }
 .illustration { object-fit: contain; }
@@ -34,6 +34,8 @@
 .moving[data-action="look"] .originalHead { animation: lookAround 2.4s ease-in-out 1; }
 .moving.walking .leftLeg { animation: stepLeft .7s ease-in-out infinite; }
 .moving.walking .rightLeg { animation: stepRight .7s ease-in-out infinite; }
+.moving.walking[data-action="idle"] .leftArm { animation: stepRight .7s ease-in-out infinite; }
+.moving.walking[data-action="idle"] .rightArm { animation: stepLeft .7s ease-in-out infinite; }
 .reduced[data-action="wave"] .rightArm { transform: rotate(-100deg); }
 .reduced[data-action="cheer"] .rightArm { transform: rotate(-100deg); }
 .reduced[data-action="cheer"] .leftArm { transform: rotate(100deg); }
