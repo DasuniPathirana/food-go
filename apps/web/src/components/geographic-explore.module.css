@@ -21,7 +21,12 @@
 .results strong, .results small { display: block; line-height: 1.2; }
 .results small, .results > span { color: var(--muted); font-size: 13px; }
 .results > span:not(:empty) { display: block; padding: 6px; }
-.bar, .adventureBar { justify-content: space-between; gap: 12px; }
+.bar, .adventureBar { justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.perspectives { display: flex; flex: none; gap: 2px; padding: 3px; background: #eeeade; border-radius: 9px; }
+.perspectives button { min-width: 36px; min-height: 36px; border: 0; border-radius: 6px; padding: 5px 8px; font: 700 12px/1.1 var(--font-body); color: var(--ink); background: transparent; }
+.perspectives button[aria-pressed=true] { color: var(--petrol); background: white; box-shadow: var(--shadow-control); }
+.perspectives button:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.perspectives button:disabled { opacity: .45; }
 .adventureBar { padding: 5px clamp(10px, 2vw, 30px); }
 .modeNav a, .layers button {
   display: inline-flex; justify-content: center; align-items: center; gap: 5px;
@@ -91,8 +96,9 @@
   .modeNav a svg { width: 14px; }
   .readout .directions a svg { display: none; }
 }
-.locationTools { position: absolute; top: 12px; right: 60px; z-index: 14; display: flex; gap: 5px; }
-.locationTools button { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #9db7a9; border-radius: 12px; background: #fffef9; color: var(--petrol); box-shadow: 0 3px 10px #193a3020; }
+.locationTools { position: absolute; top: 8px; right: 8px; z-index: 14; display: flex; flex-direction: column; gap: 3px; }
+.locationTools button { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid #9db7a9; border-radius: 9px; background: #fffef9; color: var(--petrol); box-shadow: 0 2px 6px #193a3020; }
+.locationTools svg { width: 16px; height: 16px; }
 .locationTools button[aria-pressed=true] { color: var(--canvas); background: var(--petrol); border-color: var(--petrol); }
 .modeStatus { position: absolute; left: 12px; bottom: 14px; z-index: 3; padding: 7px 10px; border-radius: 8px; background: #fffdf0f0; color: #27463e; font: 700 12px/1.2 var(--font-body); pointer-events: none; box-shadow: 0 2px 8px #193a3014; }
 .gameBar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; min-height: 46px; padding: 4px 10px; background: var(--paper); border-top: 1px solid var(--line); }
@@ -116,7 +122,7 @@
 .motionButton { margin-block: 4px 8px; }
 @media (prefers-reduced-motion: no-preference) { .field button, .locationTools button, .gameBar button { transition: background-color 160ms ease-out, box-shadow 160ms ease-out; } }
 @media (max-width: 600px) {
-  .locationTools { top: 8px; right: 56px; gap: 4px; }
+  .locationTools { top: 8px; right: 8px; gap: 3px; }
   .locationTools button { width: 40px; height: 40px; }
   .gameBar { gap: 3px 5px; padding: 3px 6px; }
   .gameBar button { padding: 4px 7px; font-size: 12px; }
@@ -127,3 +133,11 @@
   .modeStatus { font-size: 11px; left: 7px; }
 }
 @media (max-width: 370px) { .layers button { font-size: 11px; padding-inline: 3px; } .layers .depth { margin-left: 0; padding-inline: 6px; } }
+@media (max-width: 600px) {
+  .perspectives { margin-left: auto; padding: 2px; }
+  .perspectives button { min-height: 32px; padding-inline: 7px; font-size: 11px; }
+  .bar { gap: 3px 7px; }
+}
+@media (max-height: 520px) {
+  .locationTools { flex-direction: row; right: 8px; }
+}

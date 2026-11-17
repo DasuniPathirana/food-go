@@ -98,19 +98,21 @@
   border: 1px solid #5b5649;
 }
 .tools button {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 44px;
-  min-height: 44px;
+  width: 40px;
+  min-height: 40px;
   padding: 0;
   background: transparent;
   color: #241b29;
   border: 0;
   border-radius: 6px;
 }
-.tools button:hover { background: #f0e8da; }
+.tools button::before { position: absolute; inset: 4px; border-radius: 5px; background: #fffdf6; content: ""; }
+.tools button:hover::before { background: #f0e8da; }
 .tools button:focus-visible, .scene a:focus-visible { outline: 3px solid #304bc2; outline-offset: -3px; }
-.tools svg { width: 19px; height: 19px; }
+.tools svg { position: relative; width: 17px; height: 17px; }
 .credit, .provider {
   position: absolute;
   bottom: 0;
@@ -129,7 +131,7 @@
 .provider { left: 12px; bottom: 48px; z-index: 4; border-radius: 4px; }
 .provider img { width: 75px; height: 18px; object-fit: contain; }
 @media (max-width: 700px), (max-height: 520px) {
-  .tools { grid-template-columns: repeat(2, 44px); }
+  .tools { grid-template-columns: repeat(2, 40px); }
   .scene .place { max-width: 105px; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {

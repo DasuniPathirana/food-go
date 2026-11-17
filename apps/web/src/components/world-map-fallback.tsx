@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { LocateFixed } from "lucide-react";
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ATLAS_AERIAL, ATLAS_CENTER, ATLAS_CORNERS, ATLAS_SATELLITE, ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
@@ -191,6 +192,10 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
         }
       }}/>
     {playerElement && props.playerContent && createPortal(props.playerContent, playerElement)}
+    <button className={styles.recenter} type="button" aria-label="Recenter map on explorer" title="Find my explorer" onClick={() => {
+      props.onRecenter?.();
+      if (props.player) map.current?.setView(position(props.player), Math.max(16, map.current.getZoom()), { animate: false });
+    }}><LocateFixed size={16}/></button>
     {props.imagery === "satellite" && satelliteKey && !satelliteFailed && <a className={styles.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler"/></a>}
     {!tilesReady && !error && <p className={styles.tileStatus} role="status">Loading street tiles…</p>}
     {error && <div className={styles.error} role="status"><p>{error}</p>{streetTiles.current && <button type="button" onClick={() => {

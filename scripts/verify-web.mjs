@@ -31,6 +31,8 @@ for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/ven
   if (path === "/") {
     check(html.includes("Search map places") && html.includes("Explore full map"), "Explore has search and an expanded map");
     check(html.includes("Streets") && html.includes("Enable live location") && html.includes("Avatar options"), "Explore exposes worldwide maps, opt-in location and the avatar");
+    check(html.includes("First person view") && html.includes("Third person view"), "Explore offers both player camera perspectives");
+    check(!html.includes("Place explorer here") && !html.includes(">Walk here<"), "Explore does not require separate place or walk buttons");
     check((response.headers.get("permissions-policy") || "").includes("geolocation=(self)"), "Geolocation is permitted for this site's explicit request");
   }
   if (path === "/deals") check(html.includes("Food Deals") && html.includes("Restaurant Deals"), "Deals separates food and restaurant offers");
