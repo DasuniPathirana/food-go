@@ -168,7 +168,7 @@ try {
   assert.equal((await webPost("/api/community", { action: "create", body: "This should remain blocked", visibility: "public", requestId: randomUUID() }, young.jar)).status, 403, "Young account cannot post even before consent");
   assert.equal((await webPost("/api/account/age", { birthDate: "1990-01-01" }, young.jar)).status, 409, "Young account cannot change its date to unlock Feed");
   const youngHtml = await (await fetch(origin + "/feed", { headers: { Cookie: youngCookie } })).text();
-  assert.ok(youngHtml.includes("Feed is for ages 16 and over") && !youngHtml.includes('data-section="feed"'), "Direct Feed link returns an age notice and no Feed tab");
+  assert.ok(youngHtml.includes("Feed is for ages 16 and over") && youngHtml.includes('data-section="feed"'), "Feed navigation remains in place while its content is age-restricted");
   console.log("Feed age API: 9 assertions passed for existing-account declaration, private signup age, server denial and direct-route protection.");
   const created = await webPost("/api/partner/venues", {
     name: "Connected fixture kitchen", email: owner.address, phone: "0391234567",

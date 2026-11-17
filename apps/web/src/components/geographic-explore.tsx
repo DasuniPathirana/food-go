@@ -16,13 +16,15 @@ import { MapPlayer } from "./map-player";
 import { AvatarCustomizer, type AvatarAction } from "./avatar-customizer";
 import { useExplorerLocation } from "./use-explorer-location";
 import { useStreetWalk } from "./use-street-walk";
+import { mapDistance } from "@/lib/map-game";
 import styles from "./geographic-explore.module.css";
 
 const Canvas = dynamic(() => import("./atlas-canvas").then(module => module.AtlasCanvas), { ssr: false });
 const FlatCanvas = dynamic(() => import("./world-map-fallback").then(module => module.WorldMapFallback), { ssr: false });
 const noVenues: CatalogueVenue[] = [];
-// Federation Square is a public reference point, not a claimed device position.
-const initialPosition = { longitude: 144.968964, latitude: -37.817852 };
+// Open Swanston Street geometry near Federation Square, never a claimed GPS fix.
+const initialPosition = { longitude: 144.9671462327242, latitude: -37.81681344435442 };
+const initialHeading = 340.0423857123138;
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
 const globalSatellite = !!browserMapKey;
 
@@ -43,13 +45,14 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [imagery, setImagery] = useState<AtlasImagery>("game");
   const [mapBearing, setMapBearing] = useState(-18);
   const [threeD, setThreeD] = useState(true), [loaded, setLoaded] = useState(false);
+  const [perspective, setPerspective] = useState<"first" | "third">("first");
   const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl"), [providerFailed, setProviderFailed] = useState(false);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
   const preferences = useAvatarPreferences();
   const location = useExplorerLocation(initialPosition);
-  const walk = useStreetWalk({ start: location.position, enabled: location.mode === "manual" });
+  const walk = useStreetWalk({ start: location.position, enabled: location.mode === "manual", motionPaused: paused, initialHeading });
   const player = walk.position;
   const allVenues = useMemo(() => [...new Map([...venues, ...chosenVenues, ...venueResults].map(v => [v.id, v])).values()], [venues, chosenVenues, venueResults]);
   const stops = useMemo(() => atlasStops([], allVenues), [allVenues]);
@@ -58,18 +61,36 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const directions = selected && pointDirections(selected);
   const walking = walk.phase === "walking";
   const avatarWalking = location.mode === "live" ? location.walking : walking;
-  const avatarHeading = location.mode === "live" ? location.heading ?? undefined : walk.totalDistance > 0 ? walk.heading : undefined;
+  const avatarHeading = location.mode === "live" ? location.heading ?? undefined : walk.heading;
   const ready = useCallback(() => setLoaded(true), []);
   const unavailable = useCallback(() => { setRenderer("fallback"); setLoaded(false); }, []);
   const satelliteUnavailable = useCallback(() => setProviderFailed(true), []);
   const cameraMoved = useCallback(() => setFollow(false), []);
+  const recenter = useCallback(() => { setFollow(true); setFocus(n => n + 1); }, []);
+  useEffect(() => {
+    try { if (localStorage.getItem("food-go-explorer-view-v1") === "third") setPerspective("third"); } catch { /* Optional browser preference. */ }
+  }, []);
+  function changePerspective(next: "first" | "third") {
+    setPerspective(next); recenter();
+    try { localStorage.setItem("food-go-explorer-view-v1", next); } catch { /* View remains usable without storage. */ }
+  }
   const selectPoint = useCallback((point: AtlasSelection) => {
     if (!geographicPoint(point)) return;
-    setSelected(point); setSelectedName(""); setFollow(false); setSearchOpen(false);
-  }, []);
+    setSelected(point); setSelectedName(""); setSearchOpen(false);
+    if (location.mode === "live" && location.status === "live") void walk.planTo(point);
+    else if (location.mode === "live") walk.cancel();
+    else void walk.walkTo(point);
+    setFollow(true);
+  }, [location.mode, location.status, walk.planTo, walk.walkTo, walk.cancel]);
   function choose(point: AtlasSelection, name: string) {
     field.current?.focus({ preventScroll: true });
-    selectPoint(point); setSelectedName(name); setQuery(name);
+    if (mapDistance(player, point) > 2000) {
+      // A world search chooses a manual area or a detached view, never a GPS fix.
+      if (location.mode === "manual") { location.place(point); walk.place(point); recenter(); }
+      else { walk.cancel(); setFollow(false); }
+      setSelected(point); setSearchOpen(false);
+    } else selectPoint(point);
+    setSelectedName(name); setQuery(name);
     if (point.id) {
       const stop = stops.find(item => item.id === point.id);
       const ids = new Set([point.id, ...(stop?.members.map(member => member.id) ?? [])]);
@@ -129,7 +150,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   const canvasProps: AtlasCanvasProps = {
-    places: stops, selected, imagery, threeD, player, followPlayer: follow, focusPlayerNonce: focus,
+    places: stops, selected, imagery, threeD, perspective, player, followPlayer: follow, focusPlayerNonce: focus, onRecenter: recenter,
     playerTransitionMs: location.mode === "live" ? 600 : 80, onBearingChange: setMapBearing,
     location: location.mode === "live" ? location.position : null, accuracy: location.accuracy ?? undefined,
     heading: location.mode === "live" ? location.heading ?? undefined : walk.heading, route: walk.route,
@@ -158,10 +179,13 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
             <span role="status">{searching ? "Searching places…" : searchMessage || (!query ? "Type a place or address, then search." : !worldResults.length && !localMatches.length ? "Press Search to look worldwide." : "")}</span>
           </div>}
         </form></div>
-        <div className={styles.bar}><div className={styles.layers} role="group" aria-label="Imagery and perspective">
+        <div className={styles.bar}><div className={styles.layers} role="group" aria-label="Map imagery">
           {([["game","Game","Game"],["street","Streets","Streets"],["satellite", globalSatellite && !providerFailed ? "Satellite" : "Melbourne satellite","Satellite"],["aerial","Melbourne aerial","Aerial"]] as const).map(([mode,label,short]) =>
             <button key={mode} type="button" aria-label={label} title={label} aria-pressed={imagery === mode} onClick={() => setImagery(mode)}>{short}</button>)}
           <button type="button" className={styles.depth} aria-label="3D buildings" aria-pressed={renderer === "webgl" && threeD} disabled={renderer === "fallback"} onClick={() => setThreeD(v => !v)}><Box size={16}/>3D</button>
+        </div><div className={styles.perspectives} role="group" aria-label="Explorer view">
+          <button type="button" title="First person view" aria-label="First person view" aria-pressed={perspective === "first" && renderer === "webgl"} disabled={renderer === "fallback"} onClick={() => changePerspective("first")}>1st</button>
+          <button type="button" title="Third person view" aria-label="Third person view" aria-pressed={perspective === "third" || renderer === "fallback"} onClick={() => changePerspective("third")}>3rd</button>
         </div></div>
       </div>
       <div ref={frame} className={styles.stage} data-selected={Boolean(selected)}><div className={styles.scene}><MapExpandButton/>
@@ -170,25 +194,19 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <div className={styles.locationTools}>
           <button type="button" title={location.mode === "live" ? "Turn off live location" : "Enable live location"} aria-label={location.mode === "live" ? "Turn off live location" : "Enable live location"}
             aria-pressed={location.mode === "live"} onClick={() => { walk.cancel(); if (location.mode === "live") location.stop(); else { location.enable(); setFollow(true); setFocus(n => n + 1); } }}><LocateFixed size={19}/></button>
-          <button type="button" title="Follow my explorer" aria-label="Follow my explorer" aria-pressed={follow} onClick={() => { setFollow(true); setFocus(n => n + 1); }}><Compass size={19}/></button>
           <button type="button" title="Avatar options" aria-label="Avatar options" aria-expanded={avatarOpen} onClick={() => setAvatarOpen(v => !v)}><PersonStanding size={19}/></button>
         </div>
-        <span className={styles.modeStatus}>{renderer === "fallback" ? "2D map · " : imagery === "game" ? "Game world · " : ""}{location.mode === "live" ? location.status === "live" ? "Live location" : "Waiting for location" : "Manual explorer"}{location.accuracy != null ? ` · ±${Math.round(location.accuracy)} m` : ""}</span>
+        <span className={styles.modeStatus}>{renderer === "fallback" ? "2D map · " : perspective === "first" ? "First person · " : "Third person · "}{!follow && "Browsing · "}{location.mode === "live" ? location.status === "live" ? "Live location" : "Waiting for location" : "Manual explorer"}{location.accuracy != null ? ` · ±${Math.round(location.accuracy)} m` : ""}</span>
       </div>
-        <div className={styles.readout}><div className={styles.readoutName}><MapPin size={17}/><div><strong>{active?.name || selectedName || (directions ? "Selected point" : "Choose your next stop")}</strong>
-          <small>{directions ? directions.coordinate : "Search a place or select a point on the map."}</small></div></div>
+        <div className={styles.readout}><div className={styles.readoutName}><div><strong>{active?.name || selectedName || (directions ? "Selected point" : "Choose your next stop")}</strong>
+          <small>{directions ? directions.coordinate : "Tap a street to walk, or search a new area."}</small></div></div>
           {directions && <div className={styles.directions}><a href={directions.google} target="_blank" rel="noopener noreferrer">Google Maps<ArrowUpRight size={14}/></a><a href={directions.apple} target="_blank" rel="noopener noreferrer">Apple Maps<ArrowUpRight size={14}/></a></div>}
         </div>
-        {(selected || walk.route) && <div className={styles.gameBar} aria-label="Explorer controls">
-          {selected && <><button type="button" onClick={() => { location.place(selected); walk.place(selected); setFollow(true); setFocus(n => n + 1); }}>Place explorer here</button>
-            <button type="button" className={styles.walkButton} disabled={walk.phase === "routing" || (location.mode === "live" && location.status !== "live")} onClick={() => {
-              if (location.mode === "live") void walk.planTo(selected); else void walk.walkTo(selected);
-              setFollow(true);
-            }}><Play size={15}/>{walk.phase === "routing" ? "Finding streets…" : location.mode === "live" ? "Plan walking route" : "Walk here"}</button></>}
+        {walk.route && <div className={styles.gameBar} aria-label="Explorer controls">
           {walking && <button type="button" onClick={walk.pause}><Pause size={15}/>Pause walk</button>}
-          {walk.phase === "paused" && location.mode === "manual" && <button type="button" onClick={walk.resume}><Play size={15}/>Resume walk</button>}
+          {walk.phase === "paused" && location.mode === "manual" && <button type="button" onClick={() => { setPaused(false); walk.resume(); }}><Play size={15}/>Resume walk</button>}
           {walk.route && <button type="button" onClick={walk.cancel}><X size={15}/>End route</button>}
-          <span className={styles.walkDistance}>{walk.totalDistance > 0 ? `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m` : "Tap your explorer to wave"}</span>
+          <span className={styles.walkDistance}>{location.mode === "live" ? "Route guide · follows your live position" : `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m`}</span>
         </div>}
       </div>
       {avatarOpen && <div className={styles.avatarPanel}><AvatarCustomizer onClose={() => setAvatarOpen(false)} onAction={perform} motionPaused={paused}/></div>}
@@ -199,7 +217,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <button type="button" disabled={paused} onClick={() => perform("cheer")}><Sparkles size={16}/>Celebrate</button>
         <button type="button" disabled={paused} onClick={() => perform("look")}><Compass size={16}/>Look around</button></div>
       <button type="button" className={styles.motionButton} aria-pressed={paused} onClick={() => { setPaused(v => !v); if (walking) walk.pause(); }}><Pause size={15}/>{paused ? "Enable avatar motion" : "Pause avatar motion"}</button>
-      <p>Allow live location to move with your device, or place your explorer manually and follow a real pedestrian route. Virtual walks track this session's movement. Collect verified XP using a restaurant's code.</p>
+      <p>Tap a street to walk. Search a distant place to move your manual explorer there. Live location follows your device. Virtual walking never earns verified XP.</p>
       <p>GPS fixes stay in this page. Map tiles reveal the viewed area to the map provider. Searches and requested route endpoints go to their providers. Location turns off when you leave or hide Explore.</p>
       <p>{Math.round(location.mode === "live" ? location.distanceMetres : walk.sessionMetres)} metres explored this session.</p><Link href="/collect">Collect a verified discovery</Link>
     </details>

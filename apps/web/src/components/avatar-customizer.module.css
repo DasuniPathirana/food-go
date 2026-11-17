@@ -49,10 +49,19 @@
 
 @media(max-width:650px) { .choices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; } .choices strong { overflow-wrap: normal; } .choiceStyle { font-size: 12px; } }
 
-/* Shared guide chrome; character artwork and gestures remain unchanged. */
+/* A lit fitting stage keeps the outfit readable, including on small screens. */
 .heading h2 { font-weight: 700; }
-.stage { background: #f4f3eb; border-color: var(--line); border-radius: 7px; }
-.pedestal { background: #797b5220; box-shadow: 0 10px 18px #3c412b0a; }
+.stage { height: 390px; background: #edf5f5; border-color: #cbdcda; border-radius: 12px; }
+.stage::before { content: ""; position: absolute; inset: auto -15% 0; height: 138px; background: #e2e9d3; border-top: 2px solid #fffdf5; border-radius: 50% 50% 0 0; }
+.pedestal { background: #52654c20; box-shadow: 0 9px 16px #3c412b0e; }
+.stageCopy { margin-top: 0; }
+.stageCopy > span { color: #46605a; }
+.previewControls { position: relative; z-index: 2; display: flex; gap: 7px; margin: 11px 8px 0; }
+.previewControls button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid #a5b8ad; border-radius: 6px; background: #fffef6; color: #24463d; font-size: 12px; font-weight: 700; }
+.previewControls button:hover { background: white; border-color: #557b6b; }
+.previewControls button[aria-pressed="true"] { background: #244e43; color: #fffef3; border-color: #244e43; }
+.customizer button:focus-visible, .wardrobe button:focus-visible { outline: 3px solid var(--focus, #1b61db); outline-offset: 3px; }
+.customizer button:disabled { opacity: .5; cursor: not-allowed; }
 .choices > button { background: transparent; border-radius: 5px; box-shadow: none; }
 .choices > .selected { background: #fff0ea; border-color: var(--tomato); }
 .choices > button:hover { background: #f3f2eb; }
@@ -63,3 +72,4 @@
 .currentPortrait { border-radius: 4px; background: #f2f0e5; }
 .wardrobeHeader > button { border: 1px solid #b7bab0; border-radius: 5px; background: white; font-size: 14px; font-weight: 600; }
 .wardrobe .customizer { padding: 23px 0; }
+@media(max-width:650px) { .stage { height: 310px; } .stage::before { height: 111px; } .character { height: 210px; } .previewControls { margin-top: 9px; } .previewControls button { min-height: 44px; } .stageCopy { gap: 2px; } .stageCopy strong { font-size: 22px; } }

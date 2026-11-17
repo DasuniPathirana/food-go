@@ -20,11 +20,11 @@
 .rightArm { transform-origin: 39px 32px; }
 .leftLeg { transform-origin: 27px 53px; }
 .rightLeg { transform-origin: 37px 53px; }
-.illustrationHead { transform-origin: 50px 60px; }
-.illustrationLeftArm { transform-origin: 37px 65px; }
-.illustrationRightArm { transform-origin: 64px 65px; }
-.illustrationLeftLeg { transform-origin: 43px 91px; }
-.illustrationRightLeg { transform-origin: 60px 91px; }
+.illustrationHead { transform-origin: 50px 53px; }
+.illustrationLeftArm { transform-origin: 34px 60px; }
+.illustrationRightArm { transform-origin: 66px 60px; }
+.illustrationLeftLeg { transform-origin: 43px 90px; }
+.illustrationRightLeg { transform-origin: 59px 90px; }
 .moving .artwork { animation: breathe 4.2s ease-in-out infinite; }
 .moving .originalHead { animation: idleLook 8s ease-in-out infinite; }
 .moving[data-action="wave"] .rightArm { animation: wave 2.4s ease-in-out 1; }

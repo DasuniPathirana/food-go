@@ -216,6 +216,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     style: {
       ...base,
       light: { anchor: "map", position: [1.4, 195, 45], color: "#fffaf0", intensity: 0.42 },
+      sky: { "sky-color": "#79c9ff", "horizon-color": "#eefaff", "sky-horizon-blend": 0.55 },
       sources: {
         ...base.sources,
         [MAP_SOURCE_IDS.aerial]: { type: "image", url: ATLAS_AERIAL, coordinates: corners },
