@@ -1,0 +1,27 @@
+.player {
+  position: absolute;
+  left: var(--close-avatar-left, clamp(24px, 20%, 280px));
+  bottom: var(--close-avatar-bottom, 0px);
+  width: var(--close-avatar-width, clamp(150px, 18vw, 224px));
+  height: var(--close-avatar-height, clamp(190px, 28vh, 250px));
+  z-index: 3;
+  isolation: isolate;
+  pointer-events: none;
+  /* Only vertical cropping: raised hands can extend past the shoulders. */
+  clip-path: inset(0 -60% 0 -60%);
+}
+.player * { pointer-events: none; }
+.character {
+  position: absolute;
+  left: -40%;
+  bottom: -86%;
+  width: 180%;
+  height: 185%;
+  filter: drop-shadow(0 3px 3px #183c3a24);
+}
+@media (max-width: 650px) {
+  .player {
+    width: var(--close-avatar-width, clamp(124px, 38vw, 156px));
+    height: var(--close-avatar-height, clamp(166px, 24svh, 214px));
+  }
+}

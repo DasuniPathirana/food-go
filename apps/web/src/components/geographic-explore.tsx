@@ -13,6 +13,7 @@ import { useAvatarPreferences } from "@/lib/avatar-preferences";
 import type { AtlasCanvasProps, AtlasImagery, AtlasSelection } from "./atlas-canvas";
 import { MapExpandButton, MapFrame } from "./map-frame";
 import { MapPlayer } from "./map-player";
+import { CloseMapPlayer } from "./close-map-player";
 import { AvatarCustomizer, type AvatarAction } from "./avatar-customizer";
 import { useExplorerLocation } from "./use-explorer-location";
 import { useStreetWalk } from "./use-street-walk";
@@ -47,6 +48,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [threeD, setThreeD] = useState(true), [loaded, setLoaded] = useState(false);
   const [perspective, setPerspective] = useState<"first" | "third">("first");
   const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl"), [providerFailed, setProviderFailed] = useState(false);
+  const [graphicsAttempt, setGraphicsAttempt] = useState(0);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
@@ -64,6 +66,9 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const avatarHeading = location.mode === "live" ? location.heading ?? undefined : walk.heading;
   const ready = useCallback(() => setLoaded(true), []);
   const unavailable = useCallback(() => { setRenderer("fallback"); setLoaded(false); }, []);
+  const retryGraphics = useCallback(() => {
+    setLoaded(false); setThreeD(true); setGraphicsAttempt(n => n + 1); setRenderer("webgl");
+  }, []);
   const satelliteUnavailable = useCallback(() => setProviderFailed(true), []);
   const cameraMoved = useCallback(() => setFollow(false), []);
   const recenter = useCallback(() => { setFollow(true); setFocus(n => n + 1); }, []);
@@ -182,14 +187,25 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <div className={styles.bar}><div className={styles.layers} role="group" aria-label="Map imagery">
           {([["game","Game","Game"],["street","Streets","Streets"],["satellite", globalSatellite && !providerFailed ? "Satellite" : "Melbourne satellite","Satellite"],["aerial","Melbourne aerial","Aerial"]] as const).map(([mode,label,short]) =>
             <button key={mode} type="button" aria-label={label} title={label} aria-pressed={imagery === mode} onClick={() => setImagery(mode)}>{short}</button>)}
-          <button type="button" className={styles.depth} aria-label="3D buildings" aria-pressed={renderer === "webgl" && threeD} disabled={renderer === "fallback"} onClick={() => setThreeD(v => !v)}><Box size={16}/>3D</button>
+          <button type="button" className={styles.depth} aria-label="3D buildings" title={renderer === "fallback" ? "Retry 3D map" : "Show or hide 3D buildings"} aria-pressed={renderer === "webgl" && threeD}
+            onClick={() => { if (renderer === "fallback") retryGraphics(); else setThreeD(v => !v); }}><Box size={16}/>3D</button>
         </div><div className={styles.perspectives} role="group" aria-label="Explorer view">
-          <button type="button" title="First person view" aria-label="First person view" aria-pressed={perspective === "first" && renderer === "webgl"} disabled={renderer === "fallback"} onClick={() => changePerspective("first")}>1st</button>
+          <button type="button" title="First person view" aria-label="First person view" aria-pressed={perspective === "first" && renderer === "webgl"}
+            onClick={() => { if (renderer === "fallback") retryGraphics(); changePerspective("first"); }}>1st</button>
           <button type="button" title="Third person view" aria-label="Third person view" aria-pressed={perspective === "third" || renderer === "fallback"} onClick={() => changePerspective("third")}>3rd</button>
         </div></div>
       </div>
+      {renderer === "fallback" && <div className={styles.graphicsRecovery}>
+        <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
+        <button type="button" onClick={retryGraphics}>Retry 3D</button>
+      </div>}
       <div ref={frame} className={styles.stage} data-selected={Boolean(selected)}><div className={styles.scene}><MapExpandButton/>
-        {renderer === "webgl" ? <Canvas {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
+        {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
+        {renderer === "webgl" && loaded && threeD && perspective === "first" && <CloseMapPlayer
+          avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}
+          heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
+          distanceTransitionMs={location.mode === "live" ? 600 : 80}
+          animate={!paused && (preferences.preferences.idleMotion || avatarWalking || action !== "idle")}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <div className={styles.locationTools}>
           <button type="button" title={location.mode === "live" ? "Turn off live location" : "Enable live location"} aria-label={location.mode === "live" ? "Turn off live location" : "Enable live location"}

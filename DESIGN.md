@@ -49,6 +49,8 @@ Explore is the centre destination and opens on worldwide real geography. OpenFre
 
 Each map fits below its own header and above the phone navigation. Long feeds and directories use normal page scrolling. Keep map inputs keyboard-accessible and respect reduced-motion settings. Labels and pressed states accompany colour changes. Licence attribution remains available on both geographic renderers.
 
+The close 3D view shows partial original character artwork near the lower edge, synchronised to the existing travel and gesture state, without intercepting map input. The third-person marker remains separate. Graphics fallback explains why 2D is active and provides Retry 3D; the 3D and first-person choices can initiate recovery rather than remaining disabled. Parent selection, player and route state survive a renderer replacement.
+
 ## Product boundaries
 
 The map shows provider place labels and validated, published Food Go venues. Google Maps and Apple Maps use the chosen geographic destination. Live GPS requires an explicit user action and browser permission; manual positioning remains available. Route walking follows a real pedestrian polyline and records session movement only. It does not prove a visit or award XP. Customer collections and social XP use server verification. Native map parity and physical-device GPS performance require separate delivery and testing.

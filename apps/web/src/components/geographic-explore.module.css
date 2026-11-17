@@ -119,6 +119,9 @@
 .avatarPanel { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); padding: 10px; }
 .atlas dialog:modal .avatarPanel { position: absolute; z-index: 40; right: 10px; top: 70px; width: min(820px, calc(100% - 20px)); max-height: calc(100dvh - 90px); overflow: auto; margin: 0; box-shadow: var(--shadow-panel); }
 .layers button:disabled { opacity: .5; }
+.graphicsRecovery { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 clamp(10px, 2vw, 30px) 6px; color: var(--muted); font: 600 13px/1.3 var(--font-body); }
+.graphicsRecovery button { flex: none; min-height: 40px; padding: 6px 10px; border: 1px solid var(--petrol); border-radius: 8px; background: white; color: var(--petrol); font: 700 13px/1.2 var(--font-body); }
+.graphicsRecovery button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .motionButton { margin-block: 4px 8px; }
 @media (prefers-reduced-motion: no-preference) { .field button, .locationTools button, .gameBar button { transition: background-color 160ms ease-out, box-shadow 160ms ease-out; } }
 @media (max-width: 600px) {
