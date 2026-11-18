@@ -300,7 +300,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       // Labels, restaurant markers, attribution and route guidance stay legible.
       const before = map.getStyle().layers.find(layer => layer.type === "symbol")?.id;
       map.addLayer({ id: layerId, type: "fill", source: sourceId,
-        paint: { "fill-color": "#d1e2d4", "fill-opacity": .3, "fill-antialias": false } }, before);
+        paint: { "fill-color": "#74978b", "fill-opacity": .43, "fill-antialias": true, "fill-outline-color": "#a5c3b2" } }, before);
     }
     const refresh = () => {
       const bounds = map.getBounds();
