@@ -10,6 +10,7 @@ import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
 import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
 import { createGameWorldObjectLayer, GAME_WORLD_OBJECT_LAYER, type GameWorldObject } from "@/lib/game-world-objects";
 import { parkTreesFromMap } from "@/lib/game-world-greenery";
+import { rooftopsFromMap } from "@/lib/game-world-architecture";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
 import { mapDistance } from "@/lib/map-game";
@@ -83,6 +84,8 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
   const [parkTrees, setParkTrees] = useState<GameWorldObject[]>([]);
+  const [roofDetails, setRoofDetails] = useState<GameWorldObject[]>([]);
+  const roofSignature = useRef("");
   const parkSignature = useRef("");
   const [worldEpoch, setWorldEpoch] = useState(0);
   const [zoom, setZoom] = useState(homeZoom);
@@ -244,11 +247,18 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const map = mapRef.current;
     if (!ready || !map) return;
     const update = () => {
-      const trees = threeD && imagery === "game" && !props.lowDetail ? parkTreesFromMap(map) : [];
+      const decorate = threeD && imagery === "game" && !props.lowDetail;
+      const trees = decorate ? parkTreesFromMap(map) : [];
       const signature = trees.map(tree => tree.id).join("|");
       if (signature !== parkSignature.current) {
         parkSignature.current = signature;
         setParkTrees(trees);
+      }
+      const roofs = decorate ? rooftopsFromMap(map) : [];
+      const roofsKey = roofs.map(roof => roof.id + ":" + roof.height).join("|");
+      if (roofsKey !== roofSignature.current) {
+        roofSignature.current = roofsKey;
+        setRoofDetails(roofs);
       }
     };
     const moved = () => { setWorldEpoch(value => value + 1); update(); };
@@ -269,6 +279,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const reference = { latitude: centre.lat, longitude: centre.lng };
     const nearby: GameWorldObject[] = [
       ...parkTrees,
+      ...roofDetails,
       ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
         id: place.id, longitude: place.longitude, latitude: place.latitude,
         kind: place.kind ?? "building" as const,
@@ -280,15 +291,15 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     });
     const demo = new URLSearchParams(window.location.search).get("world-demo") === "1";
     if (demo) nearby.push({
-      id: "melbourne-scenery-demo-not-redeemable", longitude: 144.96915,
-      latitude: -37.81790, kind: "waypoint",
+      id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
+      latitude: -37.81790, kind: "treasure",
     });
     if (nearby.length === 0) return;
     const layer = createGameWorldObjectLayer(nearby);
     const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
     map.addLayer(layer, label);
     return () => { if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER); };
-  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, worldEpoch]);
+  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, roofDetails, worldEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -495,7 +506,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   const map = mapRef.current;
   function pauseCameraTracking() { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
-  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
+  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-game-roof-count={roofDetails.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
         event.preventDefault(); const centre = map.getCenter().wrap();
