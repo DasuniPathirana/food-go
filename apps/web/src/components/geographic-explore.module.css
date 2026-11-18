@@ -159,24 +159,32 @@
   padding: 12px; margin: 0; background: #fffdf7f8;
   box-shadow: 0 12px 32px #163b3e30;
 }
+/* Keep the closed control compact and ABOVE the main game action area.
+   Previously its 380px-wide hitbox blocked the avatar and mobile cameras. */
 .worldSheet {
-  position: absolute; z-index: 25; left: 12px;
-  bottom: calc(82px + env(safe-area-inset-bottom));
-  width: min(380px, calc(100vw - 24px));
-  border: 1px solid #c4dfd3; border-radius: 14px;
+  position: absolute; z-index: 25;
+  top: calc(182px + env(safe-area-inset-top)); left: 12px;
+  bottom: auto; width: max-content; max-width: calc(100vw - 24px);
+  border: 1px solid #c4dfd3; border-radius: 13px;
   background: #fffdf5ed; color: #173e3c;
   box-shadow: 0 8px 22px #16444424; backdrop-filter: blur(12px);
 }
 .worldSheet > summary {
-  display: flex; align-items: center; gap: 9px;
-  padding: 10px 13px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 0;
+  box-sizing: border-box; width: 46px; height: 46px;
+  padding: 0; min-height: 44px;
   font: 700 13px/1.25 var(--font-body); cursor: pointer;
   list-style: none;
 }
 .worldSheet > summary::-webkit-details-marker { display: none; }
-.worldSheet[open] { width: min(445px, calc(100vw - 24px)); }
+.worldSheet:not([open]) > summary span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+.worldSheet[open] { width: min(420px, calc(100vw - 24px)); }
+.worldSheet[open] > summary { width: 100%; justify-content: flex-start; gap: 9px; padding: 0 13px; }
 .worldSheetBody {
-  max-height: min(56dvh, 490px); overflow-y: auto; overscroll-behavior: contain;
+  max-height: min(48dvh, 400px); overflow-y: auto; overscroll-behavior: contain;
   padding: 8px 12px 18px; border-top: 1px solid #bfd8cf;
 }
 .worldSheetLinks { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
@@ -196,5 +204,6 @@
   .atlas .scene .perspectives { bottom: calc(84px + env(safe-area-inset-bottom)); }
   .atlas .readout { bottom: calc(143px + env(safe-area-inset-bottom)); }
   .atlas .gameBar { bottom: calc(205px + env(safe-area-inset-bottom)); }
-  .worldSheet { left: 10px; bottom: calc(81px + env(safe-area-inset-bottom)); }
+  .worldSheet { left: 10px; top: calc(180px + env(safe-area-inset-top)); bottom: auto; max-width: calc(100vw - 20px); }
+  .worldSheet[open] { width: calc(100vw - 20px); }
 }
