@@ -9,6 +9,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
 import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
 import { createGameWorldObjectLayer, GAME_WORLD_OBJECT_LAYER, type GameWorldObject } from "@/lib/game-world-objects";
+import { parkTreesFromMap } from "@/lib/game-world-greenery";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
 import { mapDistance } from "@/lib/map-game";
@@ -81,6 +82,9 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const eyeInput = useRef<ReturnType<typeof attachFirstPersonInput> | null>(null);
   const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
+  const [parkTrees, setParkTrees] = useState<GameWorldObject[]>([]);
+  const parkSignature = useRef("");
+  const [worldEpoch, setWorldEpoch] = useState(0);
   const [zoom, setZoom] = useState(homeZoom);
   const [bearing, setBearing] = useState(-18);
   const [tileIssue, setTileIssue] = useState(false);
@@ -234,6 +238,26 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     map.setPixelRatio(props.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2));
   }, [ready, props.lowDetail]);
 
+  // Park meshes are placed only inside visible mapped green polygons.
+  // They are aesthetic vegetation, not individual surveyed tree positions.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const update = () => {
+      const trees = threeD && imagery === "game" && !props.lowDetail ? parkTreesFromMap(map) : [];
+      const signature = trees.map(tree => tree.id).join("|");
+      if (signature !== parkSignature.current) {
+        parkSignature.current = signature;
+        setParkTrees(trees);
+      }
+    };
+    const moved = () => { setWorldEpoch(value => value + 1); update(); };
+    update();
+    map.on("idle", update);
+    map.on("moveend", moved);
+    return () => { map.off("idle", update); map.off("moveend", moved); };
+  }, [ready, threeD, imagery, props.lowDetail]);
+
   // Real geographic 3D objects share MapLibre's camera and depth buffer.
   // The optional ?world-demo=1 fixture is visual-only and never awards loot.
   useEffect(() => {
@@ -241,11 +265,16 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!ready || !map) return;
     if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER);
     if (!threeD || imagery !== "game" || props.lowDetail) return;
-    const nearby: GameWorldObject[] = places.filter(valid).slice(0, 22).map(place => ({
-      id: place.id, longitude: place.longitude, latitude: place.latitude,
-      kind: place.kind ?? "building",
-    }));
-    if (valid(selected)) nearby.push({
+    const centre = map.getCenter();
+    const reference = { latitude: centre.lat, longitude: centre.lng };
+    const nearby: GameWorldObject[] = [
+      ...parkTrees,
+      ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
+        id: place.id, longitude: place.longitude, latitude: place.latitude,
+        kind: place.kind ?? "building" as const,
+      })),
+    ];
+    if (valid(selected) && mapDistance(selected, reference) < 1250) nearby.push({
       id: "selected-waypoint", longitude: selected.longitude,
       latitude: selected.latitude, kind: "waypoint",
     });
@@ -259,7 +288,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
     map.addLayer(layer, label);
     return () => { if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER); };
-  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail]);
+  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, worldEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
