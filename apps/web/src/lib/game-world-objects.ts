@@ -5,7 +5,7 @@
  */
 import { MercatorCoordinate, type CustomLayerInterface } from "maplibre-gl";
 import {
-  AmbientLight, BoxGeometry, Camera, CylinderGeometry, DirectionalLight,
+  AmbientLight, BoxGeometry, Camera, CylinderGeometry, DirectionalLight, DodecahedronGeometry,
   Group, Matrix4, Mesh, MeshStandardMaterial, OctahedronGeometry,
   Scene, TorusGeometry, Vector3, WebGLRenderer,
   type BufferGeometry, type Material,
@@ -17,7 +17,7 @@ export type GameWorldObject = {
   id: string;
   longitude: number;
   latitude: number;
-  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint";
+  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree";
 };
 
 const hues = {
@@ -26,7 +26,36 @@ const hues = {
   market: { main: 0xef8d6b, trim: 0x0b7771 },
   building: { main: 0xbecfb7, trim: 0x0b6a60 },
   waypoint: { main: 0x7bd1d2, trim: 0x145b70 },
+  tree: { main: 0x5f9576, trim: 0x285945 },
 } as const;
+
+function makeTree(seed: number): Group {
+  const group = new Group();
+  const wood = new MeshStandardMaterial({ color: 0x755a43, roughness: 0.9 });
+  const evergreen = new MeshStandardMaterial({ color: seed % 2 ? 0x4b9271 : 0x5a9c73, roughness: 0.88 });
+  const highlights = new MeshStandardMaterial({ color: seed % 3 ? 0x76ab7b : 0x80ae8a, roughness: 0.84 });
+  const trunk = new Mesh(new CylinderGeometry(0.27, 0.38, 2.9, 7), wood);
+  trunk.position.y = 1.45;
+  group.add(trunk);
+  const crown = new Mesh(new DodecahedronGeometry(1.95, 0), evergreen);
+  crown.position.set(0, 3.25, 0);
+  group.add(crown);
+  const upper = new Mesh(new DodecahedronGeometry(1.58, 0), highlights);
+  upper.position.set(0.28, 4.25, -0.24);
+  group.add(upper);
+  const crownEdge = new Mesh(new DodecahedronGeometry(1.18, 0), evergreen);
+  crownEdge.position.set(-0.62, 3.82, 0.55);
+  group.add(crownEdge);
+  const scale = 0.78 + (seed % 5) * 0.07;
+  group.scale.setScalar(scale);
+  return group;
+}
+
+function seedFromId(id: string): number {
+  let n = 19;
+  for (const letter of id) n = (n * 31 + letter.charCodeAt(0)) >>> 0;
+  return n;
+}
 
 function makeBeacon(kind: GameWorldObject["kind"]): Group {
   const tone = hues[kind];
@@ -62,7 +91,7 @@ function makeBeacon(kind: GameWorldObject["kind"]): Group {
 export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]): CustomLayerInterface {
   const valid = objects.filter(item =>
     Number.isFinite(item.longitude) && Math.abs(item.longitude) <= 180 &&
-    Number.isFinite(item.latitude) && Math.abs(item.latitude) < 85).slice(0, 24);
+    Number.isFinite(item.latitude) && Math.abs(item.latitude) < 85).slice(0, 64);
   const scene = new Scene();
   const camera = new Camera();
   let renderer: WebGLRenderer | null = null;
@@ -82,7 +111,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       const dz = (position.y - origin.y) / unit;
       // Avoid huge world-coordinate offsets if a venue directory spans regions.
       if (Math.hypot(dx, dz) > 3000) continue;
-      const beacon = makeBeacon(point.kind);
+      const beacon = point.kind === "tree" ? makeTree(seedFromId(point.id)) : makeBeacon(point.kind);
       beacon.position.set(dx, 0, dz);
       beacon.name = point.id;
       scene.add(beacon);
