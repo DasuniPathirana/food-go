@@ -43,6 +43,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const avatarPanel = useRef<HTMLDivElement>(null);
   const avatarScroll = useRef(0);
   const cameraMenu = useRef<HTMLDetailsElement>(null);
+  const worldSheet = useRef<HTMLDetailsElement>(null);
   const searchRequest = useRef<AbortController | null>(null);
   const resultsId = useId();
   const [query, setQuery] = useState(""), [searchOpen, setSearchOpen] = useState(false);
@@ -79,6 +80,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const active = stops.find(stop => stop.id === selected?.id);
   const encounterVenueId = active?.members.length === 1 ? active.members[0].id
     : active && chosenShop?.selectionId === active.id && active.members.some(member => member.id === chosenShop.venueId) ? chosenShop.venueId : null;
+  // Contextual restaurant actions should surface when an actual venue is selected.
+  useEffect(() => { if (encounterVenueId && worldSheet.current) worldSheet.current.open = true; }, [encounterVenueId]);
   const localMatches = stops.filter(stop => stop.name.toLocaleLowerCase("en-AU").includes(query.trim().toLocaleLowerCase("en-AU")));
   const directions = selected && pointDirections(selected);
   const walking = walk.phase === "walking";
@@ -283,7 +286,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           <span className={styles.walkDistance}>{location.mode === "live" ? "Route guide · follows your live position" : `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m`}</span>
         </div>}
       {avatarOpen && <div ref={avatarPanel} className={styles.avatarPanel} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeAvatar(); } }}><AvatarCustomizer compact onClose={closeAvatar} onAction={perform} motionPaused={paused}/></div>}
-    <details className={styles.worldSheet}>
+    <details ref={worldSheet} className={styles.worldSheet}>
       <summary aria-label="Open game details and discovery settings"><Layers size={17}/><span>Game details</span></summary>
       <div className={styles.worldSheetBody}>
         <nav className={styles.worldSheetLinks} aria-label="Food Go discoveries"><Link href="/?view=catalogue">Restaurants and deals</Link><Link href="/inventory">Inventory</Link><Link href="/quests">Quests</Link></nav>
