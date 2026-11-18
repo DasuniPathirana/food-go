@@ -18,7 +18,12 @@ export type GameWorldObject = {
   id: string;
   longitude: number;
   latitude: number;
-  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree";
+  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure";
+  /** Decorative building footprint dimensions/roof altitude, in metres. */
+  width?: number;
+  depth?: number;
+  height?: number;
+  variant?: number;
 };
 
 const hues = {
@@ -28,6 +33,8 @@ const hues = {
   building: { main: 0xbecfb7, trim: 0x0b6a60 },
   waypoint: { main: 0x7bd1d2, trim: 0x145b70 },
   tree: { main: 0x5f9576, trim: 0x285945 },
+  roof: { main: 0x7a9e9c, trim: 0x305b5c },
+  treasure: { main: 0xffd15f, trim: 0x076f71 },
 } as const;
 
 type TreePosition = { x: number; z: number; seed: number };
@@ -155,11 +162,89 @@ function makeBeacon(kind: GameWorldObject["kind"]): Group {
   return group;
 }
 
+/**
+ * Small roof modules help break the monotonous extruded skyline. They sit on
+ * mapped roofs, never invent extra building footprints or usable entrances.
+ */
+function makeRoof(point: GameWorldObject): Group {
+  const root = new Group();
+  const sizeX = Math.max(1.5, Math.min(7, point.width ?? 4));
+  const sizeZ = Math.max(1.5, Math.min(7, point.depth ?? 4));
+  const top = Math.max(4, Math.min(200, point.height ?? 12));
+  const seed = seedFromId(point.id);
+  const dark = new MeshStandardMaterial({ color: 0x375c60, roughness: 0.77, metalness: 0.2 });
+  const light = new MeshStandardMaterial({ color: 0xb8c7b6, roughness: 0.86, metalness: 0.09 });
+  const solar = new MeshStandardMaterial({ color: 0x3a6875, roughness: 0.25, metalness: 0.38 });
+  const terracotta = new MeshStandardMaterial({ color: 0xbc846c, roughness: 0.87 });
+  const foliage = new MeshStandardMaterial({ color: 0x658e68, roughness: 0.88 });
+  const lip = new Mesh(new BoxGeometry(sizeX, 0.18, sizeZ), dark);
+  lip.position.y = top + 0.15;
+  root.add(lip);
+  if (seed % 4 === 0) {
+    // Bounded pavilion canopy and a slender dark support.
+    const body = new Mesh(new CylinderGeometry(1.02, 1.25, 1.25, 8), light);
+    body.position.y = top + 0.85; root.add(body);
+    const canopy = new Mesh(new ConeGeometry(1.7, 0.8, 8), terracotta);
+    canopy.position.y = top + 1.95; root.add(canopy);
+  } else if (seed % 4 === 1) {
+    // Two compact solar arrays (decorative, not a claimed real solar installation).
+    for (const offset of [-1, 1]) {
+      const panel = new Mesh(new BoxGeometry(Math.min(2, sizeX * .43), 0.12, Math.min(2.2, sizeZ * .65)), solar);
+      panel.position.set(offset * sizeX * .22, top + .57, 0);
+      panel.rotation.x = -.22; root.add(panel);
+    }
+  } else if (seed % 4 === 2) {
+    // Skylight, with reflective glazing and a lighter surround.
+    const frame = new Mesh(new BoxGeometry(sizeX * .52, .42, sizeZ * .53), light);
+    frame.position.y = top + .41; root.add(frame);
+    const glass = new Mesh(new BoxGeometry(sizeX * .44, .06, sizeZ * .45), solar);
+    glass.position.y = top + .67; root.add(glass);
+  } else {
+    // An artistic roof garden cluster with raised containers.
+    for (let i = 0; i < 3; i++) {
+      const planter = new Mesh(new BoxGeometry(.9, .4, 1.1), terracotta);
+      planter.position.set((i-1) * Math.min(1.45, sizeX * .24), top + .45, 0);
+      root.add(planter);
+      const shrub = new Mesh(new DodecahedronGeometry(.58, 0), foliage);
+      shrub.position.set(planter.position.x, top + 1.08, 0); root.add(shrub);
+    }
+  }
+  return root;
+}
+
+function makeTreasure(): Group {
+  // A Food Go original, stylised non-redeemable discovery chest.
+  const root = new Group();
+  const dark = new MeshStandardMaterial({ color: 0x096b68, metalness: .35, roughness: .4 });
+  const gold = new MeshStandardMaterial({ color: 0xffc959, metalness: .42, roughness: .35 });
+  const light = new MeshStandardMaterial({ color: 0xfff2be, emissive: 0xefbb50, emissiveIntensity: .42 });
+  const disk = new Mesh(new CylinderGeometry(2.4, 2.6, .3, 20), dark);
+  disk.position.y = .15; root.add(disk);
+  const ring = new Mesh(new TorusGeometry(2.2, .13, 8, 30), gold);
+  ring.rotation.x = Math.PI/2; ring.position.y = .38; root.add(ring);
+  const box = new Mesh(new BoxGeometry(2.9, 1.3, 1.9), dark);
+  box.position.y = 1.02; root.add(box);
+  const lid = new Mesh(new BoxGeometry(3.12, .46, 2.1), gold);
+  lid.position.y = 1.9; root.add(lid);
+  for (const x of [-1.02, 1.02]) {
+    const strap = new Mesh(new BoxGeometry(.18, 1.66, 2.06), gold);
+    strap.position.set(x, 1.16, 0); root.add(strap);
+  }
+  const lock = new Mesh(new OctahedronGeometry(.44), light);
+  lock.position.set(0, 1.38, 1.08); root.add(lock);
+  for (let i = 0; i < 4; i++) {
+    const glimmer = new Mesh(new OctahedronGeometry(.3 + i * .045), light);
+    glimmer.position.set(Math.cos(i*Math.PI/2)*2.4, 2.85 + (i%2)*.65, Math.sin(i*Math.PI/2)*1.3);
+    root.add(glimmer);
+  }
+  return root;
+}
+
 /** Rendering is intentionally bounded and does not affect geolocation or rewards. */
 export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]): CustomLayerInterface {
   const valid = objects.filter(item =>
     Number.isFinite(item.longitude) && Math.abs(item.longitude) <= 180 &&
-    Number.isFinite(item.latitude) && Math.abs(item.latitude) < 85).slice(0, 64);
+    Number.isFinite(item.latitude) && Math.abs(item.latitude) < 85).slice(0, 128);
   const scene = new Scene();
   const camera = new Camera();
   let renderer: WebGLRenderer | null = null;
@@ -181,7 +266,8 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       // Avoid huge world-coordinate offsets if a venue directory spans regions.
       if (Math.hypot(dx, dz) > 3000) continue;
       if (point.kind === "tree") { grove.push({ x: dx, z: dz, seed: seedFromId(point.id) }); continue; }
-      const beacon = makeBeacon(point.kind);
+      const beacon = point.kind === "roof" ? makeRoof(point)
+        : point.kind === "treasure" ? makeTreasure() : makeBeacon(point.kind);
       beacon.position.set(dx, 0, dz);
       beacon.name = point.id;
       scene.add(beacon);
