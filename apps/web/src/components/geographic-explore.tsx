@@ -211,7 +211,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     onSelect: selectPoint, onReady: ready, onUnavailable: unavailable, onCameraInteraction: cameraMoved, onSatelliteUnavailable: satelliteUnavailable,
   };
   return <section className={styles.atlas} aria-label="Geographic exploration">
-    <MapFrame label="Explore the world">
+    <MapFrame label="Explore the world" className={styles.fullFrame}>
       <div ref={controls} className={styles.controls}><div className={styles.placeBar}>
         <h1>Explore</h1><form className={styles.search} role="search" onSubmit={search}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}
@@ -283,7 +283,10 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           <span className={styles.walkDistance}>{location.mode === "live" ? "Route guide · follows your live position" : `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m`}</span>
         </div>}
       {avatarOpen && <div ref={avatarPanel} className={styles.avatarPanel} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeAvatar(); } }}><AvatarCustomizer compact onClose={closeAvatar} onAction={perform} motionPaused={paused}/></div>}
-    </MapFrame>
+    <details className={styles.worldSheet}>
+      <summary aria-label="Open game details and discovery settings"><Layers size={17}/><span>Game details</span></summary>
+      <div className={styles.worldSheetBody}>
+        <nav className={styles.worldSheetLinks} aria-label="Food Go discoveries"><Link href="/?view=catalogue">Restaurants and deals</Link><Link href="/inventory">Inventory</Link><Link href="/quests">Quests</Link></nav>
     <div className={styles.explorerStatus} role="status"><div><p>{walk.message || (location.status === "manual" ? perspective === "first" && renderer === "webgl" ? "Drag to look around. Pinch to change the view angle. Tap a street to walk." : "Tap a street to explore. Tap your explorer for live location, or hold to change your look." : location.message)}</p>{compass.message && <p>{compass.message}</p>}</div>{walk.route && location.mode === "manual" && <label>Walk speed<select value={walk.speed} onChange={e => walk.setSpeed(Number(e.target.value) as 1 | 4)}><option value="1">1×</option><option value="4">4×</option></select></label>}</div>
     {encounterLandmarks.nearby.length > 0 && <div className={styles.gameBar} aria-label="Nearby restaurant encounters"><span>Nearby restaurant encounters</span>{encounterLandmarks.nearby.map(venue => <button key={venue.venueId} type="button" onClick={() => {
       const stop = stops.find(place => place.members.some(member => member.id === venue.venueId));
@@ -339,5 +342,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       {renderer === "fallback" && <span>Interactive 2D map</span>}
       {catalogueUnavailable && <span>Food Go venue listings are temporarily unavailable.</span>}
     </div>
+      </div>
+    </details>
+    </MapFrame>
   </section>;
 }
