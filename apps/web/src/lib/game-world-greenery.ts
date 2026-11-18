@@ -6,7 +6,7 @@
 import type { Map as GeographicMap } from "maplibre-gl";
 import type { GameWorldObject } from "./game-world-objects";
 
-type Position = readonly [number, number];
+type Position = readonly number[];
 type Ring = readonly Position[];
 
 function inRing(lng: number, lat: number, ring: Ring): boolean {
@@ -46,7 +46,7 @@ export function parkTreesFromMap(map: GeographicMap): GameWorldObject[] {
       : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
     for (const rings of polygons) {
       const shell = rings[0];
-      if (!shell || shell.length < 4) continue;
+      if (!shell || shell.length < 4 || shell.length > 2048) continue;
       const lngs = shell.map(point => point[0]), lats = shell.map(point => point[1]);
       const west = Math.min(...lngs), east = Math.max(...lngs);
       const south = Math.min(...lats), north = Math.max(...lats);
