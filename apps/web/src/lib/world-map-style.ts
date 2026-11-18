@@ -73,9 +73,9 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
       const landColour = sourceLayer === "water" || layer.id === "water" ? "#6abed0"
-        : sourceLayer === "park" || layer.id === "park" ? "#85b984"
-          : layer.id.includes("wood") ? "#75a78a"
-            : /grass|cemetery|pitch/u.test(layer.id) ? "#a6ca93"
+        : sourceLayer === "park" || layer.id === "park" ? "#99bf90"
+          : layer.id.includes("wood") ? "#749d82"
+            : /grass|cemetery|pitch/u.test(layer.id) ? "#b0cc9f"
               : layer.id.includes("wetland") ? "#c6e5d9"
                 : layer.id.includes("sand") ? "#f5ecd2"
                   : /ice|glacier/u.test(layer.id) ? "#f6fbff"
@@ -97,10 +97,16 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       }
       if (sourceLayer === "transportation" && /^(road|bridge|tunnel)_/u.test(layer.id)) {
         const rail = layer.id.includes("rail"), casing = layer.id.endsWith("casing");
-        add(layer, "line-color", rail ? "#9aada4" : casing ? "#bcc7b4" : "#f8f6ec", "#000000");
+        const walking = /path|footway|pedestrian|steps|cycleway/u.test(layer.id);
+        // Pedestrian networks remain real, but should not become stark white
+        // dashed decorations that overpower the park scene.
+        add(layer, "line-color", rail ? "#9aada4" : walking
+          ? casing ? "#a7bfa0" : "#d9e7ce"
+          : casing ? "#b8c8ba" : "#f5f5e9", "#000000");
         if (rail) add(layer, "line-opacity", 0.28, 1);
         else {
-          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], casing ? 1.1 : 1.06), 1);
+          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], walking ? 0.88 : casing ? 1.1 : 1.06), 1);
+          if (walking) add(layer, "line-opacity", 0.67, 1);
           if (casing) add(layer, "line-blur", 0.35, 0);
         }
       }
@@ -115,7 +121,7 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       if (sourceLayer === "poi") {
         // Published Food Go markers stay distinct. Provider POIs reappear softly
         // at close zoom while real street and suburb names stay available.
-        const opacity: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 16.5, 0, 18, 0.65];
+        const opacity: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 16.5, 0, 18, 0.32];
         add(layer, "text-opacity", opacity, 1); add(layer, "icon-opacity", opacity, 1);
       }
       if (/one_way_arrow|shield/u.test(layer.id)) {
