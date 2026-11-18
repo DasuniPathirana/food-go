@@ -495,7 +495,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   const map = mapRef.current;
   function pauseCameraTracking() { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
-  return <div className={css.scene}>
+  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
         event.preventDefault(); const centre = map.getCenter().wrap();
