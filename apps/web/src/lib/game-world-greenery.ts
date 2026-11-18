@@ -36,29 +36,38 @@ function jitter(x: number, y: number): number {
 export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre, limit = 36): GameWorldObject[] {
   if (!Number.isFinite(centre.longitude) || !Number.isFinite(centre.latitude) || Math.abs(centre.latitude) > 83) return [];
   const cos = Math.max(0.15, Math.cos(centre.latitude * Math.PI / 180));
-  const lngStep = 30 / (111320 * cos), latStep = 30 / 111320;
-  const radius = 400;
+  // Global Web Mercator metres anchor the planting grid. Using a grid based
+  // on centre.latitude made all the trees shift when the user walked north.
+  const earth = 6378137, radians = Math.PI / 180;
+  const mercatorX = (longitude: number) => earth * longitude * radians;
+  const mercatorY = (latitude: number) => earth * Math.log(Math.tan(Math.PI / 4 + latitude * radians / 2));
+  const fromX = (x: number) => x / earth / radians;
+  const fromY = (y: number) => (2 * Math.atan(Math.exp(y / earth)) - Math.PI / 2) / radians;
+  const step = 32, radius = 400;
+  const centreX = mercatorX(centre.longitude), centreY = mercatorY(centre.latitude);
+  const projectedRadius = radius / cos;
   const bounds = {
-    west: centre.longitude - radius / (111320 * cos),
-    east: centre.longitude + radius / (111320 * cos),
-    south: centre.latitude - radius / 111320,
-    north: centre.latitude + radius / 111320,
+    west: centreX - projectedRadius, east: centreX + projectedRadius,
+    south: centreY - projectedRadius, north: centreY + projectedRadius,
   };
   const trees = new Map<string, { value: GameWorldObject; distance: number }>();
   for (const polygon of polygons.slice(0, 120)) {
     const shell = polygon[0];
     if (!shell || shell.length < 4 || shell.length > 2500) continue;
-    const xs = shell.map(point => point[0]), ys = shell.map(point => point[1]);
+    if (shell.some(point => !Number.isFinite(point[0]) || !Number.isFinite(point[1]) ||
+      Math.abs(point[1]) > 83)) continue;
+    const xs = shell.map(point => mercatorX(point[0])), ys = shell.map(point => mercatorY(point[1]));
     const west = Math.max(bounds.west, Math.min(...xs)), east = Math.min(bounds.east, Math.max(...xs));
     const south = Math.max(bounds.south, Math.min(...ys)), north = Math.min(bounds.north, Math.max(...ys));
     if (west >= east || south >= north) continue;
-    for (let x = Math.floor(west / lngStep); x <= Math.ceil(east / lngStep); x++) {
-      for (let y = Math.floor(south / latStep); y <= Math.ceil(north / latStep); y++) {
+    for (let x = Math.floor(west / step); x <= Math.ceil(east / step); x++) {
+      for (let y = Math.floor(south / step); y <= Math.ceil(north / step); y++) {
         if ((x + y * 3) % 5 === 0) continue; // Keep park lawns visible.
-        const longitude = (x + 0.3 + jitter(x, y) * 0.4) * lngStep;
-        const latitude = (y + 0.3 + jitter(y, x) * 0.4) * latStep;
-        if (longitude < west || longitude > east || latitude < south || latitude > north ||
-          !inPolygon(longitude, latitude, polygon)) continue;
+        const worldX = (x + 0.3 + jitter(x, y) * 0.4) * step;
+        const worldY = (y + 0.3 + jitter(y, x) * 0.4) * step;
+        if (worldX < west || worldX > east || worldY < south || worldY > north) continue;
+        const longitude = fromX(worldX), latitude = fromY(worldY);
+        if (!inPolygon(longitude, latitude, polygon)) continue;
         const distance = Math.hypot((longitude - centre.longitude) * 111320 * cos,
           (latitude - centre.latitude) * 111320);
         if (distance > radius) continue;
