@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { AVATARS, type AvatarId } from "@food-go/domain/avatar";
 import { avatarDistanceAt, avatarLegPose, avatarMapYaw, AVATAR_STRIDE_METRES, retargetAvatarDistance, shortestAvatarTurn, type AvatarDistanceTransition } from "@/lib/avatar-motion";
+import { AVATAR_ASSET_CATALOGUE, avatarAnimationForMotion } from "@/lib/avatar-assets";
+import type { LoadedAvatarModel } from "./avatar-model-loader";
 
 export type AvatarAction = "idle" | "wave" | "cheer" | "look";
 export type AvatarMotion = { animate: boolean; walking: boolean; action: AvatarAction; actionToken: number; reduced?: boolean;
@@ -184,7 +186,7 @@ function character(avatarId: AvatarId) {
   return { root, body, torso, head, headHeight, arms, elbows, hands, legs, knees, feet, eyes, backpack };
 }
 
-export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId, onFailure: () => void) {
+export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId, onFailure: () => void, onAssetChange: (loaded: boolean) => void = () => {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "low-power" });
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -204,7 +206,16 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
   let disposed = false, failed = false, frame = 0, time = 0, previous = 0, gestureTime = -100;
   let facing = -.13, targetFacing = -.13, facingKnown = false, walkBlend = 0, walkDistance = 0;
   let distanceTransition: AvatarDistanceTransition | null = null;
+  let model: LoadedAvatarModel | null = null;
+  const assetRequest = new AbortController(), asset = AVATAR_ASSET_CATALOGUE[avatarId];
+  if (asset) void import("./avatar-model-loader").then(({ loadAvatarModel }) => loadAvatarModel(asset, { signal: assetRequest.signal })).then(loaded => {
+    if (disposed || failed) { loaded.dispose(); return; }
+    model = loaded; rig.root.visible = false; scene.add(loaded.root);
+    loaded.setState(avatarAnimationForMotion(motion), { immediate: !motion.animate || motion.reduced });
+    onAssetChange(true); draw();
+  }).catch(() => { if (!disposed) onAssetChange(false); });
   function pose() {
+    if (model) { model.root.rotation.y = facing; return; }
     const moving = motion.animate && !motion.reduced;
     const phase = time - gestureTime;
     const gesture = motion.action !== "idle" && phase >= 0 && phase < 2.4;
@@ -280,6 +291,18 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
     // the gait, so settled distance returns naturally to the standing pose.
     const stepping = walkDistance - before > 0.00001;
     walkBlend += ((stepping ? 1 : 0) - walkBlend) * (1 - Math.exp(-elapsed * 14));
+    if (model) {
+      if (motion.action === "idle") {
+        const speed = elapsed > 0 ? Math.max(0, (walkDistance - before) / elapsed) : 0;
+        const state = walkBlend > .1 ? speed > 2.2 ? "jog" : "walk" : "idle";
+        model.setState(state);
+        if (state === "walk" || state === "jog") {
+          const action = model.actions[state], cycle = state === "walk" ? model.manifest.metrics.walkCycleMetres : model.manifest.metrics.jogCycleMetres;
+          action.setEffectiveTimeScale(Math.min(4, speed * action.getClip().duration / cycle));
+        }
+      }
+      model.update(elapsed);
+    }
     draw();
     if (!disposed && !failed && motion.animate && !motion.reduced) frame = requestAnimationFrame(tick);
   }
@@ -294,7 +317,9 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
       camera.left = -halfWidth; camera.right = halfWidth; camera.updateProjectionMatrix(); draw();
     },
     setMotion(next: AvatarMotion) {
-      if (next.actionToken !== motion.actionToken || next.action !== motion.action) gestureTime = time;
+      const newAction = next.actionToken !== motion.actionToken || next.action !== motion.action;
+      if (newAction) gestureTime = time;
+      if (model && (newAction || !next.animate || next.reduced)) model.setState(avatarAnimationForMotion(next), { restart: newAction, immediate: !next.animate || next.reduced });
       targetFacing = avatarMapYaw(next.heading, next.mapBearing);
       if (!facingKnown || !next.animate || next.reduced) { facing = targetFacing; facingKnown = true; }
       if (Number.isFinite(next.distanceMetres)) {
@@ -312,6 +337,7 @@ export function createAvatarScene(canvas: HTMLCanvasElement, avatarId: AvatarId,
     },
     dispose() {
       disposed = true; cancelAnimationFrame(frame); canvas.removeEventListener("webglcontextlost", contextLost);
+      assetRequest.abort(); model?.dispose(); model = null;
       const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) { geometries.add(object.geometry); (Array.isArray(object.material) ? object.material : [object.material]).forEach((item) => materials.add(item)); }

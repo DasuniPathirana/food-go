@@ -32,6 +32,7 @@
   color: #241b29;
   font-size: 11px;
 }
+.clearance { position: absolute; top: 48px; left: 12px; max-width: calc(100% - 90px); margin: 0; padding: 5px 8px; border-radius: 4px; background: #fffdf4ed; color: #315246; font: 600 11px/1.3 var(--font-body); pointer-events: none; }
 .scene :global(.maplibregl-ctrl-attrib) {
   max-width: min(580px, calc(100vw - 48px));
   font: 500 10px/1.4 var(--font-body);
@@ -88,21 +89,21 @@
 .tools {
   position: absolute;
   right: max(10px, env(safe-area-inset-right));
-  bottom: 35px;
+  top: 68px;
   display: grid;
   gap: 1px;
-  border-radius: 9px;
+  border-radius: 5px;
   padding: 2px;
   background: #fff9ee;
   box-shadow: 0 2px 8px #21182855;
-  border: 1px solid #5b5649;
+  border: 1px solid #9db7a9;
 }
 .tools button {
   position: relative;
   display: grid;
   place-items: center;
-  width: 40px;
-  min-height: 40px;
+  width: 44px;
+  min-height: 44px;
   padding: 0;
   background: transparent;
   color: #241b29;
@@ -131,7 +132,7 @@
 .provider { left: 12px; bottom: 48px; z-index: 4; border-radius: 4px; }
 .provider img { width: 75px; height: 18px; object-fit: contain; }
 @media (max-width: 700px), (max-height: 520px) {
-  .tools { grid-template-columns: repeat(2, 40px); }
+  .tools { grid-template-columns: 44px; }
   .scene .place { max-width: 105px; font-size: 11px; }
 }
 @media (prefers-reduced-motion: reduce) {

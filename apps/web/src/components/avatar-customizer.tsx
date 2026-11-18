@@ -15,8 +15,8 @@ const actions = [
 ] as const;
 
 /** Preview choices locally; nothing changes until the user applies a choice. */
-export function AvatarCustomizer({ onClose, onAction, motionPaused = false }: {
-  onClose?: () => void; onAction?: (action: AvatarAction) => void; motionPaused?: boolean;
+export function AvatarCustomizer({ onClose, onAction, motionPaused = false, compact = false }: {
+  onClose?: () => void; onAction?: (action: AvatarAction) => void; motionPaused?: boolean; compact?: boolean;
 }) {
   const { preferences, ready, persistent, chooseAvatar, setIdleMotion } = useAvatarPreferences();
   const [draft, setDraft] = useState<AvatarId>(preferences.avatarId);
@@ -40,8 +40,8 @@ export function AvatarCustomizer({ onClose, onAction, motionPaused = false }: {
     setNotice(`${selected.label} applied. Your avatar preference stays on this browser.`);
     onClose?.();
   }
-  return <section className={styles.customizer} aria-labelledby={titleId}>
-    <div className={styles.heading}><div><h2 id={titleId}>Find your adventure look.</h2><p>Four original 3D explorers, plus the illustrated original. Try a look before applying it.</p></div>{onClose && <button type="button" className={styles.close} onClick={onClose} aria-label="Close avatar options"><X size={20} /></button>}</div>
+  return <section className={`${styles.customizer} ${compact ? styles.compact : ""}`} aria-labelledby={titleId}>
+    <div className={styles.heading}><div><h2 id={titleId}>{compact ? "Your explorer" : "Find your adventure look."}</h2><p>{compact ? "Preview a look, then apply it." : "Four original 3D explorers, plus the illustrated original. Try a look before applying it."}</p></div>{onClose && <button type="button" className={styles.close} onClick={onClose} aria-label="Close avatar options"><X size={20} /></button>}</div>
     <div className={styles.layout}>
       <div className={styles.stage}>
         <div className={styles.character}><ExplorerAvatar avatarId={draft} mode="preview" action={action} actionToken={token} walking={previewWalking} heading={backView ? (AVATAR_CAMERA_YAW + .13) * 180 / Math.PI : undefined} animate={!motionPaused && (idle || previewWalking || action !== "idle")} onActivate={() => perform("wave")} /></div>

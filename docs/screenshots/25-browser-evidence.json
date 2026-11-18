@@ -1,0 +1,175 @@
+{
+  "date": "2026-11-18",
+  "scope": "Milestone 25 restaurant encounters and inventory",
+  "origin": "http://127.0.0.1:3100",
+  "playwrightVersion": "1.65.1",
+  "releaseGates": {
+    "auth": false,
+    "authProductionReady": false,
+    "community": false,
+    "exploration": false,
+    "encounters": false,
+    "partner": false,
+    "phoneAuth": false,
+    "sms": false
+  },
+  "results": {
+    "workspace": {
+      "command": "npm run check",
+      "status": "passed",
+      "applicationTests": 271,
+      "webTypes": "passed",
+      "nativeTypes": "passed"
+    },
+    "security": {
+      "command": "npm run test:security",
+      "status": "passed",
+      "tests": 10
+    },
+    "build": {
+      "status": "passed",
+      "command": "npm run build:web",
+      "execution": "Built by Playwright webServer before the final 12-case run; production Next server started successfully"
+    },
+    "browser": {
+      "status": "passed_with_isolated_rerun",
+      "distinctCases": 48,
+      "fullRun": {
+        "command": "npm run test:e2e -- --output=artifacts/playwright-25-final",
+        "passed": 47,
+        "failed": 1,
+        "failure": "Desktop camera case exceeded its 30-second total budget at the final mouse release. Its assertions were not relaxed.",
+        "artifacts": "artifacts/playwright-25-final"
+      },
+      "isolatedRerun": {
+        "command": "npm run test:e2e -- --project=desktop-chromium --grep='drag, keyboard, optical zoom' --output=artifacts/playwright-25-camera-rerun",
+        "passed": 1,
+        "failed": 0,
+        "testSeconds": 7.3
+      },
+      "finalFeatureRun": {
+        "command": "npm run test:e2e -- tests/e2e/encounters.spec.ts --output=artifacts/playwright-25-encounters",
+        "passed": 12,
+        "failed": 0,
+        "scope": "After confirmed-item spacing polish; six feature cases on each project"
+      },
+      "earlierRunFindings": [
+        "Owner test exact-label selector corrected to the accessible combobox role",
+        "Two trace-file ENOENT cleanup errors did not recur with isolated artifacts"
+      ]
+    },
+    "http": {
+      "command": "FOOD_GO_CHECK_ORIGIN=http://127.0.0.1:3200 npm run check:web",
+      "status": "passed",
+      "assertions": 178,
+      "origin": "http://127.0.0.1:3200"
+    }
+  },
+  "browserFixture": {
+    "actualComponents": [
+      "EncounterPanel",
+      "EncounterWorkspace",
+      "EncounterChest"
+    ],
+    "actualStylesAndFonts": true,
+    "isolated": true,
+    "productionRoute": false,
+    "fixtureIdentities": true,
+    "httpResponsesMocked": true,
+    "nextLinkAdapter": "Plain anchor",
+    "visibleLabel": "Food Go browser fixture. No live restaurant or offer.",
+    "productionRoutesCheckedSeparately": [
+      "/inventory",
+      "/encounters",
+      "/api/encounters"
+    ],
+    "signedInLiveBrowser": false,
+    "databaseAuthorityTestedSeparately": "../progress/25-database-evidence.json",
+    "javascriptBundle": "Ignored artifacts/encounter-ui-fixture.json; not a production payload measurement"
+  },
+  "viewports": [
+    {
+      "project": "desktop-chromium",
+      "device": "Desktop Chrome",
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      },
+      "deviceScaleFactor": 1,
+      "chestMotion": "normal"
+    },
+    {
+      "project": "phone-chromium",
+      "device": "Pixel 7 emulation",
+      "viewport": {
+        "width": 412,
+        "height": 839
+      },
+      "deviceScaleFactor": 2.625,
+      "chestMotion": "reduced"
+    }
+  ],
+  "checkedInteractions": [
+    "Staff-code semantic refusal leaves illustration closed",
+    "Unknown claim outcome retries the identical request ID and command",
+    "Opening requires the acknowledged matching inventory item",
+    "Collected state disables a repeated Begin",
+    "No code in localStorage or sessionStorage",
+    "Inventory offer/collectible filters",
+    "Customer prepares a code without self-redeeming",
+    "Issued code clears on visibility loss",
+    "Staff issue requires exact guest reference",
+    "Independent operator review submits exact version and reason",
+    "Expired public pool removes Begin and refresh restores a new pool",
+    "Owner draft links a promotion without client-authored offer terms",
+    "Owner submits the exact returned server version",
+    "Production release gates and navigation",
+    "Desktop/phone horizontal overflow"
+  ],
+  "screenshots": [
+    {
+      "file": "25-encounter-confirmed-desktop.png",
+      "sha256": "31C4742AC69C1C9AFDE2C4A44CBB81C00646C5CB4D95A029C17D89326E390DBB",
+      "source": "Labelled isolated component fixture",
+      "visuallyInspected": true
+    },
+    {
+      "file": "25-encounter-confirmed-phone.png",
+      "sha256": "D0E49E7FE957556163870A208BEB4ABD418666CA1854E6A7187CC95B42FDDE93",
+      "source": "Labelled isolated component fixture",
+      "visuallyInspected": true
+    },
+    {
+      "file": "25-inventory-desktop.png",
+      "sha256": "C009A073E40A3C6981033E51CE004E53F70484CFB8244A2DD679B505DB024123",
+      "source": "Labelled isolated component fixture",
+      "visuallyInspected": true
+    },
+    {
+      "file": "25-inventory-phone.png",
+      "sha256": "2BBAF8FE9D4863B60300155D025485E33A0CC81E2ACA275E771672B3CA409B61",
+      "source": "Labelled isolated component fixture",
+      "visuallyInspected": true
+    },
+    {
+      "file": "25-operator-desktop.png",
+      "sha256": "C3C1838F1210B8960CEEB169DBBDE5EC85E9817DEE3E0344E8515DCB63226185",
+      "source": "Labelled isolated component fixture",
+      "visuallyInspected": true
+    },
+    {
+      "file": "25-operator-phone.png",
+      "sha256": "0B278938F496588A758E56B687B0A53562D1625CFC45C1711994AB80F54CD474",
+      "source": "Labelled isolated component fixture",
+      "visuallyInspected": true
+    }
+  ],
+  "limitations": [
+    "No signed-in live-browser or real restaurant acceptance",
+    "No physical GPS/orientation/battery/performance measurement",
+    "No native map or native AR acceptance",
+    "No observed competing database transactions",
+    "No genuine reward campaigns or offers seeded",
+    "No deployment, push or commit performed"
+  ]
+}

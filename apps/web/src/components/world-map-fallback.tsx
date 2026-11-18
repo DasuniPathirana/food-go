@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { LocateFixed } from "lucide-react";
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { ATLAS_AERIAL, ATLAS_CENTER, ATLAS_CORNERS, ATLAS_SATELLITE, ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import type { MapPoint } from "@/lib/map-game";
-import { createMapPlaceMarker } from "./map-place-marker";
+import { explorationFogGeometry, EXPLORATION_MAX_LATITUDE } from "@food-go/domain/exploration";
+import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
 import type { AtlasCanvasProps } from "./atlas-canvas";
 import styles from "./world-map-fallback.module.css";
 
@@ -109,6 +109,26 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active) return;
+    const pane = active.getPane("discovery-fog") ?? active.createPane("discovery-fog");
+    pane.style.zIndex = "450"; pane.style.pointerEvents = "none";
+    const fog = L.geoJSON(undefined, { pane: "discovery-fog", interactive: false,
+      style: { stroke: false, fillColor: "#d1e2d4", fillOpacity: .3 } }).addTo(active);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      const bounds = active.getBounds();
+      const result = explorationFogGeometry({ viewport: { west: bounds.getWest(), east: bounds.getEast(),
+        south: Math.max(-EXPLORATION_MAX_LATITUDE, bounds.getSouth()), north: Math.min(EXPLORATION_MAX_LATITUDE, bounds.getNorth()) },
+        exploredCellIds: props.discoveredCells ?? [], maxCells: props.lowDetail ? 1024 : 4096 });
+      fog.clearLayers(); if (props.discoveryEnabled) fog.addData(result.data);
+      const { data: _data, ...view } = result; props.onDiscoveryView?.(view);
+    };
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(refresh, 120); };
+    refresh(); active.on("moveend", schedule); active.on("resize", schedule);
+    return () => { clearTimeout(timer); active.off("moveend", schedule); active.off("resize", schedule); active.removeLayer(fog); };
+  }, [ready, props.discoveryEnabled, props.discoveredCells, props.lowDetail, props.onDiscoveryView]);
+  useEffect(() => {
+    const L = api.current, active = map.current;
+    if (!ready || !L || !active) return;
     const markers = props.places.map(place => {
       const button = createMapPlaceMarker(place);
       button.style.transform = "translate(-50%, -100%)";
@@ -124,6 +144,12 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
     for (const [id, marker] of placeMarkers.current)
       marker.getElement()?.querySelector("button")?.setAttribute("aria-pressed", String(id === props.selected?.id));
   }, [ready, props.places, props.selected?.id]);
+  useEffect(() => {
+    for (const place of props.places) {
+      const button = placeMarkers.current.get(place.id)?.getElement()?.querySelector("button");
+      if (button) updateMapPlaceEncounter(button, place, props.encounterSignals ?? {});
+    }
+  }, [ready, props.places, props.encounterSignals]);
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active || !props.player) return;
@@ -192,10 +218,6 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
         }
       }}/>
     {playerElement && props.playerContent && createPortal(props.playerContent, playerElement)}
-    <button className={styles.recenter} type="button" aria-label="Recenter map on explorer" title="Find my explorer" onClick={() => {
-      props.onRecenter?.();
-      if (props.player) map.current?.setView(position(props.player), Math.max(16, map.current.getZoom()), { animate: false });
-    }}><LocateFixed size={16}/></button>
     {props.imagery === "satellite" && satelliteKey && !satelliteFailed && <a className={styles.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler"/></a>}
     {!tilesReady && !error && <p className={styles.tileStatus} role="status">Loading street tiles…</p>}
     {error && <div className={styles.error} role="status"><p>{error}</p>{streetTiles.current && <button type="button" onClick={() => {

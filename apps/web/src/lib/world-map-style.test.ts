@@ -33,6 +33,29 @@ test("world street, local imagery and gameplay sources coexist in one valid map 
   assert.equal(result.style.layers.filter(layer => layer.id === "building-3d").length, 0);
 });
 
+test("world building polygons cannot overlap the local survey and create false camera walls", () => {
+  const layer = worldMapStyle(street).style.layers.find(item => item.id === "food-go-world-buildings")!;
+  assert.ok("filter" in layer);
+  const compiled = expression.createExpression(layer.filter, "test");
+  assert.equal(compiled.result, "success");
+  if (compiled.result !== "success") throw new Error("Invalid geographic building mask");
+  const tile = { z: 14, x: 14789, y: 10053 };
+  const world = 8192 * 2 ** tile.z;
+  function polygon(longitude: number, latitude: number, size: number) {
+    return [[longitude - size, latitude - size], [longitude + size, latitude - size], [longitude + size, latitude + size], [longitude - size, latitude + size], [longitude - size, latitude - size]].map(([lng, lat]) => {
+      const sin = Math.sin(lat * Math.PI / 180);
+      return { x: (lng + 180) / 360 * world - tile.x * 8192, y: (.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * world - tile.y * 8192 };
+    });
+  }
+  // This expression only reads z/x/y; the map's URL/equality methods are unused.
+  const canonical = tile as NonNullable<Parameters<typeof compiled.value.evaluate>[3]>;
+  const visible = (longitude: number, latitude: number, size = .0001) => compiled.value.evaluate({ zoom: 18 },
+    { type: "Polygon", properties: {}, geometry: [polygon(longitude, latitude, size)] }, {}, canonical);
+  assert.equal(visible(144.967146, -37.816813), false, "World roof inside the survey must be excluded");
+  assert.equal(visible(144.974, -37.813, .002), false, "An intersecting footprint must not overlap the survey");
+  assert.equal(visible(145.01, -37.813), true, "Real world buildings remain outside local coverage");
+});
+
 function evaluate(value: unknown, zoom: number, properties: Record<string, number | string> = {}, id?: number | string) {
   if (!Array.isArray(value)) return value;
   const parsed = expression.createExpression(value, "test");
@@ -80,7 +103,7 @@ test("Game materials validate and can be restored while preserving geographic so
   }
 });
 
-test("Game roads widen at actual zoom while compact buildings restore measured heights and POIs stay quiet", () => {
+test("Game roads widen at actual zoom while buildings preserve the source skyline and restore measured heights", () => {
   const { gamePaint } = worldMapStyle(street);
   const override = (id: string, property: string) => {
     const entry = gamePaint.find(item => item.id === id && item.property === property);
@@ -96,7 +119,8 @@ test("Game roads widen at actual zoom while compact buildings restore measured h
     const height = override(id, "fill-extrusion-height");
     assert.equal(evaluate(height.normal, 16, { [heightProperty]: 300 }), 300);
     const tall = evaluate(height.game, 16, { [heightProperty]: 300 }) as number;
-    assert.ok(tall > 18 && tall < 22);
+    assert.ok(tall > 180 && tall < 200);
+    assert.ok((evaluate(height.game, 16, { [heightProperty]: 40 }) as number) < tall / 4, "Low-rise and tall buildings retain different scales");
     assert.ok((evaluate(height.game, 16, { [heightProperty]: 301 }) as number) > tall, "Different roof sections must not collapse onto the same plane");
     assert.ok(evaluate(height.game, 16, { [heightProperty]: 6 }) >= 3);
   }

@@ -2,26 +2,36 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Compass, LocateFixed, Minus, Plus, RefreshCw } from "lucide-react";
-import type { AttributionControl, GeoJSONSource, Map as GeographicMap, Marker, StyleSpecification } from "maplibre-gl";
+import { Compass, Minus, Plus, RefreshCw } from "lucide-react";
+import type { AttributionControl, CameraOptions, FilterSpecification, GeoJSONSource, Map as GeographicMap, Marker, StyleSpecification } from "maplibre-gl";
 import type { LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
 import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
-import { explorerCameraLimits, explorerCameraOptions, interpolateCameraBearing, type ExplorerPerspective } from "@/lib/explorer-camera";
-import { createMapPlaceMarker } from "./map-place-marker";
+import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
+import { mapDistance } from "@/lib/map-game";
+import { explorationFogGeometry, EXPLORATION_MAX_LATITUDE, type ExplorationFogResult } from "@food-go/domain/exploration";
+import { createFirstPersonLook } from "@/lib/first-person-look";
+import { attachFirstPersonInput } from "./first-person-input";
+import { buildCameraObstacles, resolveCameraClearance, type CameraObstacle } from "@/lib/camera-clearance";
+import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
+import type { EncounterSignal } from "@/lib/encounter-landmarks";
 import css from "./atlas-canvas.module.css";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
-export type AtlasPlace = AtlasSelection & { id: string; name: string; image?: string; kind?: "cafe" | "restaurant" | "market" | "building"; shopCount?: number };
+export type AtlasPlace = AtlasSelection & { id: string; name: string; image?: string; kind?: "cafe" | "restaurant" | "market" | "building"; shopCount?: number; members?: readonly { id: string }[] };
 export type AtlasImagery = "game" | "street" | "aerial" | "satellite";
 export type AtlasCanvasProps = {
   places: readonly AtlasPlace[]; selected: AtlasSelection | null; threeD: boolean; imagery: AtlasImagery;
   player?: AtlasSelection | null; playerContent?: ReactNode; followPlayer?: boolean; focusPlayerNonce?: number;
   playerTransitionMs?: number; onBearingChange?: (bearing: number) => void;
   perspective?: ExplorerPerspective;
-  onRecenter?: () => void;
+  lowDetail?: boolean;
+  deviceHeading?: number | null; onEyeLook?: () => void;
+  discoveryEnabled?: boolean; discoveredCells?: readonly string[];
+  encounterSignals?: Readonly<Record<string, EncounterSignal>>;
+  onDiscoveryView?: (view: Omit<ExplorationFogResult, "data">) => void;
   location?: AtlasSelection | null; accuracy?: number; heading?: number; route?: LineString | null;
   onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
   onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
@@ -46,7 +56,7 @@ function accuracyCircle(point: AtlasSelection, metres: number): Polygon {
 }
 
 export function AtlasCanvas(props: AtlasCanvasProps) {
-  const { places, selected, threeD, imagery, player, playerContent, followPlayer, focusPlayerNonce, location, accuracy, route, perspective = "first" } = props;
+  const { places, selected, threeD, imagery, player, playerContent, followPlayer, focusPlayerNonce, location, accuracy, route, perspective = "overhead" } = props;
   const latest = useRef(props);
   useEffect(() => { latest.current = props; }, [props]);
   const host = useRef<HTMLDivElement>(null);
@@ -64,12 +74,54 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const cameraInterrupted = useRef(false);
   const cameraPerspective = useRef<ExplorerPerspective | null>(null);
   const wasFollowing = useRef(false);
+  const cameraBlend = useRef<{ from: ExplorerCameraPose; started: number; duration: number } | null>(null);
+  const firstPersonLook = useRef(createFirstPersonLook());
+  const ignoreDeviceHeading = useRef(false);
+  const eyeInput = useRef<ReturnType<typeof attachFirstPersonInput> | null>(null);
   const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
   const [zoom, setZoom] = useState(homeZoom);
   const [bearing, setBearing] = useState(-18);
   const [tileIssue, setTileIssue] = useState(false);
   const [remoteUnavailable, setRemoteUnavailable] = useState(false);
+  const [geometryEpoch, setGeometryEpoch] = useState(0);
+  const [clearance, setClearance] = useState<"clear" | "closer" | "raised">("clear");
+  const clearanceRef = useRef(clearance);
+  const obstacleCache = useRef<{ point: AtlasSelection; at: number; epoch: number; game: boolean; obstacles: CameraObstacle[]; truncated: boolean } | null>(null);
+  const sceneCamera = useRef<(map: GeographicMap, input: Parameters<typeof explorerCameraOptions>[1]) => CameraOptions | null>(() => null);
+  sceneCamera.current = (map, input) => {
+    let status: typeof clearance = "clear", override: typeof input.cameraPosition;
+    if (input.follow && input.threeD && (input.perspective === "third" || input.perspective === "close")) {
+      const now = performance.now(), game = latest.current.imagery === "game", ground = input.groundElevation ?? 0;
+      let cached = obstacleCache.current;
+      if (!cached || now - cached.at > 500 || cached.epoch !== geometryEpoch || cached.game !== game || mapDistance(cached.point, input.point) > 15) {
+        const features: unknown[] = [];
+        for (const layer of (map.getStyle()?.layers ?? []).filter(layer => layer.id === MAP_SOURCE_IDS.buildings || layer.id === "food-go-world-buildings")) {
+          if (!("source" in layer) || typeof layer.source !== "string") continue;
+          try {
+            // Filter geographically before the feature cap. A large survey can
+            // otherwise fill the result with distant roofs and omit this wall.
+            const nearby = ["<=", ["distance", { type: "Point", coordinates: [input.point.longitude, input.point.latitude] }], 75] as FilterSpecification;
+            const filter = "filter" in layer && layer.filter ? ["all", layer.filter, nearby] as FilterSpecification : nearby;
+            const found = map.querySourceFeatures(layer.source, { ...("source-layer" in layer && layer["source-layer"] ? { sourceLayer: layer["source-layer"] } : {}), filter });
+            features.push(...found.slice(0, Math.max(0, 2501 - features.length)));
+          } catch { /* Missing tiles remain a documented data limit, not a wall. */ }
+        }
+        const admitted = buildCameraObstacles(features, { centre: input.point, groundElevation: ground, gameHeights: game });
+        cached = { ...admitted, point: input.point, at: now, epoch: geometryEpoch, game }; obstacleCache.current = cached;
+      }
+      const result = resolveCameraClearance({ target: { ...input.point, altitude: ground + 1.5 },
+        desired: explorerCameraPosition(input.point, input.heading, input.perspective, ground), obstacles: cached.obstacles });
+      if (result.obstructed) {
+        status = result.targetBlocked || result.fraction < .15 ? "raised" : "closer";
+        if (status === "closer") override = result.camera;
+      }
+    }
+    if (status !== clearanceRef.current) { clearanceRef.current = status; setClearance(status); }
+    const look = input.perspective === "first" && !ignoreDeviceHeading.current && Number.isFinite(latest.current.deviceHeading) && latest.current.deviceHeading != null
+      ? { ...(input.look ?? firstPersonLook.current), yawOffset: latest.current.deviceHeading - input.heading } : input.look;
+    return explorerCameraOptions(map, status === "raised" ? { ...input, perspective: "overhead", refocus: true } : { ...input, look, cameraPosition: override });
+  };
 
   useEffect(() => {
     const container = host.current;
@@ -98,19 +150,19 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       gamePaint.current = composed.gamePaint;
       gl.setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).toString());
       const initial = latest.current;
-      const initialPerspective = initial.perspective ?? "first";
+      const initialPerspective = initial.perspective ?? "overhead";
       const initialLimits = explorerCameraLimits(initialPerspective, initial.threeD);
       active = new gl.Map({
         container, style: composed.style, center: valid(initial.player) ? [initial.player.longitude, initial.player.latitude] : ATLAS_CENTER,
         zoom: homeZoom, minZoom: 1, ...initialLimits,
         pitch: initial.threeD ? 44 : 0, bearing: initial.threeD ? -18 : 0,
         cooperativeGestures: false, scrollZoom: true, renderWorldCopies: true, attributionControl: false,
-        pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        pixelRatio: initial.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2),
       });
       const map = active;
       mapRef.current = map; pinClass.current = gl.Marker; creditClass.current = gl.AttributionControl;
       if (valid(initial.player) && initial.followPlayer) {
-        const camera = explorerCameraOptions(map, { perspective: initialPerspective, point: initial.player,
+        const camera = sceneCamera.current(map, { perspective: initialPerspective, point: initial.player,
           heading: initial.heading ?? map.getBearing(), follow: true, threeD: initial.threeD, refocus: true });
         if (camera) map.jumpTo(camera);
       }
@@ -126,14 +178,14 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       });
       map.on("resize", () => {
         const current = latest.current;
-        if ((current.perspective ?? "first") !== "first" || !current.followPlayer || cameraInterrupted.current) return;
+        if (!current.followPlayer || cameraInterrupted.current) return;
         const point = displayedPlayer.current ?? current.player;
         if (!valid(point)) return;
         const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
         if (Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
-        const camera = explorerCameraOptions(map, { perspective: "first", point,
+        const camera = sceneCamera.current(map, { perspective: current.perspective ?? "overhead", point,
           heading: displayedPlayer.current ? displayedHeading.current : current.heading ?? map.getBearing(),
-          follow: true, threeD: current.threeD, groundElevation: ground });
+          follow: true, threeD: current.threeD, groundElevation: ground, look: firstPersonLook.current });
         if (camera) map.jumpTo(camera);
       });
       map.on("webglcontextlost", () => unavailable("The browser lost its 3D graphics connection."));
@@ -148,7 +200,14 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
           }
         } else setTileIssue(true);
       });
-      map.on("idle", () => setTileIssue(false));
+      const buildingSources = new Set(composed.style.layers.filter(layer => layer.id === MAP_SOURCE_IDS.buildings || layer.id === "food-go-world-buildings")
+        .map(layer => "source" in layer ? layer.source : undefined));
+      let geometryChanged = false;
+      map.on("sourcedata", event => { if (event.sourceDataType === "content" && buildingSources.has(event.sourceId)) geometryChanged = true; });
+      map.on("idle", () => {
+        setTileIssue(false);
+        if (geometryChanged) { geometryChanged = false; setGeometryEpoch(n => n + 1); }
+      });
       map.on("load", () => {
         if (disposed || failed) return;
         clearTimeout(timeout);
@@ -167,6 +226,38 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       mapRef.current = null; active?.remove();
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    map.setPixelRatio(props.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  }, [ready, props.lowDetail]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const sourceId = "food-go-discovery-fog", layerId = "food-go-discovery-fog-fill";
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, { type: "geojson", data: emptyMapFeatures(), maxzoom: 18 });
+      // Labels, restaurant markers, attribution and route guidance stay legible.
+      const before = map.getStyle().layers.find(layer => layer.type === "symbol")?.id;
+      map.addLayer({ id: layerId, type: "fill", source: sourceId,
+        paint: { "fill-color": "#d1e2d4", "fill-opacity": .3, "fill-antialias": false } }, before);
+    }
+    const refresh = () => {
+      const bounds = map.getBounds();
+      const result = explorationFogGeometry({ viewport: { west: bounds.getWest(), east: bounds.getEast(),
+        south: Math.max(-EXPLORATION_MAX_LATITUDE, bounds.getSouth()), north: Math.min(EXPLORATION_MAX_LATITUDE, bounds.getNorth()) },
+        exploredCellIds: props.discoveredCells ?? [], maxCells: props.lowDetail ? 1024 : 4096 });
+      (map.getSource(sourceId) as GeoJSONSource).setData(props.discoveryEnabled ? result.data : emptyMapFeatures());
+      const { data: _data, ...view } = result;
+      props.onDiscoveryView?.(view);
+    };
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(refresh, 120); };
+    refresh(); map.on("moveend", schedule); map.on("resize", schedule);
+    return () => { clearTimeout(timer); map.off("moveend", schedule); map.off("resize", schedule); };
+  }, [ready, props.discoveryEnabled, props.discoveredCells, props.lowDetail, props.onDiscoveryView]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -218,6 +309,13 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     return () => { for (const marker of pins.values()) marker.remove(); pins.clear(); };
   }, [ready, places]);
 
+  useEffect(() => {
+    for (const place of places) {
+      const button = placeMarkers.current.get(place.id)?.getElement() as HTMLButtonElement | undefined;
+      if (button) updateMapPlaceEncounter(button, place, props.encounterSignals ?? {});
+    }
+  }, [ready, places, props.encounterSignals]);
+
   const longitude = selected?.longitude, latitude = selected?.latitude, selectedId = selected?.id;
   useEffect(() => {
     for (const [id, marker] of placeMarkers.current) marker.getElement().setAttribute("aria-pressed", String(id === selectedId));
@@ -225,7 +323,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   useEffect(() => {
     const map = mapRef.current, Pin = pinClass.current;
     if (!ready || !map || !Pin || !valid(selected)) return;
-    if (perspective === "third" || !latest.current.followPlayer)
+    if (perspective === "overhead" || !latest.current.followPlayer)
       map.easeTo({ center: [selected.longitude, selected.latitude], duration: duration(), zoom: Math.max(map.getZoom(), 15.5) });
     if (selected.id && placeMarkers.current.has(selected.id)) return;
     const dot = document.createElement("div"); dot.className = css.droppedPin; dot.setAttribute("aria-hidden", "true");
@@ -234,6 +332,45 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   }, [ready, longitude, latitude, selectedId, perspective]);
 
   const playerLongitude = player?.longitude, playerLatitude = player?.latitude;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const eye = perspective === "first" && followPlayer;
+    map.getCanvas().setAttribute("aria-label", eye
+      ? "Street view. Drag to look around. Pinch, scroll or plus and minus change the view angle. Arrow keys look. Home faces forward. Enter selects the centre."
+      : "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
+    if (!eye) return;
+    firstPersonLook.current = createFirstPersonLook(map.getVerticalFieldOfView());
+    const input = attachFirstPersonInput(map, {
+      initial: firstPersonLook.current,
+      onChange(look, reason) {
+        if (reason !== "sensor" && reason !== "zoom") {
+          if (reason === "turn" && !ignoreDeviceHeading.current && latest.current.deviceHeading != null && Number.isFinite(latest.current.deviceHeading)) {
+            const delta = ((look.yawOffset - firstPersonLook.current.yawOffset + 540) % 360) - 180;
+            look = { ...look, yawOffset: latest.current.deviceHeading - displayedHeading.current + delta };
+            eyeInput.current?.synchronise(look);
+          }
+          ignoreDeviceHeading.current = true; latest.current.onEyeLook?.();
+        }
+        firstPersonLook.current = look; cameraBlend.current = null; map.stop();
+        const point = displayedPlayer.current ?? latest.current.player;
+        if (!valid(point) || !latest.current.followPlayer) return;
+        const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
+        if (Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
+        const camera = sceneCamera.current(map, { perspective: "first", point, heading: displayedHeading.current,
+          follow: true, threeD: latest.current.threeD, groundElevation: ground, look });
+        if (camera) map.jumpTo(camera);
+      },
+      onTap: point => latest.current.onSelect(point),
+    });
+    eyeInput.current = input;
+    return () => { eyeInput.current = null; input.dispose(mapRef.current === map); };
+  }, [ready, perspective, followPlayer, focusPlayerNonce]);
+  useEffect(() => {
+    if (props.deviceHeading == null || !Number.isFinite(props.deviceHeading) || !eyeInput.current) return;
+    ignoreDeviceHeading.current = false;
+    eyeInput.current.orient(props.deviceHeading - displayedHeading.current);
+  }, [props.deviceHeading, props.heading, ready, perspective, focusPlayerNonce]);
   useEffect(() => {
     if (followPlayer) cameraInterrupted.current = false;
   }, [followPlayer, focusPlayerNonce, perspective]);
@@ -251,9 +388,14 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const refocus = !!followPlayer && (focusRevision.current !== focusPlayerNonce || cameraPerspective.current !== perspective || !wasFollowing.current);
     cameraPerspective.current = perspective; wasFollowing.current = !!followPlayer;
     if (followPlayer) focusRevision.current = focusPlayerNonce;
-    const heading = Number.isFinite(props.heading) ? props.heading! : map.getBearing();
+    const heading = Number.isFinite(props.heading) ? props.heading! : displayedPlayer.current ? displayedHeading.current : map.getBearing();
     const fromHeading = displayedPlayer.current ? displayedHeading.current : heading;
     const started = performance.now();
+    if (refocus) {
+      const centre = map.getCenter();
+      cameraBlend.current = { from: { longitude: centre.lng, latitude: centre.lat, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }, started,
+        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches || mapDistance({ longitude: centre.lng, latitude: centre.lat }, target) > 10000 ? 0 : EXPLORER_CAMERA_TRANSITION_MS };
+    }
     let animation = 0;
     const render = (now: number) => {
       const progress = milliseconds ? Math.min(1, (now - started) / milliseconds) : 1;
@@ -265,15 +407,21 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       if (followPlayer && latest.current.followPlayer && !cameraInterrupted.current) {
         const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
         if (perspective === "first" && Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
-        const camera = explorerCameraOptions(map, { perspective, point, heading: cameraHeading,
-          follow: true, threeD, refocus, groundElevation: ground });
-        if (camera) map.jumpTo(camera);
+        const camera = sceneCamera.current(map, { perspective, point, heading: cameraHeading,
+          follow: true, threeD, refocus, groundElevation: ground, look: firstPersonLook.current });
+        if (camera) {
+          const blend = cameraBlend.current;
+          if (blend && blend.duration && now - blend.started < blend.duration) {
+            map.jumpTo(blendExplorerCamera(blend.from, explorerCameraPose(camera, { ...point, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }),
+            (now - blend.started) / blend.duration));
+          } else { map.jumpTo(camera); cameraBlend.current = null; }
+        }
       }
-      if (progress < 1) animation = requestAnimationFrame(render);
+      if (progress < 1 || (cameraBlend.current && now - cameraBlend.current.started < cameraBlend.current.duration && !cameraInterrupted.current)) animation = requestAnimationFrame(render);
     };
     render(started);
     return () => cancelAnimationFrame(animation);
-  }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce, props.playerTransitionMs, props.heading, perspective, threeD]);
+  }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce, props.playerTransitionMs, props.heading, perspective, threeD, geometryEpoch, imagery]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource(MAP_SOURCE_IDS.route) as GeoJSONSource | undefined;
@@ -290,16 +438,6 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   const map = mapRef.current;
   function pauseCameraTracking() { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
-  function recenter() {
-    if (!map) return;
-    latest.current.onRecenter?.();
-    const point = valid(player) ? player : { longitude: ATLAS_CENTER[0], latitude: ATLAS_CENTER[1] };
-    const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
-    if (perspective === "first" && Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
-    const camera = explorerCameraOptions(map, { perspective, point, heading: props.heading ?? map.getBearing(), follow: true, threeD, refocus: true, groundElevation: ground });
-    cameraInterrupted.current = false;
-    if (camera) map.jumpTo(camera);
-  }
   return <div className={css.scene}>
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
@@ -307,16 +445,15 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
       }
     }}/>
-    {perspective === "third" && playerElement && playerContent && createPortal(playerContent, playerElement)}
+    {perspective !== "first" && playerElement && playerContent && createPortal(playerContent, playerElement)}
     {ready && <>
       <div className={css.tools} role="group" aria-label="Geographic map controls">
-        <button type="button" title="Face north" aria-label="Face north" onClick={() => { pauseCameraTracking(); map?.easeTo({ bearing: 0, duration: duration() }); }}><Compass style={{ transform: `rotate(${-bearing}deg)` }}/></button>
-        <button type="button" title="Zoom in" aria-label="Zoom in on geographic map" disabled={zoom >= explorerCameraLimits(perspective, threeD).maxZoom} onClick={() => { pauseCameraTracking(); map?.zoomIn({ duration: duration() }); }}><Plus/></button>
-        <button type="button" title="Zoom out" aria-label="Zoom out of geographic map" disabled={zoom <= 1} onClick={() => { pauseCameraTracking(); map?.zoomOut({ duration: duration() }); }}><Minus/></button>
-        <button type="button" title={valid(player) ? "Find my explorer" : "Back to Melbourne"} aria-label={valid(player) ? "Recenter map on explorer" : "Recenter geographic map on Melbourne"}
-          onClick={recenter}><LocateFixed/></button>
+        <button type="button" title="Face north" aria-label="Face north" onClick={() => { if (eyeInput.current) eyeInput.current.faceNorth(displayedHeading.current); else { pauseCameraTracking(); map?.easeTo({ bearing: 0, duration: duration() }); } }}><Compass style={{ transform: `rotate(${-bearing}deg)` }}/></button>
+        <button type="button" title="Zoom in" aria-label="Zoom in on geographic map" disabled={eyeInput.current ? firstPersonLook.current.fieldOfView <= 28.01 : zoom >= explorerCameraLimits(perspective, threeD).maxZoom} onClick={() => { if (eyeInput.current) eyeInput.current.zoom(1.2); else { pauseCameraTracking(); map?.zoomIn({ duration: duration() }); } }}><Plus/></button>
+        <button type="button" title="Zoom out" aria-label="Zoom out of geographic map" disabled={eyeInput.current ? firstPersonLook.current.fieldOfView >= 67.99 : zoom <= 1} onClick={() => { if (eyeInput.current) eyeInput.current.zoom(1 / 1.2); else { pauseCameraTracking(); map?.zoomOut({ duration: duration() }); } }}><Minus/></button>
       </div>
       {tileIssue && <p className={css.tileIssue} role="status"><RefreshCw size={13}/>Some map tiles could not load. Keep exploring or try again shortly.</p>}
+      {clearance !== "clear" && <p className={css.clearance} role="status">{clearance === "raised" ? "Camera raised for building clearance." : "Camera moved closer for building clearance."}</p>}
       {imagery === "satellite" && satelliteKey && !satelliteFailed.current && <a className={css.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler"/></a>}
     </>}
   </div>;

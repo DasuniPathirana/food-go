@@ -1,0 +1,971 @@
+{
+  "capturedAt": "2026-11-17T17:05:54.287Z",
+  "origin": "http://127.0.0.1:3200",
+  "runtime": "159.0.8154.6",
+  "providersMocked": false,
+  "deviceLocationRequested": false,
+  "runtimeErrors": [],
+  "viewports": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "label": "desktop",
+      "overflow": {
+        "initial": {
+          "scrollWidth": 1280,
+          "viewportWidth": 1280
+        },
+        "fog": {
+          "scrollWidth": 1280,
+          "viewportWidth": 1280
+        },
+        "firstPerson": {
+          "scrollWidth": 1280,
+          "viewportWidth": 1280
+        },
+        "expanded": {
+          "scrollWidth": 1280,
+          "viewportWidth": 1280
+        },
+        "fallback": {
+          "scrollWidth": 1280,
+          "viewportWidth": 1280
+        },
+        "recovered": {
+          "scrollWidth": 1280,
+          "viewportWidth": 1280
+        }
+      },
+      "cameras": [
+        {
+          "mode": "third",
+          "sameCanvas": true,
+          "pose": {
+            "centre": {
+              "longitude": 144.9671128238374,
+              "latitude": -37.81674076522412
+            },
+            "zoom": 21.54786678361739,
+            "pitch": 78.00000000000001,
+            "bearing": -19.957614287686283,
+            "fieldOfView": 36.86989764584402,
+            "height": 764,
+            "ground": 0,
+            "loaded": false,
+            "tilesLoaded": false,
+            "fog": {
+              "features": 3,
+              "renderedFeatures": 0,
+              "sourceLoaded": false,
+              "initialCell": "wm18:236633:160858",
+              "initialCellOnScreen": false,
+              "initialCellCovered": 0,
+              "opacity": 0.3
+            },
+            "sourceFeatures": [
+              {
+                "layer": "food-go-world-buildings",
+                "count": 29,
+                "nearbyWithin75Metres": 0
+              },
+              {
+                "layer": "food-go-city-buildings",
+                "count": 20045,
+                "nearbyWithin75Metres": 116
+              }
+            ],
+            "eye": {
+              "longitude": 144.96720057144205,
+              "latitude": -37.81693165523582,
+              "altitude": 4.799999999999987
+            }
+          }
+        },
+        {
+          "mode": "close",
+          "sameCanvas": true,
+          "pose": {
+            "centre": {
+              "longitude": 144.96711878500673,
+              "latitude": -37.816753733366845
+            },
+            "zoom": 22.132829030899163,
+            "pitch": 78.00000000000001,
+            "bearing": -19.957614287686283,
+            "fieldOfView": 36.86989764584402,
+            "height": 764,
+            "ground": 0,
+            "loaded": false,
+            "tilesLoaded": false,
+            "fog": {
+              "features": 1,
+              "renderedFeatures": 0,
+              "sourceLoaded": false,
+              "initialCell": "wm18:236633:160858",
+              "initialCellOnScreen": false,
+              "initialCellCovered": 0,
+              "opacity": 0.3
+            },
+            "sourceFeatures": [
+              {
+                "layer": "food-go-world-buildings",
+                "count": 29,
+                "nearbyWithin75Metres": 0
+              },
+              {
+                "layer": "food-go-city-buildings",
+                "count": 20045,
+                "nearbyWithin75Metres": 116
+              }
+            ],
+            "eye": {
+              "longitude": 144.96717728342014,
+              "latitude": -37.81688099342951,
+              "altitude": 3.1999999999999864
+            }
+          }
+        }
+      ],
+      "routeRequests": 0,
+      "savingRequests": 0,
+      "initial": {
+        "centre": {
+          "longitude": 144.9671462327242,
+          "latitude": -37.81681344435442
+        },
+        "zoom": 16.5,
+        "pitch": 44,
+        "bearing": -18,
+        "fieldOfView": 36.86989764584402,
+        "height": 764,
+        "ground": 0,
+        "loaded": true,
+        "tilesLoaded": true,
+        "fog": {
+          "features": 0,
+          "renderedFeatures": 0,
+          "sourceLoaded": true,
+          "initialCell": "wm18:236633:160858",
+          "initialCellOnScreen": true,
+          "initialCellCovered": 0,
+          "opacity": 0.3
+        },
+        "sourceFeatures": [
+          {
+            "layer": "food-go-world-buildings",
+            "count": 54,
+            "nearbyWithin75Metres": 0
+          },
+          {
+            "layer": "food-go-city-buildings",
+            "count": 7664,
+            "nearbyWithin75Metres": 37
+          }
+        ],
+        "eye": {
+          "longitude": 144.96901250870326,
+          "latitude": -37.82135076941773,
+          "altitude": 549.3578131034245
+        }
+      },
+      "fog": {
+        "centre": {
+          "longitude": 144.9671462327242,
+          "latitude": -37.81681344435442
+        },
+        "zoom": 16.5,
+        "pitch": 44,
+        "bearing": -18,
+        "fieldOfView": 36.86989764584402,
+        "height": 764,
+        "ground": 0,
+        "loaded": true,
+        "tilesLoaded": true,
+        "fog": {
+          "features": 12,
+          "renderedFeatures": 39,
+          "sourceLoaded": true,
+          "initialCell": "wm18:236633:160858",
+          "initialCellOnScreen": true,
+          "initialCellCovered": 0,
+          "opacity": 0.3
+        },
+        "sourceFeatures": [
+          {
+            "layer": "food-go-world-buildings",
+            "count": 54,
+            "nearbyWithin75Metres": 0
+          },
+          {
+            "layer": "food-go-city-buildings",
+            "count": 7664,
+            "nearbyWithin75Metres": 37
+          }
+        ],
+        "eye": {
+          "longitude": 144.96901250870326,
+          "latitude": -37.82135076941773,
+          "altitude": 549.3578131034245
+        }
+      },
+      "attribution": {
+        "visible": true,
+        "text": "City of Melbourne · Copernicus | OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
+      },
+      "firstPerson": {
+        "before": {
+          "centre": {
+            "longitude": 144.96708338394058,
+            "latitude": -37.81667672016808
+          },
+          "zoom": 22.053292655875747,
+          "pitch": 84,
+          "bearing": -19.957614287686283,
+          "fieldOfView": 36.86989764584402,
+          "height": 764,
+          "ground": 0,
+          "loaded": false,
+          "tilesLoaded": false,
+          "fog": {
+            "features": 1,
+            "renderedFeatures": 0,
+            "sourceLoaded": false,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 29,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 20045,
+              "nearbyWithin75Metres": 116
+            }
+          ],
+          "eye": {
+            "longitude": 144.9671462327242,
+            "latitude": -37.816813444354416,
+            "altitude": 1.7000000000000008
+          }
+        },
+        "dragged": {
+          "centre": {
+            "longitude": 144.96702719118167,
+            "latitude": -37.81666615824099
+          },
+          "zoom": 21.791064651015773,
+          "pitch": 85,
+          "bearing": -32.55761428768665,
+          "fieldOfView": 36.86989764584402,
+          "height": 764,
+          "ground": 0,
+          "loaded": true,
+          "tilesLoaded": true,
+          "fog": {
+            "features": 2,
+            "renderedFeatures": 0,
+            "sourceLoaded": true,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 132,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 21301,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.96714623272413,
+            "latitude": -37.816813444354416,
+            "altitude": 1.7000000000000004
+          }
+        },
+        "zoomed": {
+          "centre": {
+            "longitude": 144.96702719118167,
+            "latitude": -37.81666615824099
+          },
+          "zoom": 22.05409905684957,
+          "pitch": 85,
+          "bearing": -32.55761428768665,
+          "fieldOfView": 31.048221993508516,
+          "height": 764,
+          "ground": 0,
+          "loaded": true,
+          "tilesLoaded": true,
+          "fog": {
+            "features": 2,
+            "renderedFeatures": 0,
+            "sourceLoaded": true,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 132,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 21301,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.96714623272413,
+            "latitude": -37.816813444354416,
+            "altitude": 1.699999999999998
+          }
+        },
+        "keyed": {
+          "centre": {
+            "longitude": 144.96701447548628,
+            "latitude": -37.816673076911364
+          },
+          "zoom": 22.054098921636786,
+          "pitch": 85,
+          "bearing": -36.557614287686654,
+          "fieldOfView": 31.048221993508516,
+          "height": 764,
+          "ground": 0,
+          "loaded": true,
+          "tilesLoaded": true,
+          "fog": {
+            "features": 2,
+            "renderedFeatures": 0,
+            "sourceLoaded": true,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 132,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 21301,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.9671462327242,
+            "latitude": -37.816813444354416,
+            "altitude": 1.6999999999999988
+          }
+        },
+        "finalLook": {
+          "centre": {
+            "longitude": 144.96701447548628,
+            "latitude": -37.816673076911364
+          },
+          "zoom": 21.765559913458993,
+          "pitch": 85,
+          "bearing": -36.557614287686654,
+          "fieldOfView": 37.48194404818025,
+          "height": 764,
+          "ground": 0,
+          "loaded": true,
+          "tilesLoaded": true,
+          "fog": {
+            "features": 2,
+            "renderedFeatures": 0,
+            "sourceLoaded": true,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 132,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 21301,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.9671462327242,
+            "latitude": -37.816813444354416,
+            "altitude": 1.6999999999999982
+          }
+        },
+        "eyeRemainedFixed": true,
+        "routeRequestsAfterLook": 0
+      },
+      "expanded": {
+        "sameCanvas": true,
+        "bounds": {
+          "x": 0,
+          "y": 63,
+          "width": 1280,
+          "height": 837
+        }
+      },
+      "fallback": {
+        "contextLost": true,
+        "fogPaths": 15,
+        "attribution": {
+          "visible": true,
+          "text": "Leaflet | © OpenStreetMap"
+        },
+        "visibleTiles": {
+          "visible": 24,
+          "loaded": 24
+        },
+        "actualTilesLoaded": 24
+      },
+      "recovered": {
+        "centre": {
+          "longitude": 144.9671462327242,
+          "latitude": -37.81681344435442
+        },
+        "zoom": 16.5,
+        "pitch": 44,
+        "bearing": -18,
+        "fieldOfView": 36.86989764584402,
+        "height": 764,
+        "ground": 0,
+        "loaded": true,
+        "tilesLoaded": true,
+        "fog": {
+          "features": 12,
+          "renderedFeatures": 39,
+          "sourceLoaded": true,
+          "initialCell": "wm18:236633:160858",
+          "initialCellOnScreen": true,
+          "initialCellCovered": 0,
+          "opacity": 0.3
+        },
+        "sourceFeatures": [
+          {
+            "layer": "food-go-world-buildings",
+            "count": 54,
+            "nearbyWithin75Metres": 0
+          },
+          {
+            "layer": "food-go-city-buildings",
+            "count": 7664,
+            "nearbyWithin75Metres": 37
+          }
+        ],
+        "eye": {
+          "longitude": 144.96901250870326,
+          "latitude": -37.82135076941773,
+          "altitude": 549.3578131034245
+        }
+      },
+      "providerResponses": {
+        "tiles.openfreemap.org": 62,
+        "api.maptiler.com": 2,
+        "tile.openstreetmap.org": 24
+      }
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "label": "phone",
+      "overflow": {
+        "initial": {
+          "scrollWidth": 390,
+          "viewportWidth": 390
+        },
+        "fog": {
+          "scrollWidth": 390,
+          "viewportWidth": 390
+        },
+        "firstPerson": {
+          "scrollWidth": 390,
+          "viewportWidth": 390
+        },
+        "expanded": {
+          "scrollWidth": 390,
+          "viewportWidth": 390
+        },
+        "fallback": {
+          "scrollWidth": 390,
+          "viewportWidth": 390
+        },
+        "recovered": {
+          "scrollWidth": 390,
+          "viewportWidth": 390
+        }
+      },
+      "cameras": [
+        {
+          "mode": "third",
+          "sameCanvas": true,
+          "pose": {
+            "centre": {
+              "longitude": 144.9671128238374,
+              "latitude": -37.81674076522412
+            },
+            "zoom": 21.321377137128074,
+            "pitch": 78.00000000000001,
+            "bearing": -19.957614287686283,
+            "fieldOfView": 36.86989764584402,
+            "height": 653,
+            "ground": 0,
+            "loaded": false,
+            "tilesLoaded": false,
+            "fog": {
+              "features": 0,
+              "renderedFeatures": 0,
+              "sourceLoaded": true,
+              "initialCell": "wm18:236633:160858",
+              "initialCellOnScreen": false,
+              "initialCellCovered": 0,
+              "opacity": 0.3
+            },
+            "sourceFeatures": [
+              {
+                "layer": "food-go-world-buildings",
+                "count": 0,
+                "nearbyWithin75Metres": 0
+              },
+              {
+                "layer": "food-go-city-buildings",
+                "count": 14453,
+                "nearbyWithin75Metres": 74
+              }
+            ],
+            "eye": {
+              "longitude": 144.96720057144205,
+              "latitude": -37.81693165523582,
+              "altitude": 4.799999999999983
+            }
+          }
+        },
+        {
+          "mode": "close",
+          "sameCanvas": true,
+          "pose": {
+            "centre": {
+              "longitude": 144.96711878500673,
+              "latitude": -37.816753733366845
+            },
+            "zoom": 21.906339384409844,
+            "pitch": 78.00000000000001,
+            "bearing": -19.957614287686283,
+            "fieldOfView": 36.86989764584402,
+            "height": 653,
+            "ground": 0,
+            "loaded": false,
+            "tilesLoaded": false,
+            "fog": {
+              "features": 0,
+              "renderedFeatures": 0,
+              "sourceLoaded": false,
+              "initialCell": "wm18:236633:160858",
+              "initialCellOnScreen": false,
+              "initialCellCovered": 0,
+              "opacity": 0.3
+            },
+            "sourceFeatures": [
+              {
+                "layer": "food-go-world-buildings",
+                "count": 9,
+                "nearbyWithin75Metres": 0
+              },
+              {
+                "layer": "food-go-city-buildings",
+                "count": 14453,
+                "nearbyWithin75Metres": 74
+              }
+            ],
+            "eye": {
+              "longitude": 144.96717728342014,
+              "latitude": -37.81688099342951,
+              "altitude": 3.1999999999999913
+            }
+          }
+        }
+      ],
+      "routeRequests": 0,
+      "savingRequests": 0,
+      "initial": {
+        "centre": {
+          "longitude": 144.9671462327242,
+          "latitude": -37.81681344435442
+        },
+        "zoom": 16.5,
+        "pitch": 44,
+        "bearing": -18,
+        "fieldOfView": 36.86989764584402,
+        "height": 653,
+        "ground": 0,
+        "loaded": true,
+        "tilesLoaded": true,
+        "fog": {
+          "features": 0,
+          "renderedFeatures": 0,
+          "sourceLoaded": true,
+          "initialCell": "wm18:236633:160858",
+          "initialCellOnScreen": true,
+          "initialCellCovered": 0,
+          "opacity": 0.3
+        },
+        "sourceFeatures": [
+          {
+            "layer": "food-go-world-buildings",
+            "count": 21,
+            "nearbyWithin75Metres": 0
+          },
+          {
+            "layer": "food-go-city-buildings",
+            "count": 4725,
+            "nearbyWithin75Metres": 37
+          }
+        ],
+        "eye": {
+          "longitude": 144.968741361277,
+          "latitude": -37.82069156804124,
+          "altitude": 469.5427381630055
+        }
+      },
+      "fog": {
+        "centre": {
+          "longitude": 144.9671462327242,
+          "latitude": -37.81681344435442
+        },
+        "zoom": 16.5,
+        "pitch": 44,
+        "bearing": -18,
+        "fieldOfView": 36.86989764584402,
+        "height": 653,
+        "ground": 0,
+        "loaded": true,
+        "tilesLoaded": true,
+        "fog": {
+          "features": 9,
+          "renderedFeatures": 18,
+          "sourceLoaded": true,
+          "initialCell": "wm18:236633:160858",
+          "initialCellOnScreen": true,
+          "initialCellCovered": 0,
+          "opacity": 0.3
+        },
+        "sourceFeatures": [
+          {
+            "layer": "food-go-world-buildings",
+            "count": 21,
+            "nearbyWithin75Metres": 0
+          },
+          {
+            "layer": "food-go-city-buildings",
+            "count": 4725,
+            "nearbyWithin75Metres": 37
+          }
+        ],
+        "eye": {
+          "longitude": 144.968741361277,
+          "latitude": -37.82069156804124,
+          "altitude": 469.5427381630055
+        }
+      },
+      "attribution": {
+        "visible": true,
+        "text": "City of Melbourne · Copernicus | OpenFreeMap © OpenMapTiles Data from OpenStreetMap"
+      },
+      "firstPerson": {
+        "before": {
+          "centre": {
+            "longitude": 144.96708338394058,
+            "latitude": -37.81667672016808
+          },
+          "zoom": 21.82680300938643,
+          "pitch": 84,
+          "bearing": -19.957614287686283,
+          "fieldOfView": 36.86989764584402,
+          "height": 653,
+          "ground": 0,
+          "loaded": false,
+          "tilesLoaded": false,
+          "fog": {
+            "features": 0,
+            "renderedFeatures": 0,
+            "sourceLoaded": true,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 9,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 14874,
+              "nearbyWithin75Metres": 74
+            }
+          ],
+          "eye": {
+            "longitude": 144.9671462327242,
+            "latitude": -37.816813444354416,
+            "altitude": 1.6999999999999988
+          }
+        },
+        "dragged": {
+          "centre": {
+            "longitude": 144.96702719118167,
+            "latitude": -37.81666615824099
+          },
+          "zoom": 21.564575004526457,
+          "pitch": 85,
+          "bearing": -32.55761428768665,
+          "fieldOfView": 36.86989764584402,
+          "height": 653,
+          "ground": 0,
+          "loaded": false,
+          "tilesLoaded": false,
+          "fog": {
+            "features": 0,
+            "renderedFeatures": 0,
+            "sourceLoaded": false,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 9,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 14874,
+              "nearbyWithin75Metres": 74
+            }
+          ],
+          "eye": {
+            "longitude": 144.96714623272413,
+            "latitude": -37.816813444354416,
+            "altitude": 1.6999999999999986
+          }
+        },
+        "zoomed": {
+          "centre": {
+            "longitude": 144.96702719118167,
+            "latitude": -37.81666615824099
+          },
+          "zoom": 21.82760941036025,
+          "pitch": 85,
+          "bearing": -32.55761428768665,
+          "fieldOfView": 31.048221993508516,
+          "height": 653,
+          "ground": 0,
+          "loaded": false,
+          "tilesLoaded": false,
+          "fog": {
+            "features": 0,
+            "renderedFeatures": 0,
+            "sourceLoaded": false,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 87,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 17144,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.96714623272413,
+            "latitude": -37.816813444354416,
+            "altitude": 1.7000000000000002
+          }
+        },
+        "keyed": {
+          "centre": {
+            "longitude": 144.96701447548628,
+            "latitude": -37.816673076911364
+          },
+          "zoom": 21.82760927514747,
+          "pitch": 85,
+          "bearing": -36.557614287686654,
+          "fieldOfView": 31.048221993508516,
+          "height": 653,
+          "ground": 0,
+          "loaded": false,
+          "tilesLoaded": false,
+          "fog": {
+            "features": 0,
+            "renderedFeatures": 0,
+            "sourceLoaded": false,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 104,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 21301,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.9671462327242,
+            "latitude": -37.816813444354416,
+            "altitude": 1.6999999999999964
+          }
+        },
+        "finalLook": {
+          "centre": {
+            "longitude": 144.96701447548628,
+            "latitude": -37.816673076911364
+          },
+          "zoom": 21.98349553775356,
+          "pitch": 85,
+          "bearing": -36.557614287686654,
+          "fieldOfView": 28,
+          "height": 653,
+          "ground": 0,
+          "loaded": true,
+          "tilesLoaded": true,
+          "fog": {
+            "features": 0,
+            "renderedFeatures": 0,
+            "sourceLoaded": true,
+            "initialCell": "wm18:236633:160858",
+            "initialCellOnScreen": false,
+            "initialCellCovered": 0,
+            "opacity": 0.3
+          },
+          "sourceFeatures": [
+            {
+              "layer": "food-go-world-buildings",
+              "count": 132,
+              "nearbyWithin75Metres": 0
+            },
+            {
+              "layer": "food-go-city-buildings",
+              "count": 21301,
+              "nearbyWithin75Metres": 94
+            }
+          ],
+          "eye": {
+            "longitude": 144.9671462327242,
+            "latitude": -37.816813444354416,
+            "altitude": 1.6999999999999995
+          }
+        },
+        "eyeRemainedFixed": true,
+        "routeRequestsAfterLook": 0
+      },
+      "expanded": {
+        "sameCanvas": true,
+        "bounds": {
+          "x": 0,
+          "y": 59,
+          "width": 390,
+          "height": 785
+        }
+      },
+      "fallback": {
+        "contextLost": true,
+        "fogPaths": 13,
+        "attribution": {
+          "visible": true,
+          "text": "Leaflet | © OpenStreetMap"
+        },
+        "visibleTiles": {
+          "visible": 9,
+          "loaded": 9
+        },
+        "actualTilesLoaded": 9
+      },
+      "recovered": {
+        "centre": {
+          "longitude": 144.9671462327242,
+          "latitude": -37.81681344435442
+        },
+        "zoom": 16.5,
+        "pitch": 44,
+        "bearing": -18,
+        "fieldOfView": 36.86989764584402,
+        "height": 653,
+        "ground": 0,
+        "loaded": true,
+        "tilesLoaded": true,
+        "fog": {
+          "features": 9,
+          "renderedFeatures": 18,
+          "sourceLoaded": true,
+          "initialCell": "wm18:236633:160858",
+          "initialCellOnScreen": true,
+          "initialCellCovered": 0,
+          "opacity": 0.3
+        },
+        "sourceFeatures": [
+          {
+            "layer": "food-go-world-buildings",
+            "count": 21,
+            "nearbyWithin75Metres": 0
+          },
+          {
+            "layer": "food-go-city-buildings",
+            "count": 4725,
+            "nearbyWithin75Metres": 37
+          }
+        ],
+        "eye": {
+          "longitude": 144.968741361277,
+          "latitude": -37.82069156804124,
+          "altitude": 469.5427381630055
+        }
+      },
+      "providerResponses": {
+        "tiles.openfreemap.org": 44,
+        "api.maptiler.com": 2,
+        "tile.openstreetmap.org": 9
+      }
+    }
+  ],
+  "status": "passed"
+}

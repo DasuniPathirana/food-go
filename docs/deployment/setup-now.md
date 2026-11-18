@@ -1,8 +1,10 @@
 # Setup required before public launch
 
-Updated 17 November 2026. This is the immediate handoff for the website at `https://food-go-three.vercel.app` and Supabase **Food go**, project `azccigsctzhbaxoajqst`. The owner selected this existing project for the release. The final custom domain has not been chosen.
+Updated 18 November 2026. This is the immediate handoff for the website at `https://food-go-three.vercel.app` and Supabase **Food go**, project `azccigsctzhbaxoajqst`. The owner selected this existing project for the release. The final custom domain has not been chosen.
 
-Latest: the private 16+ Feed age gate is also installed as `20261116234618_food_go_feed_age_gate.sql`, bringing history to twelve entries after passing real Supabase CI. The reported signup was rejected with `signup_disabled` (422), with no account created; the app now reports that failure honestly. Enable hosted signup and configure the deployed signed email hook using [the exact repair steps](email-signup-repair.md). Database migrations cannot change Auth service settings.
+Latest: read-only hosted history on 18 November confirms eighteen installed migrations, including the private Feed age gate, three geographic-discovery migrations and the encounter/cooldown migrations through `20261118000948_food_go_encounter_foreign_key_indexes.sql`. Do not reapply them or reset this project. Discovery recording and restaurant encounters remain behind `FOOD_GO_EXPLORATION_ENABLED=false` and `FOOD_GO_ENCOUNTERS_ENABLED=false` by default. They require their documented acceptance before activation; see [camera/discovery](../progress/24-camera-and-discovery.md) and [encounters](../progress/25-restaurant-encounters.md).
+
+The earlier signup rejection was `signup_disabled` (422). The owner subsequently enabled new signups, and the setting was verified on 17 November with confirmation still required. Deployed account configuration and signed email delivery remain separate requirements; follow [the exact repair steps](email-signup-repair.md). Database migrations cannot change Auth service settings. The dated 16 November table below records that earlier audit, not the current migration count.
 
 Delivery remains a branch and PR into `develop`. The owner separately authorised hosted migration application; the hosting team owns merge and deployment. Do not change `main`, reset the hosted database or deploy an unreviewed branch. This document records required setup; it does not certify that the service is ready.
 

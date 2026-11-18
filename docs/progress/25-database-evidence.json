@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-18",
+  "project": { "name": "Food go", "id": "azccigsctzhbaxoajqst", "authorisedUse": "development/test", "cliBranchLabel": "production" },
+  "cliVersion": "3.2.0",
+  "suite": "restaurant_encounters",
+  "assertions": 165,
+  "status": "passed",
+  "rolledBack": true,
+  "resetPerformed": false,
+  "migrations": [
+    "20261117231324_food_go_restaurant_encounters",
+    "20261117231739_food_go_encounter_cooldown_snapshot",
+    "20261118000948_food_go_encounter_foreign_key_indexes"
+  ],
+  "postRollbackCounts": {
+    "encounter_campaigns": 0,
+    "encounter_pool_items": 0,
+    "encounter_sessions": 0,
+    "encounter_inventory": 0,
+    "encounter_codes": 0,
+    "encounter_accounts": 0,
+    "encounter_requests": 0,
+    "encounter_review_audit": 0,
+    "fixture_users": 0
+  },
+  "accessAudit": {
+    "allEightPrivateTablesHaveRls": true,
+    "anonymousDirectSelect": false,
+    "authenticatedDirectCrud": false,
+    "publicWrappersUseSecurityInvoker": true,
+    "newPublicTables": 0
+  },
+  "advisors": {
+    "encounterUnindexedForeignKeysBefore": 13,
+    "encounterUnindexedForeignKeysAfter": 0,
+    "unusedNewIndexes": 13,
+    "unusedIndexContext": "No real encounter records or traffic are seeded. Indexes cover parent foreign-key maintenance; unused-index notices are expected before use.",
+    "privateRlsNoPoliciesContext": "Intentional deny-direct-access private tables; checked RPC functions are the access boundary.",
+    "existingWarnings": "Four pre-existing public security-definer endpoints and nine existing anonymous-access-policy notices remain outside this slice.",
+    "remediationLinks": [
+      "https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys",
+      "https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index",
+      "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+      "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+      "https://supabase.com/docs/guides/database/database-advisors?queryGroups=lint&lint=0012_auth_allow_anonymous_sign_ins"
+    ]
+  },
+  "scope": "Independent approval, immutable venue pools, server-weighted grants, finite stock, saved cooldowns, single-use staff confirmation, private inventory and staff-only linked-promotion redemption. No XP, check-in or quest reward writes.",
+  "testFile": "supabase/tests/restaurant_encounters.test.sql",
+  "preparedWith": "node scripts/prepare-database-tests.mjs --test supabase/tests/restaurant_encounters.test.sql --output artifacts/restaurant-encounters-rollback.sql",
+  "executedWith": "npx --yes supabase@3.2.0 db query --remote=azccigsctzhbaxoajqst --file artifacts/restaurant-encounters-rollback.sql --yes",
+  "limitations": [
+    "Fixture identities and sessions only; every fixture and temporary grant rolled back",
+    "Sequential assertions; actual competing transactions were not run because the disposable Docker database daemon is unavailable",
+    "Not a signed-in live-browser, real restaurant, physical GPS or native AR test",
+    "No genuine campaigns, participating venues, items or discounts were seeded",
+    "Production account/provider and encounter gates remain closed"
+  ]
+}

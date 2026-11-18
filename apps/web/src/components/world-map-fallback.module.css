@@ -5,11 +5,9 @@
 .place:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .explorer { width: 100px; height: 126px; }
 .playerContainer { pointer-events: auto; }
-.recenter { position: absolute; z-index: 1000; right: 8px; bottom: 34px; width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid #b4c2b8; border-radius: 8px; background: #fffaf0; color: var(--petrol); box-shadow: 0 2px 6px #193a3020; }
-.recenter:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.map :global(.leaflet-top.leaflet-right) { top: auto; bottom: 80px; right: 0; }
+.map :global(.leaflet-top.leaflet-right) { top: 68px; right: 4px; }
 .map :global(.leaflet-control-zoom) { margin-right: 8px; border-width: 1px; border-radius: 8px; overflow: hidden; }
-.map :global(.leaflet-control-zoom a) { width: 38px; height: 38px; line-height: 38px; font-size: 19px; }
+.map :global(.leaflet-control-zoom a) { width: 44px; height: 44px; line-height: 44px; font-size: 19px; }
 .provider { position: absolute; z-index: 1000; left: 8px; bottom: 48px; padding: 3px 6px; border-radius: 4px; background: #fffaf0ed; }
 .provider img { display: block; width: 88px; height: 22px; }
 .error { position: absolute; z-index: 1001; bottom: 30px; left: 8px; right: 8px; max-width: 400px; margin: 0; padding: 7px 10px; color: #302c22; background: #fff9ee; font-size: 12px; border: 1px solid #cec3ad; border-radius: 6px; }

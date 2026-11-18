@@ -13,7 +13,7 @@ export const MAP_SOURCE_IDS = {
   accuracy: "food-go-accuracy",
 } as const;
 export const emptyMapFeatures = () => ({ type: "FeatureCollection" as const, features: [] });
-export const GAME_BUILDING_PALETTE = ["#e98a70", "#edc35d", "#79b5bb", "#94be78", "#b09bcf", "#d9a16d", "#91b7da"] as const;
+export const GAME_BUILDING_PALETTE = ["#ded2b9", "#c8b79e", "#bbc6bc", "#e8dfcc"] as const;
 
 /** A building keeps its material as the camera moves. Prefer the provider's
  * stable feature ID, then numeric source IDs, then measured height as a fallback.
@@ -22,14 +22,15 @@ function gameBuildingColour(height: ExpressionSpecification): ExpressionSpecific
   const fallback: ExpressionSpecification = ["*", height, 131];
   const identity: ExpressionSpecification = ["to-number", ["coalesce", ["id"], ["get", "osm_id"], ["get", "id"], fallback], fallback];
   const bucket: ExpressionSpecification = ["%", ["abs", ["round", identity]], GAME_BUILDING_PALETTE.length];
-  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2],
-    3, GAME_BUILDING_PALETTE[3], 4, GAME_BUILDING_PALETTE[4], 5, GAME_BUILDING_PALETTE[5], GAME_BUILDING_PALETTE[6]];
+  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2], GAME_BUILDING_PALETTE[3]];
 }
 
 /** Keep roof parts ordered instead of flattening several heights onto one plane. */
 function gameBuildingHeight(height: ExpressionSpecification): ExpressionSpecification {
   const positive: ExpressionSpecification = ["max", height, 0];
-  return ["+", 3.5, ["*", 18.5, ["/", positive, ["+", positive, 44]]]];
+  // Preserve the skyline and differences between real roof sections. Compress
+  // tall structures gently rather than flattening the city into equal blocks.
+  return ["+", 2, ["*", .62, positive]];
 }
 
 type PaintValue = AllPaintProperties[keyof AllPaintProperties];
@@ -68,46 +69,46 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
   };
   for (const layer of layers) {
     const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    if (layer.type === "background") add(layer, "background-color", "#e6efd9", "#000000");
+    if (layer.type === "background") add(layer, "background-color", "#e5ead8", "#000000");
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
-      const landColour = sourceLayer === "water" || layer.id === "water" ? "#52bdf0"
-        : sourceLayer === "park" || layer.id === "park" ? "#8bd56e"
-          : layer.id.includes("wood") ? "#5dbb80"
-            : /grass|cemetery|pitch/u.test(layer.id) ? "#acd884"
+      const landColour = sourceLayer === "water" || layer.id === "water" ? "#75c6d5"
+        : sourceLayer === "park" || layer.id === "park" ? "#96c68b"
+          : layer.id.includes("wood") ? "#75a78a"
+            : /grass|cemetery|pitch/u.test(layer.id) ? "#b6cf9e"
               : layer.id.includes("wetland") ? "#c6e5d9"
                 : layer.id.includes("sand") ? "#f5ecd2"
                   : /ice|glacier/u.test(layer.id) ? "#f6fbff"
                     : layer.id.includes("hospital") ? "#f1e3e8"
                       : /school|track/u.test(layer.id) ? "#eee8d7"
-                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e4e9d4"
+                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e4e7d5"
                           : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
       if (sourceLayer === "building") add(layer, "fill-color", gameBuildingColour(["coalesce", ["get", "render_height"], ["get", "height"], 4]), "#000000");
       if (sourceLayer === "park" || /wood|grass|cemetery|pitch/u.test(layer.id)) add(layer, "fill-opacity", 0.95, 1);
-      if (sourceLayer === "building") add(layer, "fill-outline-color", "#f9fbfc", layer.paint?.["fill-color"] ?? "#000000");
+      if (sourceLayer === "building") add(layer, "fill-outline-color", "#aeb9a7", layer.paint?.["fill-color"] ?? "#000000");
       if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
     }
     if (layer.type === "line") {
-      if (sourceLayer === "waterway") add(layer, "line-color", "#52bdf0", "#000000");
-      if (sourceLayer === "park") add(layer, "line-color", "#75bf63", "#000000");
+      if (sourceLayer === "waterway") add(layer, "line-color", "#75c6d5", "#000000");
+      if (sourceLayer === "park") add(layer, "line-color", "#6c9c72", "#000000");
       if (sourceLayer === "boundary") {
         add(layer, "line-color", "#a3b3c1", "#000000"); add(layer, "line-opacity", 0.35, 1);
       }
       if (sourceLayer === "transportation" && /^(road|bridge|tunnel)_/u.test(layer.id)) {
         const rail = layer.id.includes("rail"), casing = layer.id.endsWith("casing");
-        add(layer, "line-color", rail ? "#a6b6c3" : casing ? "#cad3df" : "#ffffff", "#000000");
+        add(layer, "line-color", rail ? "#9aada4" : casing ? "#bcc7b4" : "#fffdf1", "#000000");
         if (rail) add(layer, "line-opacity", 0.28, 1);
         else {
-          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], casing ? 1.28 : 1.24), 1);
+          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], casing ? 1.1 : 1.06), 1);
           if (casing) add(layer, "line-blur", 0.35, 0);
         }
       }
     }
     if (layer.type === "symbol") {
       if (sourceLayer === "transportation_name" || sourceLayer === "place") {
-        add(layer, "text-color", sourceLayer === "place" ? "#536b80" : "#64748b", "#000000");
-        add(layer, "text-halo-color", "#f9fcff", "rgba(0,0,0,0)");
+        add(layer, "text-color", sourceLayer === "place" ? "#3e5e51" : "#435a50", "#000000");
+        add(layer, "text-halo-color", "#fffdf1", "rgba(0,0,0,0)");
         add(layer, "text-halo-width", 1.5, 0);
       }
       if (sourceLayer === "water_name" || sourceLayer === "waterway") add(layer, "text-color", "#5687ae", "#000000");
@@ -171,7 +172,10 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
   ];
   if (building?.type === "fill-extrusion") additions.push({
     ...building, id: "food-go-world-buildings", minzoom: 14,
-    filter: ["all", ["!", ["has", "hide_3d"]], ["!", ["within", survey]]],
+    // `within` only evaluates point/line features in the installed style
+    // engine. Polygon distance handles intersecting building footprints too,
+    // so the world source cannot draw duplicate roofs over the local survey.
+    filter: ["all", ["!", ["has", "hide_3d"]], [">", ["distance", survey], 0]],
     paint: {
       ...building.paint,
       "fill-extrusion-color": "#e9e7da",
@@ -216,7 +220,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     style: {
       ...base,
       light: { anchor: "map", position: [1.4, 195, 45], color: "#fffaf0", intensity: 0.42 },
-      sky: { "sky-color": "#79c9ff", "horizon-color": "#eefaff", "sky-horizon-blend": 0.55 },
+      sky: { "sky-color": "#98cfdf", "horizon-color": "#f6f7e9", "sky-horizon-blend": 0.65 },
       sources: {
         ...base.sources,
         [MAP_SOURCE_IDS.aerial]: { type: "image", url: ATLAS_AERIAL, coordinates: corners },

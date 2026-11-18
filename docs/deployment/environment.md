@@ -2,7 +2,7 @@
 
 Use `apps/web/.env.example` for local names and safe defaults. In hosting, set variables on the **web project**, scoped separately to Preview and Production. The web code reads these on the server; it does not require browser-visible Supabase variables. Do not copy a developer's ignored `.env.local` into the repository.
 
-The [setup required now](setup-now.md) records the 16 November findings, installed migrations through `20261116181558`, provider inputs and remaining acceptance checks.
+The [setup required now](setup-now.md) records the dated audit, eighteen installed migrations through `20261118000948`, provider inputs and remaining acceptance checks. Optional geographic recording and restaurant encounters remain disabled by default.
 
 ## Maps and connected accounts
 
@@ -39,6 +39,8 @@ Set `APP_ORIGIN=https://food-go-three.vercel.app` for the current hosting addres
 | `SUPABASE_PUBLISHABLE_KEY` | Public project key used by the server's anonymous or session-bound client | Publishable key or compatible legacy anonymous key; never a privileged project key |
 | `FOOD_GO_CATALOGUE_MODE` | `demo` or `supabase` | Supabase mode shows only genuine published records and never silently substitutes examples |
 | `FOOD_GO_COMMUNITY_ENABLED` | Enables connected community reads and progression endpoints | Requires reviewed community/social-XP migrations; account writes also require verified identity and Auth gates |
+| `FOOD_GO_EXPLORATION_ENABLED` | Private opt-in coarse-cell discovery recording | Keep false until its identity, explicit consent, freshness and deletion checks pass; manual fog remains cosmetic |
+| `FOOD_GO_ENCOUNTERS_ENABLED` | Restaurant encounter, inventory and staff/operator APIs | Keep false until genuine approved campaigns, staff/operator roles and customer/redemption acceptance pass; never enables the existing XP ledger |
 | `FOOD_GO_AUTH_COOKIE_SECRET` | Signs the application's recovery/session-related proof | Server secret, at least 32 random bytes encoded as base64url; separate per environment |
 | `FOOD_GO_AUTH_ENABLED` | Enables configured account endpoints | Keep false until intended account flow is ready |
 | `FOOD_GO_AUTH_PRODUCTION_READY` | Explicit gate for Auth in a production-mode Next process | Remains false until documented production checks pass; hosting a preview still runs Next in production mode |

@@ -71,6 +71,7 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
   const synchronise = useRef<() => void>(() => {});
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [assetLoaded, setAssetLoaded] = useState(false);
   const [motionAllowed, setMotionAllowed] = useState(false);
   const [reduced, setReduced] = useState(false);
   const avatar = AVATARS.find((item) => item.id === avatarId) || AVATARS[0];
@@ -86,7 +87,7 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
     if (!node) return;
     let disposed = false, visible = false, loading = false;
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReady(false); setFailed(false);
+    setReady(false); setFailed(false); setAssetLoaded(false);
     const measure = () => {
       const bounds = node.getBoundingClientRect();
       engine.current?.resize(bounds.width, bounds.height);
@@ -101,7 +102,7 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
       loading = true;
       import("./explorer-avatar-scene").then(({ createAvatarScene }) => {
         if (disposed || !canvas.current) return;
-        engine.current = createAvatarScene(canvas.current, avatar.id, () => { if (!disposed) { setReady(false); setFailed(true); } });
+        engine.current = createAvatarScene(canvas.current, avatar.id, () => { if (!disposed) { setReady(false); setFailed(true); } }, loaded => { if (!disposed) setAssetLoaded(loaded); });
         measure(); engine.current.setMotion({ ...latest.current, animate: latest.current.animate && visible && document.visibilityState !== "hidden" && !media.matches, reduced: media.matches });
         if (!disposed) setReady(true);
       }).catch(() => { if (!disposed) { setReady(false); setFailed(true); } });
@@ -120,7 +121,7 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
   }, [avatar.id, mode, uses3D]);
 
   const facingLeft = Number.isFinite(heading) && Math.sin((heading! - (mapBearing || 0)) * Math.PI / 180) < -0.2;
-  const art = <div ref={container} className={`${styles.avatar} ${styles[mode]} ${motionAllowed ? styles.moving : ""} ${walking ? styles.walking : ""} ${reduced ? styles.reduced : ""}`} data-avatar={avatar.id} data-renderer={uses3D ? ready && !failed ? "3d" : "illustration" : "illustration"} data-action={action} style={{ "--avatar-direction": facingLeft ? -1 : 1 } as CSSProperties}>
+  const art = <div ref={container} className={`${styles.avatar} ${styles[mode]} ${motionAllowed ? styles.moving : ""} ${walking ? styles.walking : ""} ${reduced ? styles.reduced : ""}`} data-avatar={avatar.id} data-renderer={uses3D ? ready && !failed ? "3d" : "illustration" : "illustration"} data-asset={uses3D && ready && !failed ? assetLoaded ? "glb" : "procedural" : "illustration"} data-action={action} style={{ "--avatar-direction": facingLeft ? -1 : 1 } as CSSProperties}>
     {uses3D && <canvas ref={canvas} className={`${styles.canvas} ${ready && !failed ? styles.canvasReady : ""}`} aria-hidden="true" />}
     <span key={`${avatar.id}-${action}-${actionToken}`} className={`${styles.artwork} ${uses3D && ready && !failed ? styles.artworkHidden : ""}`} aria-hidden="true">{avatar.id === "explorer" && mode !== "portrait" ? <OriginalExplorer /> : <AvatarIllustration avatarId={avatar.id} />}</span>
     {failed && <span className={styles.srOnly}>3D is unavailable. Showing the illustrated avatar.</span>}

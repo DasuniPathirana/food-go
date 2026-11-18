@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowUpRight, Box, Compass, Hand, LocateFixed, MapPin, Pause, PersonStanding, Play, Search, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, Box, ChevronUp, Compass, Eye, Hand, Layers, MapPin, Pause, PersonStanding, Play, Search, Sparkles, X, ZoomIn } from "lucide-react";
 import { atlasStops, geographicPoint, pointDirections } from "@/lib/atlas-places";
 import { ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
@@ -13,15 +13,21 @@ import { useAvatarPreferences } from "@/lib/avatar-preferences";
 import type { AtlasCanvasProps, AtlasImagery, AtlasSelection } from "./atlas-canvas";
 import { MapExpandButton, MapFrame } from "./map-frame";
 import { MapPlayer } from "./map-player";
-import { CloseMapPlayer } from "./close-map-player";
+import { ExplorerControl } from "./explorer-control";
 import { AvatarCustomizer, type AvatarAction } from "./avatar-customizer";
 import { useExplorerLocation } from "./use-explorer-location";
+import { useDeviceCompass } from "./use-device-compass";
+import { useGeographicDiscovery } from "./use-geographic-discovery";
+import { useEncounterLandmarks } from "./use-encounter-landmarks";
+import type { ExplorationFogResult } from "@food-go/domain/exploration";
 import { useStreetWalk } from "./use-street-walk";
 import { mapDistance } from "@/lib/map-game";
+import { isExplorerPerspective, type ExplorerPerspective } from "@/lib/explorer-camera";
 import styles from "./geographic-explore.module.css";
 
 const Canvas = dynamic(() => import("./atlas-canvas").then(module => module.AtlasCanvas), { ssr: false });
 const FlatCanvas = dynamic(() => import("./world-map-fallback").then(module => module.WorldMapFallback), { ssr: false });
+const EncounterPanel = dynamic(() => import("./encounter-panel").then(module => module.EncounterPanel));
 const noVenues: CatalogueVenue[] = [];
 // Open Swanston Street geometry near Federation Square, never a claimed GPS fix.
 const initialPosition = { longitude: 144.9671462327242, latitude: -37.81681344435442 };
@@ -29,10 +35,14 @@ const initialHeading = 340.0423857123138;
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
 const globalSatellite = !!browserMapKey;
 
-export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false }: {
+export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
   basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean;
+  signedIn?: boolean; explorationAvailable?: boolean; encountersAvailable?: boolean; accountKey?: string;
 }) {
   const frame = useRef<HTMLDivElement>(null), controls = useRef<HTMLDivElement>(null), field = useRef<HTMLInputElement>(null);
+  const avatarPanel = useRef<HTMLDivElement>(null);
+  const avatarScroll = useRef(0);
+  const cameraMenu = useRef<HTMLDetailsElement>(null);
   const searchRequest = useRef<AbortController | null>(null);
   const resultsId = useId();
   const [query, setQuery] = useState(""), [searchOpen, setSearchOpen] = useState(false);
@@ -43,22 +53,32 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [searchMessage, setSearchMessage] = useState(""), [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<AtlasSelection | null>(null);
   const [selectedName, setSelectedName] = useState("");
+  const [chosenShop, setChosenShop] = useState<{ selectionId: string; venueId: string } | null>(null);
   const [imagery, setImagery] = useState<AtlasImagery>("game");
+  const [lowDetail, setLowDetail] = useState(false);
   const [mapBearing, setMapBearing] = useState(-18);
   const [threeD, setThreeD] = useState(true), [loaded, setLoaded] = useState(false);
-  const [perspective, setPerspective] = useState<"first" | "third">("first");
+  const [perspective, setPerspective] = useState<ExplorerPerspective>("overhead");
   const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl"), [providerFailed, setProviderFailed] = useState(false);
   const [graphicsAttempt, setGraphicsAttempt] = useState(0);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
+  const compass = useDeviceCompass(perspective === "first" && renderer === "webgl");
   const preferences = useAvatarPreferences();
   const location = useExplorerLocation(initialPosition);
   const walk = useStreetWalk({ start: location.position, enabled: location.mode === "manual", motionPaused: paused, initialHeading });
   const player = walk.position;
+  const discovery = useGeographicDiscovery({ signedIn, available: explorationAvailable, accountKey,
+    mode: location.mode, fix: location.fix, liveReady: location.status === "live",
+    previewPoint: location.mode === "manual" ? player : null });
+  const [discoveryView, setDiscoveryView] = useState<Omit<ExplorationFogResult, "data"> | null>(null);
   const allVenues = useMemo(() => [...new Map([...venues, ...chosenVenues, ...venueResults].map(v => [v.id, v])).values()], [venues, chosenVenues, venueResults]);
+  const encounterLandmarks = useEncounterLandmarks({ enabled: encountersAvailable, mode: location.mode, fix: location.fix, venues: allVenues });
   const stops = useMemo(() => atlasStops([], allVenues), [allVenues]);
   const active = stops.find(stop => stop.id === selected?.id);
+  const encounterVenueId = active?.members.length === 1 ? active.members[0].id
+    : active && chosenShop?.selectionId === active.id && active.members.some(member => member.id === chosenShop.venueId) ? chosenShop.venueId : null;
   const localMatches = stops.filter(stop => stop.name.toLocaleLowerCase("en-AU").includes(query.trim().toLocaleLowerCase("en-AU")));
   const directions = selected && pointDirections(selected);
   const walking = walk.phase === "walking";
@@ -73,21 +93,42 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const cameraMoved = useCallback(() => setFollow(false), []);
   const recenter = useCallback(() => { setFollow(true); setFocus(n => n + 1); }, []);
   useEffect(() => {
-    try { if (localStorage.getItem("food-go-explorer-view-v1") === "third") setPerspective("third"); } catch { /* Optional browser preference. */ }
+    try {
+      const saved = localStorage.getItem("food-go-explorer-view-v2");
+      if (isExplorerPerspective(saved)) setPerspective(saved);
+      else if (localStorage.getItem("food-go-explorer-view-v1") === "first") setPerspective("first");
+    } catch { /* Optional browser preference. */ }
   }, []);
-  function changePerspective(next: "first" | "third") {
+  useLayoutEffect(() => {
+    if (!avatarOpen || !avatarPanel.current) return;
+    avatarPanel.current.scrollIntoView({ block: "nearest", behavior: "instant" });
+    avatarPanel.current.querySelector<HTMLButtonElement>("button[aria-label='Close avatar options']")?.focus({ preventScroll: true });
+  }, [avatarOpen]);
+  function customise() { if (!avatarOpen) avatarScroll.current = window.scrollY; setAvatarOpen(true); }
+  function closeAvatar() {
+    setAvatarOpen(false); window.scrollTo({ top: avatarScroll.current, behavior: "instant" });
+    frame.current?.querySelector<HTMLButtonElement>("[data-explorer-control]")?.focus({ preventScroll: true });
+  }
+  function locate() {
+    if (location.mode !== "live") { walk.cancel(); location.enable(); }
+    recenter();
+  }
+  function changePerspective(next: ExplorerPerspective) {
     setPerspective(next); recenter();
-    try { localStorage.setItem("food-go-explorer-view-v1", next); } catch { /* View remains usable without storage. */ }
+    if (cameraMenu.current) cameraMenu.current.open = false;
+    try { localStorage.setItem("food-go-explorer-view-v2", next); } catch { /* View remains usable without storage. */ }
   }
   const selectPoint = useCallback((point: AtlasSelection) => {
     if (!geographicPoint(point)) return;
     setSelected(point); setSelectedName(""); setSearchOpen(false);
+    setChosenShop(null);
     if (location.mode === "live" && location.status === "live") void walk.planTo(point);
     else if (location.mode === "live") walk.cancel();
     else void walk.walkTo(point);
     setFollow(true);
   }, [location.mode, location.status, walk.planTo, walk.walkTo, walk.cancel]);
   function choose(point: AtlasSelection, name: string) {
+    setChosenShop(null);
     field.current?.focus({ preventScroll: true });
     if (mapDistance(player, point) > 2000) {
       // A world search chooses a manual area or a detached view, never a GPS fix.
@@ -155,11 +196,15 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   const canvasProps: AtlasCanvasProps = {
-    places: stops, selected, imagery, threeD, perspective, player, followPlayer: follow, focusPlayerNonce: focus, onRecenter: recenter,
+    places: stops, selected, imagery, threeD: threeD && !lowDetail, lowDetail, perspective, player, followPlayer: follow, focusPlayerNonce: focus,
     playerTransitionMs: location.mode === "live" ? 600 : 80, onBearingChange: setMapBearing,
-    location: location.mode === "live" ? location.position : null, accuracy: location.accuracy ?? undefined,
+    deviceHeading: compass.heading, onEyeLook: compass.stop,
+    discoveryEnabled: discovery.enabled, discoveredCells: discovery.visibleCells, onDiscoveryView: setDiscoveryView,
+    encounterSignals: encounterLandmarks.signals,
+    location: location.mode === "live" ? location.rawPosition : null, accuracy: location.accuracy ?? undefined,
     heading: location.mode === "live" ? location.heading ?? undefined : walk.heading, route: walk.route,
     playerContent: <MapPlayer avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}
+      close={perspective === "close"}
       heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
       distanceTransitionMs={location.mode === "live" ? 600 : 80}
       animate={!paused && (preferences.preferences.idleMotion || avatarWalking || action !== "idle")} onActivate={() => perform("wave")}/>,
@@ -184,61 +229,103 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
             <span role="status">{searching ? "Searching places…" : searchMessage || (!query ? "Type a place or address, then search." : !worldResults.length && !localMatches.length ? "Press Search to look worldwide." : "")}</span>
           </div>}
         </form></div>
-        <div className={styles.bar}><div className={styles.layers} role="group" aria-label="Map imagery">
+        <details className={styles.layerMenu}
+          onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }}
+          onKeyDown={event => { if (event.key === "Escape" && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
+          <summary aria-label="Map layers"><Layers size={19}/><span>Layers</span></summary>
+          <div className={styles.layerPanel}><strong>Map style</strong><div className={styles.layers} role="group" aria-label="Map imagery">
           {([["game","Game","Game"],["street","Streets","Streets"],["satellite", globalSatellite && !providerFailed ? "Satellite" : "Melbourne satellite","Satellite"],["aerial","Melbourne aerial","Aerial"]] as const).map(([mode,label,short]) =>
             <button key={mode} type="button" aria-label={label} title={label} aria-pressed={imagery === mode} onClick={() => setImagery(mode)}>{short}</button>)}
-          <button type="button" className={styles.depth} aria-label="3D buildings" title={renderer === "fallback" ? "Retry 3D map" : "Show or hide 3D buildings"} aria-pressed={renderer === "webgl" && threeD}
-            onClick={() => { if (renderer === "fallback") retryGraphics(); else setThreeD(v => !v); }}><Box size={16}/>3D</button>
-        </div><div className={styles.perspectives} role="group" aria-label="Explorer view">
-          <button type="button" title="First person view" aria-label="First person view" aria-pressed={perspective === "first" && renderer === "webgl"}
-            onClick={() => { if (renderer === "fallback") retryGraphics(); changePerspective("first"); }}>1st</button>
-          <button type="button" title="Third person view" aria-label="Third person view" aria-pressed={perspective === "third" || renderer === "fallback"} onClick={() => changePerspective("third")}>3rd</button>
-        </div></div>
+          <button type="button" aria-label="3D buildings" title={renderer === "fallback" ? "Retry 3D map" : "Show or hide 3D buildings"} aria-pressed={renderer === "webgl" && threeD && !lowDetail}
+            onClick={() => { if (renderer === "fallback") { setLowDetail(false); retryGraphics(); return; } if (lowDetail) { setLowDetail(false); setThreeD(true); } else setThreeD(v => !v); }}><Box size={16}/>3D</button>
+          <button type="button" aria-pressed={lowDetail} onClick={() => setLowDetail(v => !v)}>Low detail</button>
+          <button type="button" aria-pressed={discovery.enabled} onClick={discovery.toggle}>Discovery fog</button>
+          </div><small>{imagery === "aerial" ? "City of Melbourne survey, local coverage." : imagery === "satellite" && (!globalSatellite || providerFailed) ? "Melbourne snapshot. World imagery needs a licensed provider." : "Real streets and geographic building footprints."}</small></div>
+        </details>
       </div>
       {renderer === "fallback" && <div className={styles.graphicsRecovery}>
         <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
         <button type="button" onClick={retryGraphics}>Retry 3D</button>
       </div>}
-      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)}><div className={styles.scene}><MapExpandButton/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/>
         {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
-        {renderer === "webgl" && loaded && threeD && perspective === "first" && <CloseMapPlayer
-          avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}
-          heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
-          distanceTransitionMs={location.mode === "live" ? 600 : 80}
-          animate={!paused && (preferences.preferences.idleMotion || avatarWalking || action !== "idle")}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
-        <div className={styles.locationTools}>
-          <button type="button" title={location.mode === "live" ? "Turn off live location" : "Enable live location"} aria-label={location.mode === "live" ? "Turn off live location" : "Enable live location"}
-            aria-pressed={location.mode === "live"} onClick={() => { walk.cancel(); if (location.mode === "live") location.stop(); else { location.enable(); setFollow(true); setFocus(n => n + 1); } }}><LocateFixed size={19}/></button>
-          <button type="button" title="Avatar options" aria-label="Avatar options" aria-expanded={avatarOpen} onClick={() => setAvatarOpen(v => !v)}><PersonStanding size={19}/></button>
+        <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
+          requesting={location.status === "requesting"} following={follow} expanded={avatarOpen} onLocate={locate} onCustomise={customise}/>
+        <div className={styles.perspectives} role="group" aria-label="Explorer view">
+          <button type="button" title="Overhead view" aria-label="Overhead view" aria-pressed={perspective === "overhead" || renderer === "fallback"} onClick={() => changePerspective("overhead")}><Compass size={16}/><span>Overview</span></button>
+          <details ref={cameraMenu} className={styles.cameraMenu}
+            onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }}
+            onKeyDown={event => { if (event.key === "Escape" && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
+            <summary aria-label="Choose camera view" data-active={perspective !== "overhead" && renderer === "webgl"}>
+              {perspective === "first" ? compass.status === "active" ? <Compass size={16}/> : <Eye size={16}/> : <PersonStanding size={16}/>}<span>{renderer === "fallback" || perspective === "overhead" ? "Camera" : perspective === "third" ? "Follow" : perspective === "close" ? "Close" : compass.status === "active" ? "Compass" : "Street"}</span><ChevronUp size={12}/>
+            </summary>
+            <div className={styles.cameraOptions} role="group" aria-label="Explorer camera profiles">
+              {([["third", "Third person view", "Follow", PersonStanding], ["close", "Close third person view", "Close", ZoomIn], ["first", "First person view", "Street", Eye]] as const).map(([view, label, name, Icon]) =>
+                <button key={view} type="button" aria-label={label} aria-pressed={perspective === view && renderer === "webgl"} onClick={() => { if (renderer === "fallback") retryGraphics(); changePerspective(view); }}><Icon size={17}/>{name}</button>)}
+              {perspective === "first" && renderer === "webgl" && <button type="button" aria-label="Device compass" aria-pressed={compass.status === "active"} aria-busy={compass.status === "requesting"} aria-disabled={compass.status === "requesting"}
+                onClick={() => { if (compass.status === "requesting") return; if (compass.status === "active") compass.stop(); else compass.start(); }}><Compass size={17}/>{compass.status === "active" ? "Stop compass" : "Use compass"}</button>}
+            </div>
+          </details>
         </div>
-        <span className={styles.modeStatus}>{renderer === "fallback" ? "2D map · " : perspective === "first" ? "First person · " : "Third person · "}{!follow && "Browsing · "}{location.mode === "live" ? location.status === "live" ? "Live location" : "Waiting for location" : "Manual explorer"}{location.accuracy != null ? ` · ±${Math.round(location.accuracy)} m` : ""}</span>
+        <span className={styles.modeStatus} data-location-status={location.status}><span className={styles.statusDot} aria-hidden="true"/>{renderer === "fallback" ? "2D map · " : ""}{!follow ? "Browsing" : location.mode === "live" ? location.status === "live" ? "Live location" : location.status === "weak" ? "Weak GPS signal" : "Finding your location" : "Manual exploration"}{location.accuracy != null ? ` · ±${Math.round(location.accuracy)} m` : ""}</span>
       </div>
-        <div className={styles.readout}><div className={styles.readoutName}><div><strong>{active?.name || selectedName || (directions ? "Selected point" : "Choose your next stop")}</strong>
-          <small>{directions ? directions.coordinate : "Tap a street to walk, or search a new area."}</small></div></div>
+      </div>
+        {selected && <div className={styles.readout}><div className={styles.readoutName}><div><strong>{active?.name || selectedName || "Selected point"}</strong>
+          <small>{directions?.coordinate}</small></div></div>
           {directions && <div className={styles.directions}><a href={directions.google} target="_blank" rel="noopener noreferrer">Google Maps<ArrowUpRight size={14}/></a><a href={directions.apple} target="_blank" rel="noopener noreferrer">Apple Maps<ArrowUpRight size={14}/></a></div>}
-        </div>
+          <button type="button" className={styles.clearSelection} aria-label="Clear selected place" onClick={() => { setSelected(null); setSelectedName(""); walk.cancel(); }}><X size={17}/></button>
+        </div>}
         {walk.route && <div className={styles.gameBar} aria-label="Explorer controls">
           {walking && <button type="button" onClick={walk.pause}><Pause size={15}/>Pause walk</button>}
           {walk.phase === "paused" && location.mode === "manual" && <button type="button" onClick={() => { setPaused(false); walk.resume(); }}><Play size={15}/>Resume walk</button>}
           {walk.route && <button type="button" onClick={walk.cancel}><X size={15}/>End route</button>}
           <span className={styles.walkDistance}>{location.mode === "live" ? "Route guide · follows your live position" : `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m`}</span>
         </div>}
-      </div>
-      {avatarOpen && <div className={styles.avatarPanel}><AvatarCustomizer onClose={() => setAvatarOpen(false)} onAction={perform} motionPaused={paused}/></div>}
+      {avatarOpen && <div ref={avatarPanel} className={styles.avatarPanel} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeAvatar(); } }}><AvatarCustomizer compact onClose={closeAvatar} onAction={perform} motionPaused={paused}/></div>}
     </MapFrame>
-    <div className={styles.explorerStatus} role="status"><p>{walk.message || location.message}</p>{walk.route && location.mode === "manual" && <label>Walk speed<select value={walk.speed} onChange={e => walk.setSpeed(Number(e.target.value) as 1 | 4)}><option value="1">1×</option><option value="4">4×</option></select></label>}</div>
+    <div className={styles.explorerStatus} role="status"><div><p>{walk.message || (location.status === "manual" ? perspective === "first" && renderer === "webgl" ? "Drag to look around. Pinch to change the view angle. Tap a street to walk." : "Tap a street to explore. Tap your explorer for live location, or hold to change your look." : location.message)}</p>{compass.message && <p>{compass.message}</p>}</div>{walk.route && location.mode === "manual" && <label>Walk speed<select value={walk.speed} onChange={e => walk.setSpeed(Number(e.target.value) as 1 | 4)}><option value="1">1×</option><option value="4">4×</option></select></label>}</div>
+    {encounterLandmarks.nearby.length > 0 && <div className={styles.gameBar} aria-label="Nearby restaurant encounters"><span>Nearby restaurant encounters</span>{encounterLandmarks.nearby.map(venue => <button key={venue.venueId} type="button" onClick={() => {
+      const stop = stops.find(place => place.members.some(member => member.id === venue.venueId));
+      if (stop) { choose(stop, stop.name); setChosenShop({ selectionId: stop.id, venueId: venue.venueId }); }
+    }}><Sparkles size={15}/>{venue.name}</button>)}</div>}
+    <details className={styles.discovery}>
+      <summary>Area discovery{discovery.enabled ? ` · ${discovery.recordedCount} saved areas` : ""}</summary>
+      <div className={styles.discoveryControls}>
+        <button type="button" aria-pressed={discovery.enabled} onClick={discovery.toggle}>{discovery.enabled ? "Hide discovery fog" : "Show discovery fog"}</button>
+        <button type="button" onClick={discovery.clearPreview} disabled={!discovery.sessionCount}>Clear session preview</button>
+      </div>
+      <p>Fog marks areas you have not explored. Manual walks and unsaved device observations stay in this page and never earn rewards.</p>
+      {discovery.enabled && <p role="status">{discoveryView?.status === "ready"
+        ? `${discoveryView.exploredPercent ?? 0}% of the visible grid explored. ${discovery.sessionCount} session areas and ${discovery.recordedCount} saved areas may overlap.`
+        : "Zoom in or use Overview to see discovery fog. It is limited to nearby areas."}</p>}
+      {signedIn && explorationAvailable ? <>
+        <label className={styles.discoveryConsent}><input type="checkbox" checked={discovery.requested} onChange={event => void discovery.setRecording(event.target.checked)}/><span>Save this session's exploration</span></label>
+        <p>With this on, fresh live GPS fixes go to Food Go to derive private coarse areas, about 120 metres wide in Melbourne. Food Go stores areas and observation times, not precise coordinates or a GPS track. Turn it on each time you return. These device observations are unverified and do not earn XP or offers.</p>
+        <button type="button" className={styles.motionButton} onClick={() => void discovery.clearSaved()} disabled={discovery.saving || !discovery.recordedCount}>Delete saved areas</button>
+      </> : <p>{explorationAvailable ? <>Sign in through <Link href="/profile">Passport</Link> to save your live exploration.</> : "Account saving is not enabled yet. You can explore with a session preview."}</p>}
+      {discovery.message && <p role="status">{discovery.message}</p>}
+      {discovery.error && <p role="alert">{discovery.error} <button type="button" onClick={() => void discovery.retry()}>Retry discovery</button></p>}
+    </details>
     <details className={styles.playHelp}><summary>Explorer actions and location</summary>
       <div className={styles.actionRow}><button type="button" disabled={paused} onClick={() => perform("wave")}><Hand size={16}/>Wave</button>
         <button type="button" disabled={paused} onClick={() => perform("cheer")}><Sparkles size={16}/>Celebrate</button>
         <button type="button" disabled={paused} onClick={() => perform("look")}><Compass size={16}/>Look around</button></div>
       <button type="button" className={styles.motionButton} aria-pressed={paused} onClick={() => { setPaused(v => !v); if (walking) walk.pause(); }}><Pause size={15}/>{paused ? "Enable avatar motion" : "Pause avatar motion"}</button>
+      <button type="button" className={styles.motionButton} aria-expanded={avatarOpen} onClick={customise}>Customise explorer</button>
+      {location.mode === "live" && <button type="button" className={styles.motionButton} onClick={() => { walk.cancel(); location.stop(); }}>Turn off live location</button>}
       <p>Tap a street to walk. Search a distant place to move your manual explorer there. Live location follows your device. Virtual walking never earns verified XP.</p>
-      <p>GPS fixes stay in this page. Map tiles reveal the viewed area to the map provider. Searches and requested route endpoints go to their providers. Location turns off when you leave or hide Explore.</p>
+      <p>GPS fixes stay in this page unless you turn on exploration saving above. Map tiles reveal the viewed area to the map provider. Searches and requested route endpoints go to their providers. Location turns off when you leave or hide Explore.</p>
+      {encountersAvailable && <p>Nearby encounter hints request at most three public venue IDs at a time. Your GPS coordinates are not sent for these hints, and proximity never confirms a claim.</p>}
       <p>{Math.round(location.mode === "live" ? location.distanceMetres : walk.sessionMetres)} metres explored this session.</p><Link href="/collect">Collect a verified discovery</Link>
     </details>
-    {active && active.members.length > 0 && <div className={styles.members}>{active.members.map(member => <div key={member.id}>
-      {member.href ? <Link href={member.href}>{member.name}<ArrowUpRight size={14}/></Link> : <strong>{member.name}</strong>}<span>{member.area}</span></div>)}</div>}
+    {active && active.members.length > 0 && <div className={styles.members}>{active.members.length > 1 && encountersAvailable && <p>Choose a shop for its restaurant encounter. Shops in this building have separate pools and staff confirmations.</p>}{active.members.map(member => <div key={member.id}>
+      {member.href ? <Link href={member.href}>{member.name}<ArrowUpRight size={14}/></Link> : <strong>{member.name}</strong>}<span>{member.area}</span>
+      {encountersAvailable && active.members.length > 1 && <button type="button" className={styles.motionButton} aria-pressed={encounterVenueId === member.id}
+        onClick={() => setChosenShop({ selectionId: active.id, venueId: member.id })}>Encounters at {member.name}</button>}
+    </div>)}</div>}
+    {encountersAvailable && encounterVenueId && <EncounterPanel key={`${accountKey ?? "visitor"}:${encounterVenueId}`} venueId={encounterVenueId} signedIn={signedIn}
+      enabled={encountersAvailable} accountKey={accountKey} proximity={{ mode: location.mode, fix: location.fix }}/>}
     <div className={styles.credits}>
       <span>Streets by OpenFreeMap and OpenStreetMap.</span><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Fix the map</a>
       {imagery === "game" && renderer === "webgl" && <span>Game view uses real streets and stylised building heights.</span>}

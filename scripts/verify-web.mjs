@@ -18,7 +18,7 @@ check(catalogueResponse.headers.get("cache-control") === "no-store", "Catalogue 
 for (const venue of catalogue.data) {
   check(venue.source === "supabase" && !["email","phone","organization_id"].some(key => key in venue), "Catalogue excludes fictional venues and private contacts");
 }
-for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/venue-dex","/quests","/outback",
+for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/venue-dex","/quests","/outback","/inventory","/encounters",
   "/partner","/partner/dashboard","/partner/onboarding","/admin","/admin/security",
   "/auth/register","/auth/sign-in","/auth/forgot-password","/auth/reset-password","/auth/phone","/help","/acknowledgement"]) {
   const response = await request(path), html = await response.text();
@@ -30,8 +30,8 @@ for (const path of ["/","/feed","/deals","/profile","/collect","/food-dex","/ven
   check(csp.includes("frame-ancestors 'none'") && !csp.includes("unsafe-eval"), `${path} has the production CSP`);
   if (path === "/") {
     check(html.includes("Search map places") && html.includes("Explore full map"), "Explore has search and an expanded map");
-    check(html.includes("Streets") && html.includes("Enable live location") && html.includes("Avatar options"), "Explore exposes worldwide maps, opt-in location and the avatar");
-    check(html.includes("First person view") && html.includes("Third person view"), "Explore offers both player camera perspectives");
+    check(html.includes("Streets") && html.includes("Locate explorer") && html.includes("Hold to customise"), "Explore exposes worldwide maps and the combined opt-in explorer control");
+    check(["Overhead view", "Third person view", "Close third person view", "First person view"].every(label => html.includes(label)), "Explore offers all four geographic camera profiles");
     check(!html.includes("Place explorer here") && !html.includes(">Walk here<"), "Explore does not require separate place or walk buttons");
     check((response.headers.get("permissions-policy") || "").includes("geolocation=(self)"), "Geolocation is permitted for this site's explicit request");
   }
@@ -48,7 +48,7 @@ for (const query of ["q=a&q=b","limit=1000","state=other","status=draft"]) {
 for (const path of ["/api/map/search?q=a","/api/map/search?q=A&q=B","/api/map/route?from=1,2&to=999,3"]) {
   check((await request(path)).status === 400, "Map services reject invalid or ambiguous input");
 }
-for (const path of ["/api/journey","/api/game","/api/adventure","/api/partner/venues","/api/community/policy"]) {
+for (const path of ["/api/journey","/api/game","/api/adventure","/api/partner/venues","/api/community/policy","/api/encounters"]) {
   check((await request(path)).status === 503, `${path} is disabled when Auth is unconfigured`);
 }
 for (const path of ["/api/account/age","/api/journey","/api/adventure","/api/partner/manage","/api/admin","/api/admin/security",

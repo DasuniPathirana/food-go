@@ -16,6 +16,7 @@ export type AuthRequest<T> =
 export async function readAuthRequest<T>(
   request: Request,
   schema: ZodType<T>,
+  maxBytes: 4096 | 16384 = 4096,
 ): Promise<AuthRequest<T>> {
   if (
     !isAllowedWriteOrigin(
@@ -53,7 +54,7 @@ export async function readAuthRequest<T>(
   if (
     !Number.isFinite(contentLength) ||
     contentLength < 0 ||
-    contentLength > 4096
+    contentLength > maxBytes
   )
     return {
       ok: false,
@@ -67,12 +68,16 @@ export async function readAuthRequest<T>(
     };
   const parts: Uint8Array[] = [];
   let size = 0;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("Request body deadline")), 5000);
+  });
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await Promise.race([reader.read(), deadline]);
       if (done) break;
       size += value.byteLength;
-      if (size > 4096) {
+      if (size > maxBytes) {
         await reader.cancel();
         return {
           ok: false,
@@ -107,11 +112,13 @@ export async function readAuthRequest<T>(
       };
     return { ok: true, config, data: result.data };
   } catch {
+    void reader.cancel().catch(() => {});
     return {
       ok: false,
       response: authJson({ error: "We could not read that request." }, 400),
     };
   } finally {
-    reader.releaseLock();
+    clearTimeout(timer);
+    try { reader.releaseLock(); } catch { /* A cancelled pending read may release asynchronously. */ }
   }
 }

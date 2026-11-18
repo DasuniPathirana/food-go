@@ -73,3 +73,33 @@
 .wardrobeHeader > button { border: 1px solid #b7bab0; border-radius: 5px; background: white; font-size: 14px; font-weight: 600; }
 .wardrobe .customizer { padding: 23px 0; }
 @media(max-width:650px) { .stage { height: 310px; } .stage::before { height: 111px; } .character { height: 210px; } .previewControls { margin-top: 9px; } .previewControls button { min-height: 44px; } .stageCopy { gap: 2px; } .stageCopy strong { font-size: 22px; } }
+
+/* The map wardrobe expands below the world without covering its character. */
+.compact { max-width: 850px; margin-inline: auto; }
+.compact .heading { margin-bottom: 10px; }
+.compact .heading h2 { font-size: 24px; }
+.compact .heading p { margin-top: 3px; font-size: 13px; }
+.compact .layout { grid-template-columns: 150px minmax(0, 1fr); gap: 16px; }
+.compact .stage { height: 245px; border-radius: 5px; }
+.compact .character { width: 150px; height: 190px; }
+.compact .pedestal { top: 170px; width: 95px; }
+.compact .stageCopy strong { font-size: 18px; }
+.compact .stageCopy > span, .compact .previewControls, .compact .description, .compact .actionGroup, .compact .motion, .compact .hint, .compact .choiceStyle { display: none; }
+.compact .choices { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.compact .thumbnail { width: 44px; height: 66px; }
+.compact .choices strong { font-size: 12px; }
+.compact .footer { margin-top: 12px; gap: 6px; }
+.compact .footer button { padding: 9px 12px; }
+.compact .notice { margin-top: 9px; font-size: 12px; }
+@media(max-width:650px) {
+  .compact .layout { grid-template-columns: 94px minmax(0, 1fr); gap: 10px; }
+  .compact .stage { height: 200px; }
+  .compact .character { width: 105px; height: 154px; }
+  .compact .pedestal { top: 142px; width: 70px; }
+  .compact .stageCopy strong { font-size: 15px; }
+  .compact .choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .compact .thumbnail { width: 32px; height: 46px; }
+  .compact .choices > button { padding: 3px 1px; }
+  .compact .choices strong { font-size: 11px; margin-top: 2px; }
+  .compact .footer button { padding-inline: 8px; font-size: 12px; }
+}

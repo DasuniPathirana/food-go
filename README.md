@@ -4,11 +4,13 @@ A food discovery and restaurant marketplace for Australia, built in stages with 
 
 ## Current milestone
 
+The [18 November encounter delivery](docs/progress/25-restaurant-encounters.md) adds approved restaurant pools, server-owned rarity draws, private inventory and separate staff confirmation/redemption. It remains disabled by default. The preceding [camera and geographic discovery work](docs/progress/24-camera-and-discovery.md) adds fixed-eye controls, optional compass, loaded-building camera clearance, guarded GLB loading and opt-in coarse-cell recording. The [map foundation](docs/progress/23-game-map-foundation.md) provides the compact portrait control, stabilised cosmetic GPS and four camera profiles. Production character art, physical-device acceptance and native AR remain separate work.
+
 The [17 November update](docs/progress/20-clean-ui-and-feed-age.md) removes decorative icon badges, colours real map buildings, adds private signup age capture and enforces 16+ access to Feed and personal walls. It also fixes the false inbox success after Supabase rejected signup. Follow [the missing-email repair](docs/deployment/email-signup-repair.md) for the required hosted signup and Brevo hook settings.
 
 The latest [five-section delivery](docs/progress/19-five-sections-and-outback.md) adds Feed, Quests, Explore, Deals and Outback, a brighter real-world Game map, two offer categories, genuine reviewed partner quests, a 250-level server-derived ladder and an original playable Australian village. Passport retains the personal wall. The original standalone prototype is unchanged.
 
-All eleven migrations are installed on the owner-selected Supabase project, including adventure at `20261116181558`. Real disposable Supabase CI passed 360 SQL assertions, a deterministic concurrent-manager test and 47 adventure API assertions alongside the existing customer/owner/operator journeys. The current website still needs the deployer to install this PR, configure the two signed messaging hooks and verify real delivery. The hosted catalogue has no published restaurants yet. Start with [setup required now](docs/deployment/setup-now.md); these results do not certify public readiness.
+Read-only migration history on 18 November confirms all eighteen migrations on the owner-selected development/test Supabase project, through `20261118000948_food_go_encounter_foreign_key_indexes.sql`. Earlier disposable Supabase CI passed 395 SQL assertions, a deterministic concurrent-manager test and 47 adventure API assertions alongside customer/owner/operator journeys. The new discovery and encounter rollback suites separately record 90 and 165 assertions. The current work must pass its final PR checks; these results do not certify public readiness. The deployer still owns rollout, signed messaging-hook configuration and real delivery acceptance. The last catalogue audit found no published restaurants. Start with [setup required now](docs/deployment/setup-now.md).
 
 The website now uses connected signup, customer collections, venue-issued verification and server-derived XP. Explorers land on Explore and restaurant owners land on their dashboard. Owners can manage listing details and menus, submit promotions and issue discovery codes after approval. The website's demo and preview routes have been retired. See the [connected release handoff](docs/deployment/connected-release.md) for rollout and verification.
 
@@ -60,6 +62,10 @@ npm run dev
 ```
 
 Open the printed local URL, normally `http://127.0.0.1:3000`. Worldwide streets work without a map key; connected records/accounts and optional satellite/routing require the documented environment settings. Historical demo routes return 404. The development server binds only to loopback.
+
+For desktop and phone browser smoke tests, run `npx playwright install chromium`,
+then `npm run test:e2e`. See [browser test setup](docs/development/browser-tests.md)
+for scope, the interactive runner and the isolated local server configuration.
 
 For the Expo mobile project:
 

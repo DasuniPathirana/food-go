@@ -131,6 +131,9 @@
 .marker[aria-pressed="true"] .label { border-color: #006d68; background: #006d68; color: #fffdf6; }
 .marker:focus-visible { z-index: 9; outline: 3px solid #304bc2; outline-offset: 3px; }
 .marker:active .face { translate: 0 1px; }
+.marker[data-encounter=available] .face { border-color: #d2a138; }
+.marker[data-encounter=nearby] .face { border-color: #006d68; box-shadow: 0 0 0 5px #ffd445b8, 0 5px 10px #006d6840; }
+.marker[data-encounter=nearby] .label { background: #fff2bd; color: #23473e; }
 
 @media (max-width: 700px) {
   .marker { gap: 4px; max-width: 104px; font-size: 11px; }

@@ -1,11 +1,21 @@
 import css from "./map-place-marker.module.css";
+import type { EncounterSignal } from "@/lib/encounter-landmarks";
 
 export type MapPlaceMarker = {
+  id?: string; members?: readonly { id: string }[];
   name: string;
   image?: string;
   kind?: "cafe" | "restaurant" | "market" | "building";
   shopCount?: number;
 };
+
+export function updateMapPlaceEncounter(button: HTMLButtonElement, place: MapPlaceMarker, signals: Readonly<Record<string, EncounterSignal>>) {
+  const states = (place.members?.map(member => member.id) ?? (place.id ? [place.id] : [])).map(id => signals[id]);
+  const state = states.includes("nearby") ? "nearby" : states.includes("available") ? "available" : "none";
+  button.dataset.encounter = state;
+  const count = place.shopCount && place.shopCount > 1 ? `, ${place.shopCount} shops` : "";
+  button.setAttribute("aria-label", `Explore ${place.name}${count}${state === "nearby" ? ", restaurant encounter nearby" : state === "available" ? ", restaurant encounter available" : ""}`);
+}
 
 const iconPaths = {
   cafe: ["M5 8h11v7a5 5 0 0 1-10 0V8Z", "M16 9h2a3 3 0 0 1 0 6h-2", "M8 3v2m4-2v2M4 21h15"],

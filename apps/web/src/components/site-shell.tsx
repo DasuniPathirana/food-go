@@ -44,6 +44,7 @@ export function SiteShell({
               <summary aria-label="Collections and Passport"><BookOpen size={16}/><span>Collections</span><ChevronDown size={13}/></summary>
               <nav aria-label="Your collections and profile"><Link href="/food-dex"><BookOpen size={17}/><span>FoodDex<small>Your food discoveries</small></span></Link>
                 <Link href="/venue-dex"><Store size={17}/><span>VenueDex<small>Places you have collected</small></span></Link>
+                <Link href="/inventory"><Gift size={17}/><span>Inventory<small>Your restaurant encounter items</small></span></Link>
                 <Link href="/outback"><Gift size={17}/><span>Village rewards<small>Your Outback progress</small></span></Link>
                 <Link href="/profile"><UserRound size={17}/><span>Passport<small>Your profile and personal wall</small></span></Link></nav>
             </details>}
