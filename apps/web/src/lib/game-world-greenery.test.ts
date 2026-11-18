@@ -35,3 +35,18 @@ test("park vegetation is bounded, non-authoritative and absent without geometry"
   assert.ok(sampleParkTrees([[square]], centre, 4).length <= 4);
   assert.deepEqual(sampleParkTrees([[square]], { longitude: 145.5, latitude: -38.5 }), []);
 });
+
+test("park trees remain fixed in world space as the map camera moves", () => {
+  const initial = sampleParkTrees([[square]], centre);
+  const shifted = sampleParkTrees([[square]], {
+    longitude: centre.longitude + 0.00006,
+    latitude: centre.latitude - 0.00006,
+  });
+  const same = new Map(shifted.map(tree => [tree.id, tree]));
+  const common = initial.filter(tree => same.has(tree.id));
+  assert.ok(common.length >= 15);
+  for (const tree of common) {
+    assert.equal(same.get(tree.id)?.longitude, tree.longitude);
+    assert.equal(same.get(tree.id)?.latitude, tree.latitude);
+  }
+});
