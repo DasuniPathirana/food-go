@@ -8,6 +8,7 @@ import type { LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
 import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
+import { createGameWorldObjectLayer, GAME_WORLD_OBJECT_LAYER, type GameWorldObject } from "@/lib/game-world-objects";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
 import { mapDistance } from "@/lib/map-game";
@@ -232,6 +233,33 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!ready || !map) return;
     map.setPixelRatio(props.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2));
   }, [ready, props.lowDetail]);
+
+  // Real geographic 3D objects share MapLibre's camera and depth buffer.
+  // The optional ?world-demo=1 fixture is visual-only and never awards loot.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER);
+    if (!threeD || imagery !== "game" || props.lowDetail) return;
+    const nearby: GameWorldObject[] = places.filter(valid).slice(0, 22).map(place => ({
+      id: place.id, longitude: place.longitude, latitude: place.latitude,
+      kind: place.kind ?? "building",
+    }));
+    if (valid(selected)) nearby.push({
+      id: "selected-waypoint", longitude: selected.longitude,
+      latitude: selected.latitude, kind: "waypoint",
+    });
+    const demo = new URLSearchParams(window.location.search).get("world-demo") === "1";
+    if (demo) nearby.push({
+      id: "melbourne-scenery-demo-not-redeemable", longitude: 144.96915,
+      latitude: -37.81790, kind: "waypoint",
+    });
+    if (nearby.length === 0) return;
+    const layer = createGameWorldObjectLayer(nearby);
+    const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
+    map.addLayer(layer, label);
+    return () => { if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER); };
+  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail]);
 
   useEffect(() => {
     const map = mapRef.current;
