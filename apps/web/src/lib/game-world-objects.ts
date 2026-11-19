@@ -10,7 +10,7 @@ import {
   AmbientLight, BoxGeometry, Camera, CanvasTexture, CircleGeometry, Color, ConeGeometry,
   CylinderGeometry, DirectionalLight, DodecahedronGeometry, Group, HemisphereLight,
   InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial,
-  Object3D, OctahedronGeometry, Scene, TorusGeometry, Vector3, WebGLRenderer,
+  Object3D, OctahedronGeometry, Scene, SphereGeometry, TorusGeometry, Vector3, WebGLRenderer,
   type BufferGeometry, type Material,
 } from "three";
 
@@ -20,7 +20,7 @@ export type GameWorldObject = {
   id: string;
   longitude: number;
   latitude: number;
-  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure" | "facade";
+  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure" | "facade" | "lamp";
   /** Decorative building footprint dimensions/roof altitude, in metres. */
   width?: number;
   depth?: number;
@@ -40,6 +40,7 @@ const hues = {
   roof: { main: 0x7a9e9c, trim: 0x305b5c },
   treasure: { main: 0xffd15f, trim: 0x076f71 },
   facade: { main: 0xd9cdb8, trim: 0x40736d },
+  lamp: { main: 0xf8dc98, trim: 0x174949 },
 } as const;
 
 type TreePosition = { x: number; z: number; seed: number };
@@ -141,6 +142,35 @@ function addParkForest(scene: Scene, positions: readonly TreePosition[]): void {
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
+  }
+}
+
+type WorldPosition = { x: number; z: number; seed: number };
+
+/** Three instanced draw calls provide depth and warm urban night ambience. */
+function addStreetLights(scene: Scene, positions: readonly WorldPosition[]): void {
+  if (!positions.length)return;
+  const metal=new MeshStandardMaterial({color:0x315a59,metalness:.52,roughness:.39});
+  const glow=new MeshStandardMaterial({
+    color:0xffe8ab,emissive:0xffd27e,emissiveIntensity:1.25,
+    metalness:0,roughness:.32,
+  });
+  const posts=new InstancedMesh(new CylinderGeometry(.075,.12,4.1,7),metal,positions.length);
+  const heads=new InstancedMesh(new SphereGeometry(.42,9,7),glow,positions.length);
+  const caps=new InstancedMesh(new ConeGeometry(.58,.4,8),metal,positions.length);
+  const dummy=new Object3D();
+  for(let i=0;i<positions.length;i++){
+    const p=positions[i];const varied=0.91+((p.seed>>4)%8)*.025;
+    dummy.position.set(p.x,2.05*varied,p.z);dummy.rotation.set(0,0,0);
+    dummy.scale.set(varied,varied,varied);dummy.updateMatrix();posts.setMatrixAt(i,dummy.matrix);
+    dummy.position.set(p.x,4.31*varied,p.z);dummy.scale.setScalar(varied);
+    dummy.updateMatrix();heads.setMatrixAt(i,dummy.matrix);
+    dummy.position.set(p.x,4.67*varied,p.z);dummy.updateMatrix();caps.setMatrixAt(i,dummy.matrix);
+  }
+  for(const mesh of [posts,heads,caps]){
+    mesh.instanceMatrix.needsUpdate=true;
+    mesh.computeBoundingSphere();
+    scene.add(mesh);
   }
 }
 
@@ -301,6 +331,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       .multiply(new Matrix4().makeScale(unit, -unit, unit))
       .multiply(new Matrix4().makeRotationX(Math.PI / 2));
     const grove: TreePosition[] = [];
+    const lamps: WorldPosition[] = [];
     for (const point of valid) {
       const position = MercatorCoordinate.fromLngLat({ lng: point.longitude, lat: point.latitude }, 0);
       const dx = (position.x - origin.x) / unit;
@@ -309,6 +340,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       if (Math.hypot(dx, dz) > 3000) continue;
       if (point.kind === "tree") { grove.push({ x: dx, z: dz, seed: seedFromId(point.id) }); continue; }
       if (point.kind === "facade") continue;
+      if (point.kind === "lamp") { lamps.push({ x:dx, z:dz, seed:seedFromId(point.id) }); continue; }
       const beacon = point.kind === "roof" ? makeRoof(point)
         : point.kind === "treasure" ? makeTreasure() : makeBeacon(point.kind);
       beacon.position.set(dx, 0, dz);
@@ -316,6 +348,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       scene.add(beacon);
     }
     addParkForest(scene, grove);
+    addStreetLights(scene,lamps);
     // Batched architectural windows change the whole city silhouette at close
     // zoom without replacing road geography or the underlying map footprint.
     const facades=valid.filter((p):p is FacadeObject => p.kind === "facade" && Array.isArray(p.ring));
