@@ -319,7 +319,13 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       // Labels, restaurant markers, attribution and route guidance stay legible.
       const before = map.getStyle().layers.find(layer => layer.type === "symbol")?.id;
       map.addLayer({ id: layerId, type: "fill", source: sourceId,
-        paint: { "fill-color": "#74978b", "fill-opacity": .43, "fill-antialias": true, "fill-outline-color": "#a5c3b2" } }, before);
+        paint: { "fill-color": "#698f84", "fill-opacity": .46, "fill-antialias": true } }, before);
+      // Diffused borders make the geographic reveal legible without faking
+      // discovered cells or applying a costly screen-space blur to the world.
+      map.addLayer({ id: "food-go-discovery-fog-glow", type: "line", source: sourceId,
+        paint: { "line-color": "#c2e5cc", "line-width": 5, "line-blur": 2.4, "line-opacity": .45 } }, before);
+      map.addLayer({ id: "food-go-discovery-fog-rim", type: "line", source: sourceId,
+        paint: { "line-color": "#dfefcb", "line-width": 1.2, "line-opacity": .48 } }, before);
     }
     const refresh = () => {
       const bounds = map.getBounds();
