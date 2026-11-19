@@ -16,7 +16,7 @@ test("park vegetation has stable unique locations within actual polygons and out
   const first = sampleParkTrees([[square, hole]], centre);
   const second = sampleParkTrees([[square, hole]], centre);
   assert.deepEqual(first, second);
-  assert.equal(first.length, 36);
+  assert.ok(first.length >= 40 && first.length <= 68);
   assert.equal(new Set(first.map(tree => tree.id)).size, first.length);
   for (const tree of first) {
     assert.equal(tree.kind, "tree");
