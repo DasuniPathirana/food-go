@@ -38,6 +38,7 @@ export type AtlasCanvasProps = {
   location?: AtlasSelection | null; accuracy?: number; heading?: number; route?: LineString | null;
   onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
   onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
+  onDemoTreasure?: () => void;
 };
 
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
@@ -176,6 +177,13 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       }
       map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
       map.on("click", event => {
+        if (new URLSearchParams(window.location.search).get("world-demo") === "1") {
+          const chest = map.project([144.96915, -37.81790]);
+          if (Math.hypot(event.point.x - chest.x, event.point.y - chest.y) <= 42) {
+            latest.current.onDemoTreasure?.();
+            return;
+          }
+        }
         const point = event.lngLat.wrap();
         latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
       });
