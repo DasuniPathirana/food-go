@@ -156,19 +156,18 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       : stop === "treasure"
         ? { longitude: 144.96915, latitude: -37.81790 }
         : initialPosition;
+    // The player's already-tested follow camera keeps nearby geographic
+    // provider tiles visible. The experimental free-camera tour produced empty
+    // mint terrain on the captured park view and is deliberately disabled.
+    setDemoFocus(null);
     if (location.mode === "manual") {
       walk.cancel(); location.place(point); walk.place(point);
+      setSelected(null); setFollow(true); setFocus(n => n + 1);
+      setPerspective(stop === "park" ? "overhead" : "third");
+    } else {
+      // Live GPS remains unchanged: the tour only browses a destination.
+      setFollow(false); setPerspective("overhead"); setSelected(point);
     }
-    // Tour camera moves freely; live GPS stays untouched, manual movements
-    // remain session previews and NEVER qualify for real rewards.
-    setSelected(null);
-    setFollow(false);
-    setPerspective("overhead");
-    setDemoFocus(previous => ({
-      ...point, zoom: stop === "park" ? 18.1 : stop === "treasure" ? 18.2 : 17.25,
-      pitch: stop === "park" ? 53 : 55,
-      nonce: (previous?.nonce ?? 0) + 1,
-    }));
     setSelectedName("");
     if (stop === "treasure") setDemoTreasureToken(token => token + 1);
   }
