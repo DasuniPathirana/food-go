@@ -4,6 +4,8 @@
  * Visual-only: objects never authorize restaurant visits, rewards or inventory.
  */
 import { MercatorCoordinate, type CustomLayerInterface } from "maplibre-gl";
+import { addFacadeDressing } from "./game-world-facade-render";
+import type { FacadeObject } from "./game-world-facades";
 import {
   AmbientLight, BoxGeometry, Camera, CanvasTexture, CircleGeometry, Color, ConeGeometry,
   CylinderGeometry, DirectionalLight, DodecahedronGeometry, Group, HemisphereLight,
@@ -18,12 +20,14 @@ export type GameWorldObject = {
   id: string;
   longitude: number;
   latitude: number;
-  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure";
+  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure" | "facade";
   /** Decorative building footprint dimensions/roof altitude, in metres. */
   width?: number;
   depth?: number;
   height?: number;
   variant?: number;
+  base?: number;
+  ring?: readonly (readonly number[])[];
 };
 
 const hues = {
@@ -35,6 +39,7 @@ const hues = {
   tree: { main: 0x5f9576, trim: 0x285945 },
   roof: { main: 0x7a9e9c, trim: 0x305b5c },
   treasure: { main: 0xffd15f, trim: 0x076f71 },
+  facade: { main: 0xd9cdb8, trim: 0x40736d },
 } as const;
 
 type TreePosition = { x: number; z: number; seed: number };
@@ -281,7 +286,7 @@ function makeTreasure(): Group {
 export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]): CustomLayerInterface {
   const valid = objects.filter(item =>
     Number.isFinite(item.longitude) && Math.abs(item.longitude) <= 180 &&
-    Number.isFinite(item.latitude) && Math.abs(item.latitude) < 85).slice(0, 128);
+    Number.isFinite(item.latitude) && Math.abs(item.latitude) < 85).slice(0, 220);
   const scene = new Scene();
   const camera = new Camera();
   let renderer: WebGLRenderer | null = null;
@@ -303,6 +308,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       // Avoid huge world-coordinate offsets if a venue directory spans regions.
       if (Math.hypot(dx, dz) > 3000) continue;
       if (point.kind === "tree") { grove.push({ x: dx, z: dz, seed: seedFromId(point.id) }); continue; }
+      if (point.kind === "facade") continue;
       const beacon = point.kind === "roof" ? makeRoof(point)
         : point.kind === "treasure" ? makeTreasure() : makeBeacon(point.kind);
       beacon.position.set(dx, 0, dz);
@@ -310,6 +316,10 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       scene.add(beacon);
     }
     addParkForest(scene, grove);
+    // Batched architectural windows change the whole city silhouette at close
+    // zoom without replacing road geography or the underlying map footprint.
+    const facades=valid.filter((p):p is FacadeObject => p.kind === "facade" && Array.isArray(p.ring));
+    addFacadeDressing(scene, facades, origin, unit);
     scene.add(new AmbientLight(0xffffff, 0.78));
     scene.add(new HemisphereLight(0xf3f6e4, 0x507768, 1.55));
     const sun = new DirectionalLight(0xffe9c1, 1.8);
