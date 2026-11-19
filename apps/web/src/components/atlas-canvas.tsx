@@ -41,6 +41,8 @@ export type AtlasCanvasProps = {
   onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
   onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
   onDemoTreasure?: () => void;
+  /** Explicit map-only focus for the opt-in, non-redeemable demo tour. */
+  demoFocus?: (AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null;
 };
 
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
@@ -249,6 +251,18 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       mapRef.current = null; active?.remove();
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const target = props.demoFocus;
+    if (!ready || !map || !target || !valid(target)) return;
+    // Public map movement only; changes neither the device GPS nor rewards.
+    map.easeTo({
+      center: [target.longitude, target.latitude],
+      zoom: target.zoom, pitch: target.pitch,
+      duration: duration(),
+    });
+  }, [ready, props.demoFocus?.nonce]);
 
   useEffect(() => {
     const map = mapRef.current;
