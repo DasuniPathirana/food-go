@@ -89,6 +89,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const roofSignature = useRef("");
   const parkSignature = useRef("");
   const [worldEpoch, setWorldEpoch] = useState(0);
+  const worldRegion = useRef<AtlasSelection | null>(null);
   const [zoom, setZoom] = useState(homeZoom);
   const [bearing, setBearing] = useState(-18);
   const [tileIssue, setTileIssue] = useState(false);
@@ -262,14 +263,22 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         parkSignature.current = signature;
         setParkTrees(trees);
       }
-      const roofs = decorate ? rooftopsFromMap(map) : [];
+      const roofs = decorate ? rooftopsFromMap(map).slice(0, window.innerWidth < 640 ? 22 : 32) : [];
       const roofsKey = roofs.map(roof => roof.id + ":" + roof.height).join("|");
       if (roofsKey !== roofSignature.current) {
         roofSignature.current = roofsKey;
         setRoofDetails(roofs);
       }
     };
-    const moved = () => { setWorldEpoch(value => value + 1); update(); };
+    const moved = () => {
+      const centre = map.getCenter();
+      const here = { longitude: centre.lng, latitude: centre.lat };
+      if (!worldRegion.current || mapDistance(worldRegion.current, here) > 160) {
+        worldRegion.current = here;
+        setWorldEpoch(value => value + 1);
+      }
+      update();
+    };
     update();
     map.on("idle", update);
     map.on("moveend", moved);
