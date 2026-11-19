@@ -33,7 +33,7 @@ function jitter(x: number, y: number): number {
 }
 
 /** Pure sampler: bounded area and stable world grid keep positions repeatable. */
-export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre, limit = 36): GameWorldObject[] {
+export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre, limit = 68): GameWorldObject[] {
   if (!Number.isFinite(centre.longitude) || !Number.isFinite(centre.latitude) || Math.abs(centre.latitude) > 83) return [];
   const cos = Math.max(0.15, Math.cos(centre.latitude * Math.PI / 180));
   // Global Web Mercator metres anchor the planting grid. Using a grid based
@@ -63,6 +63,8 @@ export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre
     for (let x = Math.floor(west / step); x <= Math.ceil(east / step); x++) {
       for (let y = Math.floor(south / step); y <= Math.ceil(north / step); y++) {
         if ((x + y * 3) % 5 === 0) continue; // Keep park lawns visible.
+        // Broad clusters leave inviting open lawns rather than a uniform tree grid.
+        if (jitter(Math.floor(x / 4), Math.floor(y / 4)) < 0.22) continue;
         const worldX = (x + 0.3 + jitter(x, y) * 0.4) * step;
         const worldY = (y + 0.3 + jitter(y, x) * 0.4) * step;
         if (worldX < west || worldX > east || worldY < south || worldY > north) continue;
@@ -81,7 +83,7 @@ export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre
   }
   return [...trees.values()]
     .sort((a, b) => a.distance - b.distance || a.value.id.localeCompare(b.value.id))
-    .slice(0, Math.max(0, Math.min(limit, 48)))
+    .slice(0, Math.max(0, Math.min(limit, 80)))
     .map(item => item.value);
 }
 
