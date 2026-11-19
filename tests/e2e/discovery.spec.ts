@@ -34,12 +34,13 @@ test("discovery fog has real geographic gaps and manual preview never contacts s
   let calls = 0; page.on("request", request => { if (new URL(request.url()).pathname === "/api/exploration") calls++; });
   await fixture(page);
   expect((await fog(page)).features).toBe(0);
-  await page.locator('summary[aria-label="Map layers"]').click();
+  await page.locator('summary[aria-label="Game graphics settings"]').click();
   await page.getByRole("button", { name: "Discovery fog", exact: true }).click();
-  await page.locator('summary[aria-label="Map layers"]').click();
+  await page.locator('summary[aria-label="Game graphics settings"]').click();
   await expect.poll(async () => (await fog(page)).features).toBeGreaterThan(0);
   await expect.poll(async () => (await fog(page)).centreCovered).toBe(0);
   expect((await fog(page)).paint).toBeLessThan(.5);
+  await page.locator('summary[aria-label="Open game details and discovery settings"]').click();
   await page.locator("summary").filter({ hasText: "Area discovery" }).click();
   await expect(page.getByText(/of the visible grid explored/)).toBeVisible();
   await expect(page.getByText("Account saving is not enabled yet. You can explore with a session preview.")).toBeVisible();
@@ -51,6 +52,7 @@ test("discovery fog has real geographic gaps and manual preview never contacts s
 
 test("large views defer bounded fog and WebGL recovery preserves its preview", async ({ page }) => {
   await fixture(page);
+  await page.locator('summary[aria-label="Open game details and discovery settings"]').click();
   await page.locator("summary").filter({ hasText: "Area discovery" }).click();
   await page.getByRole("button", { name: "Show discovery fog", exact: true }).click();
   await expect.poll(async () => (await fog(page)).features).toBeGreaterThan(0);
