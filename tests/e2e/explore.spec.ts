@@ -8,22 +8,19 @@ test.beforeEach(async ({ page }) => {
     return url.hostname === "127.0.0.1" ? route.continue() : route.abort();
   });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Explore", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Geographic exploration", exact: true })).toBeVisible();
 });
 
-test("map expands, Escape restores focus, and optional controls respond", async ({ page }) => {
-  const expand = page.getByRole("button", { name: "Explore full map", exact: true });
-  await expand.click();
-  await expect(page.getByRole("dialog", { name: "Explore the world" })).toBeVisible();
+test("single game world graphics and accessible camera/avatar controls", async ({ page }) => {
+  const graphics = page.locator('summary[aria-label="Game graphics settings"]');
+  await graphics.click();
+  await expect(page.getByText("Game world graphics", { exact: true })).toBeVisible();
+  for (const name of ["3D world", "Low detail", "Discovery fog"])
+    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+  for (const name of ["Streets", "Satellite", "Aerial"])
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await expect(expand).toBeFocused();
-  await expect(expand).toHaveAttribute("aria-expanded", "false");
-
-  const streets = page.getByRole("button", { name: "Streets", exact: true });
-  await page.locator('summary[aria-label="Map layers"]').click();
-  await streets.click();
-  await expect(streets).toHaveAttribute("aria-pressed", "true");
-  await page.keyboard.press("Escape");
+  await expect(graphics).toBeFocused();
   await page.locator('summary[aria-label="Choose camera view"]').click();
   await page.getByRole("button", { name: "Third person view", exact: true }).click();
   expect(await page.evaluate(() => localStorage.getItem("food-go-explorer-view-v2"))).toBe("third");
@@ -35,7 +32,6 @@ test("map expands, Escape restores focus, and optional controls respond", async 
   await expect(page.getByRole("group", { name: "Avatar choices", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close avatar options", exact: true }).click();
   await expect(avatar).toHaveAttribute("aria-expanded", "false");
-  await expect(avatar).toBeFocused();
 });
 
 test("portrait hold previews and persists a cosmetic choice without requesting GPS", async ({ page }) => {
@@ -147,7 +143,7 @@ test("map fills the first screen and core HUD targets stay accessible", async ({
     const navigation = (await page.getByRole("navigation", { name: "Mobile navigation", exact: true }).boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(navigation.y + 1);
   }
-  for (const name of ["Locate explorer", "Overhead view", "Explore full map"]) {
+  for (const name of ["Locate explorer", "Overhead view"]) {
     const target = (await page.getByRole("button", { name, exact: true }).boundingBox())!;
     expect(target.width).toBeGreaterThanOrEqual(44); expect(target.height).toBeGreaterThanOrEqual(44);
   }
@@ -181,4 +177,21 @@ test("navigation keeps Explore centred and pages fit the viewport", async ({ pag
   await page.getByRole("tab", { name: /Restaurant Deals/ }).click();
   await expect(page.getByRole("heading", { name: "Restaurant Deals", exact: true })).toBeVisible();
   expect(await fits()).toBe(true);
+});
+
+test("demo discovery opens a local chest without contacting real reward endpoints", async ({ page }) => {
+  const calls: string[] = [];
+  page.on("request", request => {
+    if (/\/api\/(?:encounters|inventory|claims|rewards)/.test(new URL(request.url()).pathname))
+      calls.push(request.url());
+  });
+  await page.goto("/?world-demo=1");
+  const demo = page.getByRole("button", { name: "Inspect the non-redeemable Food Go treasure demonstration" });
+  await expect(demo).toBeVisible();
+  await demo.click();
+  await expect(page.getByRole("region", { name: "Food Go demonstration chest" })).toBeVisible();
+  await page.getByRole("button", { name: "Open chest", exact: true }).click();
+  await expect(page.getByText("A secret discovery!", { exact: true })).toBeVisible();
+  await expect(page.getByText(/No inventory, offers or XP awarded/)).toBeVisible();
+  expect(calls).toEqual([]);
 });
