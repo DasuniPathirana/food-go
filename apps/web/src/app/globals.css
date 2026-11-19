@@ -2,6 +2,8 @@
 
 @font-face { font-family: "Bricolage Grotesque"; src: url("/fonts/bricolage-grotesque-variable.ttf") format("truetype"); font-style: normal; font-weight: 200 800; font-display: swap; }
 @font-face { font-family: "Source Sans 3"; src: url("/fonts/source-sans-3-variable.ttf") format("truetype"); font-style: normal; font-weight: 200 900; font-display: swap; }
+@font-face { font-family: "Fredoka"; src: url("/fonts/fredoka-variable.ttf") format("truetype"); font-style: normal; font-weight: 300 700; font-display: swap; }
+@font-face { font-family: "Outfit"; src: url("/fonts/outfit-variable.ttf") format("truetype"); font-style: normal; font-weight: 100 900; font-display: swap; }
 
 * {
   box-sizing: border-box;
@@ -3410,6 +3412,7 @@ h1,h2,h3 { font-optical-sizing: auto; }
 
 .brand-go { font-weight: inherit; }
 .main-content.discovery-main:has([aria-label="Geographic exploration"]) { padding: 0; max-width: none; }
+.main-content.discovery-main:has([aria-label="Explore map"]) { padding: 0; max-width: none; }
 .brand-icon, .brand-go, .brand-dot { color: var(--petrol); }
 .header-inner { max-width: 1600px; }
 .site-header .brand { color: var(--ink); }
