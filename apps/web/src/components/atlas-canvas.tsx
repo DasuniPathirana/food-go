@@ -333,7 +333,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     // High-priority demo landmarks and restaurant locations must appear before
     // optional trees/roofs. Otherwise the scene object budget can cut off the
     // clickable visual chest when many park features are loaded.
-    const fixture: GameWorldObject[] = demo ? [
+    const fixture: GameWorldObject[] = demo ? ([
       { id: "demo-city-food-station-visual-only", longitude: 144.96783,
         latitude: -37.81736, kind: "restaurant" },
       { id: "demo-city-cafe-visual-only", longitude: 144.96885,
@@ -342,7 +342,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         latitude: -37.81305, kind: "market" },
       { id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
         latitude: -37.81790, kind: "treasure" },
-    ].filter(point => mapDistance(point, reference) < 1250) : [];
+    ] satisfies GameWorldObject[]).filter(point => mapDistance(point, reference) < 1250) : [];
     const localDemoPark = demo && mapDistance(reference,
       { longitude: 144.9794, latitude: -37.8134 }) < 850 ? demoParkScenery() : [];
     const nearby: GameWorldObject[] = [
