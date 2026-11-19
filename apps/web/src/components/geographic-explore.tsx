@@ -65,6 +65,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl");
   const [graphicsAttempt, setGraphicsAttempt] = useState(0);
   const [demoTreasureToken, setDemoTreasureToken] = useState(0);
+  const [demoFocus, setDemoFocus] = useState<(AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null>(null);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
@@ -157,13 +158,17 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         : initialPosition;
     if (location.mode === "manual") {
       walk.cancel(); location.place(point); walk.place(point);
-      setSelected(null); setFollow(true); setFocus(n => n + 1);
-      setPerspective(stop === "treasure" ? "close" : "overhead");
-    } else {
-      // A live GPS session can inspect but never teleport to a demo coordinate.
-      setFollow(false); setPerspective("overhead");
-      setSelected(point);
     }
+    // Tour camera moves freely; live GPS stays untouched, manual movements
+    // remain session previews and NEVER qualify for real rewards.
+    setSelected(null);
+    setFollow(false);
+    setPerspective("overhead");
+    setDemoFocus(previous => ({
+      ...point, zoom: stop === "park" ? 18.1 : stop === "treasure" ? 18.2 : 17.25,
+      pitch: stop === "park" ? 53 : 55,
+      nonce: (previous?.nonce ?? 0) + 1,
+    }));
     setSelectedName("");
     if (stop === "treasure") setDemoTreasureToken(token => token + 1);
   }
@@ -220,7 +225,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   const canvasProps: AtlasCanvasProps = {
-    places: stops, selected, imagery, threeD: threeD && !lowDetail, lowDetail, perspective, player, followPlayer: follow, focusPlayerNonce: focus,
+    places: stops, selected, imagery, threeD: threeD && !lowDetail, lowDetail, perspective, player, followPlayer: follow, focusPlayerNonce: focus, demoFocus,
     playerTransitionMs: location.mode === "live" ? 600 : 80, onBearingChange: setMapBearing,
     deviceHeading: compass.heading, onEyeLook: compass.stop,
     discoveryEnabled: discovery.enabled, discoveredCells: discovery.visibleCells, onDiscoveryView: setDiscoveryView,
