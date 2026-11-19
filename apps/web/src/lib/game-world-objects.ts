@@ -5,7 +5,7 @@
  */
 import { MercatorCoordinate, type CustomLayerInterface } from "maplibre-gl";
 import {
-  AmbientLight, BoxGeometry, Camera, CircleGeometry, Color, ConeGeometry,
+  AmbientLight, BoxGeometry, Camera, CanvasTexture, CircleGeometry, Color, ConeGeometry,
   CylinderGeometry, DirectionalLight, DodecahedronGeometry, Group, HemisphereLight,
   InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshStandardMaterial,
   Object3D, OctahedronGeometry, Scene, TorusGeometry, Vector3, WebGLRenderer,
@@ -50,8 +50,21 @@ function addParkForest(scene: Scene, positions: readonly TreePosition[]): void {
   const leafMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.88 });
   const pineMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.86 });
   const shrubMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.91 });
+  // A 64px one-time procedural alpha mask gives soft canopy shade rather
+  // than the conspicuous flat circles from the original park prototype.
+  const shadowCanvas = document.createElement("canvas");
+  shadowCanvas.width = shadowCanvas.height = 64;
+  const ctx = shadowCanvas.getContext("2d");
+  if (ctx) {
+    const glow = ctx.createRadialGradient(32, 32, 3, 32, 32, 31);
+    glow.addColorStop(0, "rgba(28,68,50,0.38)");
+    glow.addColorStop(.45, "rgba(30,70,51,0.23)");
+    glow.addColorStop(1, "rgba(30,70,51,0)");
+    ctx.fillStyle = glow; ctx.fillRect(0,0,64,64);
+  }
+  const shadowTexture = new CanvasTexture(shadowCanvas);
   const shadeMaterial = new MeshBasicMaterial({
-    color: 0x295c4b, transparent: true, opacity: 0.13, depthWrite: false,
+    map: shadowTexture, transparent: true, opacity: .68, depthWrite: false,
     polygonOffset: true, polygonOffsetFactor: -1,
   });
   const trunks = new InstancedMesh(new CylinderGeometry(0.27, 0.42, 3.2, 8), trunkMaterial, positions.length);
@@ -301,7 +314,10 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
         const mesh = node as Mesh<BufferGeometry, Material | Material[]>;
         if (!mesh.isMesh) return;
         mesh.geometry.dispose();
-        for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) material.dispose();
+        for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+          (material as MeshBasicMaterial).map?.dispose();
+          material.dispose();
+        }
       });
       renderer?.dispose();
       renderer = null;
