@@ -163,7 +163,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     if (location.mode === "manual") {
       walk.cancel(); location.place(point); walk.place(point);
       setSelected(null); setFollow(true); setFocus(n => n + 1);
-      setPerspective(stop === "park" ? "overhead" : "third");
+      setPerspective("overhead");
     } else {
       // Live GPS remains unchanged: the tour only browses a destination.
       setFollow(false); setPerspective("overhead"); setSelected(point);
