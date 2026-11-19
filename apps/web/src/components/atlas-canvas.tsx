@@ -13,6 +13,7 @@ import { parkTreesFromMap } from "@/lib/game-world-greenery";
 import { rooftopsFromMap } from "@/lib/game-world-architecture";
 import { facadesFromMap, type FacadeObject } from "@/lib/game-world-facades";
 import { streetLampsFromMap } from "@/lib/game-world-streetscape";
+import { demoParkScenery } from "@/lib/demo-park-scenery";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
 import { mapDistance } from "@/lib/map-game";
@@ -328,22 +329,11 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!threeD || imagery !== "game" || props.lowDetail) return;
     const centre = map.getCenter();
     const reference = { latitude: centre.lat, longitude: centre.lng };
-    const nearby: GameWorldObject[] = [
-      ...parkTrees,
-      ...roofDetails,
-      ...facadeDetails,
-      ...streetLights,
-      ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
-        id: place.id, longitude: place.longitude, latitude: place.latitude,
-        kind: place.kind ?? "building" as const,
-      })),
-    ];
-    if (valid(selected) && mapDistance(selected, reference) < 1250) nearby.push({
-      id: "selected-waypoint", longitude: selected.longitude,
-      latitude: selected.latitude, kind: "waypoint",
-    });
     const demo = new URLSearchParams(window.location.search).get("world-demo") === "1";
-    if (demo) nearby.push(
+    // High-priority demo landmarks and restaurant locations must appear before
+    // optional trees/roofs. Otherwise the scene object budget can cut off the
+    // clickable visual chest when many park features are loaded.
+    const fixture: GameWorldObject[] = demo ? [
       { id: "demo-city-food-station-visual-only", longitude: 144.96783,
         latitude: -37.81736, kind: "restaurant" },
       { id: "demo-city-cafe-visual-only", longitude: 144.96885,
@@ -352,7 +342,25 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         latitude: -37.81305, kind: "market" },
       { id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
         latitude: -37.81790, kind: "treasure" },
-    );
+    ].filter(point => mapDistance(point, reference) < 1250) : [];
+    const localDemoPark = demo && mapDistance(reference,
+      { longitude: 144.9794, latitude: -37.8134 }) < 850 ? demoParkScenery() : [];
+    const nearby: GameWorldObject[] = [
+      ...fixture,
+      ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
+        id: place.id, longitude: place.longitude, latitude: place.latitude,
+        kind: place.kind ?? "building" as const,
+      })),
+      ...localDemoPark,
+      ...parkTrees,
+      ...facadeDetails,
+      ...roofDetails,
+      ...streetLights,
+    ];
+    if (valid(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
+      id: "selected-waypoint", longitude: selected.longitude,
+      latitude: selected.latitude, kind: "waypoint",
+    });
     if (nearby.length === 0) return;
     const layer = createGameWorldObjectLayer(nearby);
     const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
