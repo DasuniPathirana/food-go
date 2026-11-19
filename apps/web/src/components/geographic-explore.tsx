@@ -104,6 +104,16 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       else if (localStorage.getItem("food-go-explorer-view-v1") === "first") setPerspective("first");
     } catch { /* Optional browser preference. */ }
   }, []);
+  // The opt-in client showcase starts closer to the player so actual scene
+  // details are visible. Regular Explore keeps the user's chosen camera view.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("world-demo") !== "1") return;
+    setPerspective("third");
+    setThreeD(true);
+    setLowDetail(false);
+    setFollow(true);
+    setFocus(n => n + 1);
+  }, []);
   useLayoutEffect(() => {
     if (!avatarOpen || !avatarPanel.current) return;
     avatarPanel.current.scrollIntoView({ block: "nearest", behavior: "instant" });
@@ -158,7 +168,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     if (location.mode === "manual") {
       walk.cancel(); location.place(point); walk.place(point);
       setSelected(null); setFollow(true); setFocus(n => n + 1);
-      setPerspective(stop === "park" ? "overhead" : "third");
+      setPerspective(stop === "city" ? "third" : "close");
     } else {
       // A live GPS session can inspect but never teleport to a demo coordinate.
       setFollow(false); setPerspective("overhead");
