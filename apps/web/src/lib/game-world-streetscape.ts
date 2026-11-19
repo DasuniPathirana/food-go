@@ -65,11 +65,13 @@ export function sampleStreetLamps(
 
 /** Works worldwide where the normal public map exposes transportation lines. */
 export function streetLampsFromMap(map: GeographicMap, limit: number): GameStreetLamp[] {
-  if(map.getZoom()<16.7)return [];
+  if(map.getZoom()<15.9)return [];
   const layers=(map.getStyle()?.layers??[]).filter(layer=>{
     if(layer.type!=="line")return false;
-    return /road_(major|minor|residential|primary|secondary|tertiary)|road_minor|road_major/u.test(layer.id) &&
-      !/rail|tunnel|casing|footway|path|oneway/u.test(layer.id);
+    const transport = "source-layer" in layer && layer["source-layer"] === "transportation";
+    const road = /road|highway|street/u.test(layer.id);
+    return (transport || road) &&
+      !/rail|tunnel|casing|footway|path|cycleway|oneway|boundary|runway|bridge_casing/u.test(layer.id);
   }).map(x=>x.id);
   if(!layers.length)return [];
   let features:ReturnType<GeographicMap["queryRenderedFeatures"]>;
