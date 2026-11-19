@@ -319,10 +319,16 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       latitude: selected.latitude, kind: "waypoint",
     });
     const demo = new URLSearchParams(window.location.search).get("world-demo") === "1";
-    if (demo) nearby.push({
-      id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
-      latitude: -37.81790, kind: "treasure",
-    });
+    if (demo) nearby.push(
+      { id: "demo-city-food-station-visual-only", longitude: 144.96783,
+        latitude: -37.81736, kind: "restaurant" },
+      { id: "demo-city-cafe-visual-only", longitude: 144.96885,
+        latitude: -37.81742, kind: "cafe" },
+      { id: "demo-park-food-station-visual-only", longitude: 144.97911,
+        latitude: -37.81305, kind: "market" },
+      { id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
+        latitude: -37.81790, kind: "treasure" },
+    );
     if (nearby.length === 0) return;
     const layer = createGameWorldObjectLayer(nearby);
     const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
