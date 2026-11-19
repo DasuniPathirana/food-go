@@ -151,6 +151,30 @@ function makeBeacon(kind: GameWorldObject["kind"]): Group {
   const brass = new MeshStandardMaterial({ color: tone.main, metalness: 0.3, roughness: 0.42 });
   const petrol = new MeshStandardMaterial({ color: tone.trim, metalness: 0.18, roughness: 0.65 });
   const cream = new MeshStandardMaterial({ color: 0xfff3d8, emissive: tone.main, emissiveIntensity: 0.22, roughness: 0.4 });
+  if (kind === "restaurant" || kind === "cafe" || kind === "market") {
+    // A recognizable Food Go food-discovery station, not an invented restaurant
+    // building. Real venue identity/approval still comes from the catalogue.
+    const base = new Mesh(new CylinderGeometry(2.05, 2.35, .38, 16), petrol);
+    base.position.y = .19; group.add(base);
+    const podium = new Mesh(new CylinderGeometry(1.4, 1.62, 1.0, 12), brass);
+    podium.position.y = .85; group.add(podium);
+    const counter = new Mesh(new CylinderGeometry(1.82, 1.72, .18, 16), cream);
+    counter.position.y = 1.45; group.add(counter);
+    const bowl = new Mesh(new CylinderGeometry(1.12, .66, .95, 14, 1, true), petrol);
+    bowl.position.y = 2.1; group.add(bowl);
+    const rim = new Mesh(new TorusGeometry(1.09, .14, 9, 28), brass);
+    rim.rotation.x = Math.PI / 2; rim.position.y = 2.6; group.add(rim);
+    const food = new Mesh(new DodecahedronGeometry(.82, 0), cream);
+    food.position.y = 2.55; group.add(food);
+    for (let i = 0; i < 3; i++) {
+      const steam = new Mesh(new TorusGeometry(.28, .057, 5, 20, Math.PI * 1.25), cream);
+      steam.position.set((i-1)*.42, 3.55 + (i%2)*.35, 0);
+      steam.rotation.y = i * .6; group.add(steam);
+    }
+    const halo = new Mesh(new TorusGeometry(2.1, .1, 8, 32), brass);
+    halo.rotation.x = Math.PI / 2; halo.position.y = .48; group.add(halo);
+    return group;
+  }
   const pedestal = new Mesh(new CylinderGeometry(1.8, 2.2, 0.42, 10), petrol);
   pedestal.position.y = 0.21;
   group.add(pedestal);
