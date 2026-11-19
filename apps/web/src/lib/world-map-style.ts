@@ -22,7 +22,7 @@ function gameBuildingColour(height: ExpressionSpecification): ExpressionSpecific
   const fallback: ExpressionSpecification = ["*", height, 131];
   const identity: ExpressionSpecification = ["to-number", ["coalesce", ["id"], ["get", "osm_id"], ["get", "id"], fallback], fallback];
   const bucket: ExpressionSpecification = ["%", ["abs", ["round", identity]], GAME_BUILDING_PALETTE.length];
-  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2], GAME_BUILDING_PALETTE[3]];
+  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2], 3, GAME_BUILDING_PALETTE[3], 4, GAME_BUILDING_PALETTE[4], 5, GAME_BUILDING_PALETTE[5], GAME_BUILDING_PALETTE[0]];
 }
 
 /** Keep roof parts ordered instead of flattening several heights onto one plane. */
