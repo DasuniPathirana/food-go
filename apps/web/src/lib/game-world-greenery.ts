@@ -43,7 +43,7 @@ export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre
   const mercatorY = (latitude: number) => earth * Math.log(Math.tan(Math.PI / 4 + latitude * radians / 2));
   const fromX = (x: number) => x / earth / radians;
   const fromY = (y: number) => (2 * Math.atan(Math.exp(y / earth)) - Math.PI / 2) / radians;
-  const step = 32, radius = 400;
+  const step = 27, radius = 650;
   const centreX = mercatorX(centre.longitude), centreY = mercatorY(centre.latitude);
   const projectedRadius = radius / cos;
   const bounds = {
@@ -75,15 +75,15 @@ export function sampleParkTrees(polygons: readonly ParkPolygon[], centre: Centre
         if (distance > radius) continue;
         const id = `park-tree:${x}:${y}`;
         trees.set(id, { value: { id, longitude, latitude, kind: "tree" }, distance });
-        if (trees.size >= 180) break;
+        if (trees.size >= 300) break;
       }
-      if (trees.size >= 180) break;
+      if (trees.size >= 300) break;
     }
-    if (trees.size >= 180) break;
+    if (trees.size >= 300) break;
   }
   return [...trees.values()]
     .sort((a, b) => a.distance - b.distance || a.value.id.localeCompare(b.value.id))
-    .slice(0, Math.max(0, Math.min(limit, 80)))
+    .slice(0, Math.max(0, Math.min(limit, 96)))
     .map(item => item.value);
 }
 
@@ -105,5 +105,5 @@ export function parkTreesFromMap(map: GeographicMap): GameWorldObject[] {
     else if (geometry.type === "MultiPolygon") polygons.push(...geometry.coordinates);
   }
   const center = map.getCenter();
-  return sampleParkTrees(polygons, { longitude: center.lng, latitude: center.lat });
+  return sampleParkTrees(polygons, { longitude: center.lng, latitude: center.lat }, 92);
 }
