@@ -8,7 +8,7 @@ import styles from "./demo-treasure-encounter.module.css";
  * Visual-only showcase, separate from server-owned restaurant encounter claims.
  * Never calls inventory, rewards, GPS or Supabase.
  */
-export function DemoTreasureEncounter() {
+export function DemoTreasureEncounter({ activationToken = 0 }: { activationToken?: number }) {
   const [enabled, setEnabled] = useState(false);
   const [stage, setStage] = useState<"closed" | "opening" | "revealed">("closed");
   const panel = useRef<HTMLDivElement>(null);
@@ -18,6 +18,7 @@ export function DemoTreasureEncounter() {
   useEffect(() => {
     if (stage !== "closed") panel.current?.querySelector<HTMLButtonElement>("button")?.focus();
   }, [stage]);
+  useEffect(() => { if (activationToken > 0) setStage("opening"); }, [activationToken]);
   if (!enabled) return null;
   return <section className={styles.demo} aria-label="Demonstration treasure encounter">
     {stage === "closed" ? <button type="button" className={styles.dock} onClick={() => setStage("opening")}
