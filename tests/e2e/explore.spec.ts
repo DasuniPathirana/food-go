@@ -195,3 +195,22 @@ test("demo discovery opens a local chest without contacting real reward endpoint
   await expect(page.getByText(/No inventory, offers or XP awarded/)).toBeVisible();
   expect(calls).toEqual([]);
 });
+
+test("guided client tour reaches city park and treasure without claiming real rewards", async ({ page }) => {
+  const claims: string[] = [];
+  page.on("request", request => {
+    if (request.method() !== "GET" && /\/api\/(?:encounters|inventory|claims|rewards)/.test(new URL(request.url()).pathname))
+      claims.push(request.url());
+  });
+  await page.goto("/?world-demo=1");
+  const tour = page.getByRole("button", { name: "Open demo tour" });
+  await expect(tour).toBeVisible();
+  await tour.click();
+  await page.getByRole("button", { name: /Park discovery/ }).click();
+  await expect(tour).toBeVisible();
+  await tour.click();
+  await page.getByRole("button", { name: /Treasure encounter/ }).click();
+  await expect(page.getByRole("region", { name: "Food Go demonstration chest" })).toBeVisible();
+  await expect(page.getByText(/Visual demonstration only/)).toBeVisible();
+  expect(claims).toEqual([]);
+});
