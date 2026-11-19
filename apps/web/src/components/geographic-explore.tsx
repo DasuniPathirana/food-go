@@ -63,6 +63,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [perspective, setPerspective] = useState<ExplorerPerspective>("overhead");
   const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl");
   const [graphicsAttempt, setGraphicsAttempt] = useState(0);
+  const [demoTreasureToken, setDemoTreasureToken] = useState(0);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
@@ -212,6 +213,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       distanceTransitionMs={location.mode === "live" ? 600 : 80}
       animate={!paused && (preferences.preferences.idleMotion || avatarWalking || action !== "idle")} onActivate={() => perform("wave")}/>,
     onSelect: selectPoint, onReady: ready, onUnavailable: unavailable, onCameraInteraction: cameraMoved,
+    onDemoTreasure: () => setDemoTreasureToken(token => token + 1),
   };
   return <section className={styles.atlas} aria-label="Geographic exploration">
     <MapFrame label="Explore the world" className={styles.fullFrame}>
@@ -248,7 +250,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
         <button type="button" onClick={retryGraphics}>Retry 3D</button>
       </div>}
-      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoTreasureEncounter/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoTreasureEncounter activationToken={demoTreasureToken}/>
         {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
