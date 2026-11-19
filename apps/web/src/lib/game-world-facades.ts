@@ -7,7 +7,7 @@
  */
 import type { Map as GeographicMap } from "maplibre-gl";
 
-export type GeoPoint = readonly [number, number];
+export type GeoPoint = readonly number[];
 export type FacadeFootprint = {
   id: string;
   ring: readonly GeoPoint[];
@@ -61,7 +61,10 @@ export function sampleFacades(
     const base = Math.max(0, Math.min(height-3, inputItem.base ? 2+0.62*inputItem.base : 0));
     result.push({distance,item:{
       id:stableId,kind:"facade",longitude,latitude,
-      ring:inputItem.ring.slice(0,-1).filter((point,i,arr)=>i===0||Math.hypot(point[0]-arr[i-1][0],point[1]-arr[i-1][1])>1e-7),
+      ring:(inputItem.ring.at(-1)?.[0]===inputItem.ring[0][0] &&
+        inputItem.ring.at(-1)?.[1]===inputItem.ring[0][1]
+        ? inputItem.ring.slice(0,-1) : inputItem.ring)
+        .filter((point,i,arr)=>i===0||Math.hypot(point[0]-arr[i-1][0],point[1]-arr[i-1][1])>1e-7),
       height,base,
     }});
   }
