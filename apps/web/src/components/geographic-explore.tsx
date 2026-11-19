@@ -14,6 +14,7 @@ import type { AtlasCanvasProps, AtlasImagery, AtlasSelection } from "./atlas-can
 import { MapExpandButton, MapFrame } from "./map-frame";
 import { MapPlayer } from "./map-player";
 import { DemoTreasureEncounter } from "./demo-treasure-encounter";
+import { DemoWorldTour, type DemoStop } from "./demo-world-tour";
 import { ExplorerControl } from "./explorer-control";
 import { AvatarCustomizer, type AvatarAction } from "./avatar-customizer";
 import { useExplorerLocation } from "./use-explorer-location";
@@ -147,6 +148,25 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       setChosenVenues(allVenues.filter(v => ids.has(v.id)));
     }
   }
+  function previewDemo(stop: DemoStop) {
+    // The guided map tour is visual-only. Never alter or impersonate live GPS.
+    const point = stop === "park"
+      ? { longitude: 144.9794, latitude: -37.8134 }
+      : stop === "treasure"
+        ? { longitude: 144.96915, latitude: -37.81790 }
+        : initialPosition;
+    if (location.mode === "manual") {
+      walk.cancel(); location.place(point); walk.place(point);
+      setSelected(null); setFollow(true); setFocus(n => n + 1);
+      setPerspective(stop === "park" ? "overhead" : "third");
+    } else {
+      // A live GPS session can inspect but never teleport to a demo coordinate.
+      setFollow(false); setPerspective("overhead");
+      setSelected(point);
+    }
+    setSelectedName("");
+    if (stop === "treasure") setDemoTreasureToken(token => token + 1);
+  }
   function perform(next: AvatarAction) { setAction(next); setActionToken(n => n + 1); }
   function editQuery(value: string) {
     searchRequest.current?.abort(); setSearching(false); setQuery(value);
@@ -250,7 +270,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
         <button type="button" onClick={retryGraphics}>Retry 3D</button>
       </div>}
-      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoTreasureEncounter activationToken={demoTreasureToken}/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoWorldTour onSelect={previewDemo}/><DemoTreasureEncounter activationToken={demoTreasureToken}/>
         {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
