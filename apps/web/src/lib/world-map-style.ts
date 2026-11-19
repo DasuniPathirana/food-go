@@ -13,7 +13,7 @@ export const MAP_SOURCE_IDS = {
   accuracy: "food-go-accuracy",
 } as const;
 export const emptyMapFeatures = () => ({ type: "FeatureCollection" as const, features: [] });
-export const GAME_BUILDING_PALETTE = ["#d3d9d1", "#eac7a4", "#b6c9c1", "#c5aaa1", "#e7d8bb", "#a8c0bd"] as const;
+export const GAME_BUILDING_PALETTE = ["#9eaFA4", "#d4a789", "#acc8b9", "#c19489", "#dfc7a2", "#859f9b"] as const;
 
 /** A building keeps its material as the camera moves. Prefer the provider's
  * stable feature ID, then numeric source IDs, then measured height as a fallback.
@@ -73,7 +73,7 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
       const landColour = sourceLayer === "water" || layer.id === "water" ? "#5aaec4"
-        : sourceLayer === "park" || layer.id === "park" ? "#91be91"
+        : sourceLayer === "park" || layer.id === "park" ? "#88b58d"
           : layer.id.includes("wood") ? "#669b7c"
             : /grass|cemetery|pitch/u.test(layer.id) ? "#a4c797"
               : layer.id.includes("wetland") ? "#c6e5d9"
