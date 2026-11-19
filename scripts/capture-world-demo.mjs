@@ -19,7 +19,10 @@ for(const viewport of [{name:"desktop",width:1440,height:900,isMobile:false},
   try{
     await page.goto(origin,{waitUntil:"domcontentloaded",timeout:40000});
     await page.getByRole("button",{name:"Open demo tour"}).waitFor({timeout:30000});
-    await page.waitForTimeout(3500);
+    // A mounted React HUD is not evidence of ready vector tiles or WebGL.
+    // The earlier job captured the loading screen before the map rendered.
+    await page.getByText("Opening world map…",{exact:true}).waitFor({state:"hidden",timeout:45000});
+    await page.waitForTimeout(6000);
     await page.screenshot({path:`${root}/${viewport.name}-city.png`,animations:"disabled"});
     details.scenes.push("city");
     const go=async (name,label,key)=>{
