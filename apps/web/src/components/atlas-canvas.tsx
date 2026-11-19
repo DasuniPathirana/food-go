@@ -11,6 +11,7 @@ import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } f
 import { createGameWorldObjectLayer, GAME_WORLD_OBJECT_LAYER, type GameWorldObject } from "@/lib/game-world-objects";
 import { parkTreesFromMap } from "@/lib/game-world-greenery";
 import { rooftopsFromMap } from "@/lib/game-world-architecture";
+import { facadesFromMap, type FacadeObject } from "@/lib/game-world-facades";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
 import { mapDistance } from "@/lib/map-game";
@@ -86,6 +87,8 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const [ready, setReady] = useState(false);
   const [parkTrees, setParkTrees] = useState<GameWorldObject[]>([]);
   const [roofDetails, setRoofDetails] = useState<GameWorldObject[]>([]);
+  const [facadeDetails, setFacadeDetails] = useState<FacadeObject[]>([]);
+  const facadeSignature = useRef("");
   const roofSignature = useRef("");
   const parkSignature = useRef("");
   const [worldEpoch, setWorldEpoch] = useState(0);
@@ -269,6 +272,14 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         roofSignature.current = roofsKey;
         setRoofDetails(roofs);
       }
+      // A small batched set of real-building facade strips changes the visual
+      // quality at closer camera distances without faking geography.
+      const facades = decorate ? facadesFromMap(map, window.innerWidth < 640 ? 28 : 64) : [];
+      const facadeKey = facades.map(item => item.id + ":" + item.height).join("|");
+      if (facadeKey !== facadeSignature.current) {
+        facadeSignature.current = facadeKey;
+        setFacadeDetails(facades);
+      }
     };
     const moved = () => {
       const centre = map.getCenter();
@@ -297,6 +308,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const nearby: GameWorldObject[] = [
       ...parkTrees,
       ...roofDetails,
+      ...facadeDetails,
       ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
         id: place.id, longitude: place.longitude, latitude: place.latitude,
         kind: place.kind ?? "building" as const,
@@ -316,7 +328,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
     map.addLayer(layer, label);
     return () => { if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER); };
-  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, roofDetails, worldEpoch]);
+  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, roofDetails, facadeDetails, worldEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -529,7 +541,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   const map = mapRef.current;
   function pauseCameraTracking() { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
-  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-game-roof-count={roofDetails.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
+  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-game-roof-count={roofDetails.length} data-game-facade-count={facadeDetails.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
         event.preventDefault(); const centre = map.getCenter().wrap();
