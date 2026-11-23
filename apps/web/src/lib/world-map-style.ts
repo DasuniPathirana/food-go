@@ -87,9 +87,12 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
                         : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#84af65"
                           : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
-      if (sourceLayer === "building") add(layer, "fill-color", gameBuildingColour(["coalesce", ["get", "render_height"], ["get", "height"], 4]), "#000000");
+      if (sourceLayer === "building" || layer.id.includes("building")) {
+        // Client requirement: Hide generic buildings from game presentation
+        add(layer, "fill-opacity", 0, 1);
+        add(layer, "fill-outline-color", "rgba(0,0,0,0)", "#000000");
+      }
       if (sourceLayer === "park" || /wood|grass|cemetery|pitch/u.test(layer.id)) add(layer, "fill-opacity", 0.95, 1);
-      if (sourceLayer === "building") add(layer, "fill-outline-color", "#aeb9a7", layer.paint?.["fill-color"] ?? "#000000");
       if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
     }
     if (layer.type === "line") {
@@ -154,6 +157,10 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
   const survey = { type: "Polygon" as const, coordinates: [[...ATLAS_CORNERS, ATLAS_CORNERS[0]]] };
   const building = base.layers.find(layer => layer.id === "building-3d");
   const streets = base.layers.filter(layer => layer.type !== "fill-extrusion").map(layer => {
+    if (layer.type === "fill" && (layer["source-layer"] === "building" || layer.id.includes("building"))) {
+      // Hide ordinary building fills from game style
+      return { ...layer, layout: { ...layer.layout, visibility: "none" as const }, paint: { ...layer.paint, "fill-opacity": 0 } };
+    }
     if (layer.type === "fill" && layer.id === "water") return { ...layer, paint: { ...layer.paint, "fill-color": "#9fd9e6" } };
     if (layer.type === "fill" && layer.id === "park") return { ...layer, paint: { ...layer.paint, "fill-color": "#c3e5bb" } };
     if (layer.type === "symbol" && layer.id === "poi_transit") return { ...layer, minzoom: Math.max(layer.minzoom ?? 0, 17) };
@@ -178,61 +185,39 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
       id: MAP_SOURCE_IDS.aerial, type: "raster", source: MAP_SOURCE_IDS.aerial,
       layout: { visibility: "none" }, paint: { "raster-fade-duration": 0 },
     },
+    {
+      id: "food-go-accuracy-fill", source: MAP_SOURCE_IDS.accuracy, type: "fill",
+      paint: { "fill-color": "#217fc3", "fill-opacity": 0.12 },
+    },
+    {
+      id: "food-go-accuracy-outline", source: MAP_SOURCE_IDS.accuracy, type: "line",
+      paint: { "line-color": "#217fc3", "line-opacity": 0.5, "line-width": 1.5 },
+    },
+    {
+      id: "food-go-route-casing", source: MAP_SOURCE_IDS.route, type: "line",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#082d27", "line-width": 8, "line-opacity": 0.6 },
+    },
+    {
+      id: "food-go-route-line", source: MAP_SOURCE_IDS.route, type: "line",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#00f0ff", "line-width": 5, "line-dasharray": [1.2, 1.8] },
+    },
+    {
+      id: "food-go-pilot-mask", source: MAP_SOURCE_IDS.pilotMask, type: "fill",
+      paint: { "fill-color": "#183d32", "fill-opacity": 0.16 },
+    },
+    {
+      id: "food-go-pilot-boundary-glow", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#ffd445", "line-width": 7, "line-blur": 2.5, "line-opacity": 0.45 },
+    },
+    {
+      id: "food-go-pilot-boundary-line", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": "#2f6941", "line-width": 2.2, "line-opacity": 0.8 },
+    },
   ];
-  if (building?.type === "fill-extrusion") additions.push({
-    ...building, id: "food-go-world-buildings", minzoom: 14,
-    filter: ["all", ["!", ["has", "hide_3d"]], [">", ["distance", survey], 0]],
-    paint: {
-      ...building.paint,
-      "fill-extrusion-height": ["get", "render_height"],
-      "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-      "fill-extrusion-color": "#e9e7da",
-      "fill-extrusion-opacity": 0.55,
-      "fill-extrusion-vertical-gradient": true,
-    },
-  });
-  additions.push({
-    id: MAP_SOURCE_IDS.buildings, source: MAP_SOURCE_IDS.buildings, type: "fill-extrusion", minzoom: 14,
-    filter: [
-      "all",
-      [">", ["distance", { type: "Point", coordinates: [144.9673, -37.8149] }], 16],
-      [">", ["distance", { type: "Point", coordinates: [144.9664, -37.8156] }], 16],
-      [">", ["distance", { type: "Point", coordinates: [144.9676, -37.8163] }], 12],
-      [">", ["distance", { type: "Point", coordinates: [144.9677, -37.8154] }], 12],
-    ],
-    paint: {
-      "fill-extrusion-height": ["get", "height"],
-      "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
-      "fill-extrusion-color": ["interpolate", ["linear"], ["get", "height"], 0, "#f4ead6", 40, "#ebe9dc", 120, "#c9d7cb", 250, "#b5cec5"],
-      "fill-extrusion-opacity": 0.65,
-      "fill-extrusion-vertical-gradient": true,
-    },
-  }, {
-    id: "food-go-accuracy-fill", source: MAP_SOURCE_IDS.accuracy, type: "fill",
-    paint: { "fill-color": "#217fc3", "fill-opacity": 0.12 },
-  }, {
-    id: "food-go-accuracy-outline", source: MAP_SOURCE_IDS.accuracy, type: "line",
-    paint: { "line-color": "#217fc3", "line-opacity": 0.5, "line-width": 1.5 },
-  }, {
-    id: "food-go-route-casing", source: MAP_SOURCE_IDS.route, type: "line",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#082d27", "line-width": 8, "line-opacity": 0.6 },
-  }, {
-    id: "food-go-route-line", source: MAP_SOURCE_IDS.route, type: "line",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#00f0ff", "line-width": 5, "line-dasharray": [1.2, 1.8] },
-  }, {
-    id: "food-go-pilot-mask", source: MAP_SOURCE_IDS.pilotMask, type: "fill",
-    paint: { "fill-color": "#183d32", "fill-opacity": 0.16 },
-  }, {
-    id: "food-go-pilot-boundary-glow", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#ffd445", "line-width": 7, "line-blur": 2.5, "line-opacity": 0.45 },
-  }, {
-    id: "food-go-pilot-boundary-line", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#2f6941", "line-width": 2.2, "line-opacity": 0.8 },
-  });
 
   // A fixed world raster placeholder keeps the layer IDs stable without making
   // a provider request when the deployment has no satellite account.

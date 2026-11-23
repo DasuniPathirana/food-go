@@ -53,7 +53,7 @@ function photoSource(image: string | undefined) {
 }
 
 /** The map engine owns positioning and click handlers; aria-pressed controls selection. */
-export function createMapPlaceMarker(place: MapPlaceMarker, distanceMetres?: number, rating?: number): HTMLButtonElement {
+export function createMapPlaceMarker(place: MapPlaceMarker, distanceMetres?: number, rating?: number, showLabel = true): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.className = css.marker;
@@ -95,26 +95,29 @@ export function createMapPlaceMarker(place: MapPlaceMarker, distanceMetres?: num
     button.append(shops);
   }
 
-  // Attached Venue Card (The Ovenhouse ★ 4.8 · 180 m)
-  const label = document.createElement("span");
-  label.className = css.label;
-  label.setAttribute("aria-hidden", "true");
+  // Attached Venue Card: only rendered when label display is requested (e.g. selected or top venue)
+  if (showLabel) {
+    const label = document.createElement("span");
+    label.className = css.label;
+    label.setAttribute("aria-hidden", "true");
 
-  const nameSpan = document.createElement("span");
-  nameSpan.className = css.name;
-  nameSpan.textContent = place.name;
-  label.append(nameSpan);
+    const nameSpan = document.createElement("span");
+    nameSpan.className = css.name;
+    nameSpan.textContent = place.name;
+    label.append(nameSpan);
 
-  const metaSpan = document.createElement("span");
-  metaSpan.className = css.meta;
-  const placeRating = rating ?? ((4.7 + (Math.abs(place.name.length * 7) % 3) * 0.1).toFixed(1));
-  const dist = distanceMetres ?? place.distanceMetres;
-  const distanceFormatted = dist
-    ? dist < 950 ? `${Math.round(dist / 10) * 10} m` : `${(dist / 1000).toFixed(1)} km`
-    : "180 m";
-  metaSpan.innerHTML = `<span class="${css.star}">★</span> ${placeRating} · ${distanceFormatted}`;
-  label.append(metaSpan);
+    const metaSpan = document.createElement("span");
+    metaSpan.className = css.meta;
+    const placeRating = rating ?? ((4.7 + (Math.abs(place.name.length * 7) % 3) * 0.1).toFixed(1));
+    const dist = distanceMetres ?? place.distanceMetres;
+    const distanceFormatted = dist
+      ? dist < 950 ? `${Math.round(dist / 10) * 10} m` : `${(dist / 1000).toFixed(1)} km`
+      : "180 m";
+    metaSpan.innerHTML = `<span class="${css.star}">★</span> ${placeRating} · ${distanceFormatted}`;
+    label.append(metaSpan);
 
-  button.append(label);
+    button.append(label);
+  }
+
   return button;
 }

@@ -28,6 +28,8 @@ import { getMallByCoordinate, getMallById, type MallData, type ARCollectibleItem
 import { MallModal } from "./mall-modal";
 import { ARRewardView } from "./ar-reward-view";
 import { useStreetWalk } from "./use-street-walk";
+import { useJourney } from "./journey-provider";
+import { useAdventure } from "./adventure/use-adventure";
 import { mapDistance } from "@/lib/map-game";
 import { isExplorerPerspective, type ExplorerPerspective } from "@/lib/explorer-camera";
 import styles from "./geographic-explore.module.css";
@@ -36,8 +38,8 @@ const Canvas = dynamic(() => import("./atlas-canvas").then(module => module.Atla
 const FlatCanvas = dynamic(() => import("./world-map-fallback").then(module => module.WorldMapFallback), { ssr: false });
 const EncounterPanel = dynamic(() => import("./encounter-panel").then(module => module.EncounterPanel));
 const noVenues: CatalogueVenue[] = [];
-// Open Swanston Street geometry near Federation Square, never a claimed GPS fix.
-const initialPosition = { longitude: 144.9671, latitude: -37.8162 };
+// Walkable Collins Street geometry near Town Hall, never a claimed GPS fix.
+const initialPosition = { longitude: 144.9670, latitude: -37.8153 };
 const initialHeading = 340.0423857123138;
 
 const HERO_LANDMARKS: readonly AtlasDestination[] = [
@@ -110,6 +112,18 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [activeArCollectible, setActiveArCollectible] = useState<ARCollectibleItem | null>(null);
   const compass = useDeviceCompass(perspective === "first" && renderer === "webgl");
   const preferences = useAvatarPreferences();
+  const journey = useJourney();
+  const adventure = useAdventure(signedIn);
+  const realLevel = signedIn && journey?.data ? journey.data.progress.level : undefined;
+  const realXp = signedIn && journey?.data ? journey.data.progress.xp : undefined;
+  const realCoins = signedIn && adventure?.data?.village?.resources ? adventure.data.village.resources.coins : (signedIn && realXp != null ? realXp : undefined);
+  const realActiveQuest = adventure?.data?.quests?.find(q => q.participation && !q.participation.completedAt);
+  const activeQuestProp = realActiveQuest ? {
+    title: "Active Quest",
+    description: realActiveQuest.title,
+    current: realActiveQuest.participation?.awardedXp ? 1 : 0,
+    total: 1,
+  } : null;
   const location = useExplorerLocation(initialPosition);
   const walk = useStreetWalk({ start: location.position, enabled: location.mode === "manual", motionPaused: paused, initialHeading });
   const player = walk.position;
@@ -323,15 +337,11 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
           requesting={location.status === "requesting"} following={follow} expanded={avatarOpen} onLocate={locate} onCustomise={customise}/>
         <FoodGoHud
-          level={24}
-          xp={3820}
-          coins={3820}
-          activeQuest={{
-            title: "Active Quest",
-            description: "Visit The Ovenhouse and leave a review",
-            current: 0,
-            total: 1,
-          }}
+          signedIn={signedIn}
+          level={realLevel}
+          xp={realXp}
+          coins={realCoins}
+          activeQuest={activeQuestProp}
           locationName="Melbourne"
           onSearch={text => {
             setQuery(text);
