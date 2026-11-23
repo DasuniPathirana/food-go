@@ -1,4 +1,5 @@
 import type { AllPaintProperties, Coordinates, ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
+import { melbournePilotBoundaryFeature, melbournePilotMaskFeature } from "@food-go/domain";
 import {
   ATLAS_AERIAL, ATLAS_BUILDINGS, ATLAS_CORNERS, ATLAS_SATELLITE,
 } from "./melbourne-atlas";
@@ -11,6 +12,8 @@ export const MAP_SOURCE_IDS = {
   buildings: "food-go-city-buildings",
   route: "food-go-route",
   accuracy: "food-go-accuracy",
+  pilotBoundary: "food-go-pilot-boundary",
+  pilotMask: "food-go-pilot-mask",
 } as const;
 export const emptyMapFeatures = () => ({ type: "FeatureCollection" as const, features: [] });
 export const GAME_BUILDING_PALETTE = ["#9eaFA4", "#d4a789", "#acc8b9", "#c19489", "#dfc7a2", "#859f9b"] as const;
@@ -210,6 +213,17 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     id: "food-go-route-line", source: MAP_SOURCE_IDS.route, type: "line",
     layout: { "line-cap": "round", "line-join": "round" },
     paint: { "line-color": "#ffd445", "line-width": 5 },
+  }, {
+    id: "food-go-pilot-mask", source: MAP_SOURCE_IDS.pilotMask, type: "fill",
+    paint: { "fill-color": "#183d32", "fill-opacity": 0.16 },
+  }, {
+    id: "food-go-pilot-boundary-glow", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#ffd445", "line-width": 7, "line-blur": 2.5, "line-opacity": 0.45 },
+  }, {
+    id: "food-go-pilot-boundary-line", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#2f6941", "line-width": 2.2, "line-opacity": 0.8 },
   });
 
   // A fixed world raster placeholder keeps the layer IDs stable without making
@@ -237,6 +251,8 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
         [MAP_SOURCE_IDS.buildings]: { type: "geojson", data: ATLAS_BUILDINGS, generateId: true, maxzoom: 17 },
         [MAP_SOURCE_IDS.route]: { type: "geojson", data: emptyMapFeatures() },
         [MAP_SOURCE_IDS.accuracy]: { type: "geojson", data: emptyMapFeatures() },
+        [MAP_SOURCE_IDS.pilotBoundary]: { type: "geojson", data: melbournePilotBoundaryFeature() },
+        [MAP_SOURCE_IDS.pilotMask]: { type: "geojson", data: melbournePilotMaskFeature() },
       },
       layers,
     },

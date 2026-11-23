@@ -22,6 +22,9 @@ import { useDeviceCompass } from "./use-device-compass";
 import { useGeographicDiscovery } from "./use-geographic-discovery";
 import { useEncounterLandmarks } from "./use-encounter-landmarks";
 import type { ExplorationFogResult } from "@food-go/domain/exploration";
+import { getMallByCoordinate, getMallById, type MallData, type ARCollectibleItem } from "@food-go/domain";
+import { MallModal } from "./mall-modal";
+import { ARRewardView } from "./ar-reward-view";
 import { useStreetWalk } from "./use-street-walk";
 import { mapDistance } from "@/lib/map-game";
 import { isExplorerPerspective, type ExplorerPerspective } from "@/lib/explorer-camera";
@@ -69,6 +72,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
+  const [activeMall, setActiveMall] = useState<MallData | null>(null);
+  const [activeArCollectible, setActiveArCollectible] = useState<ARCollectibleItem | null>(null);
   const compass = useDeviceCompass(perspective === "first" && renderer === "webgl");
   const preferences = useAvatarPreferences();
   const location = useExplorerLocation(initialPosition);
@@ -82,6 +87,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const encounterLandmarks = useEncounterLandmarks({ enabled: encountersAvailable, mode: location.mode, fix: location.fix, venues: allVenues });
   const stops = useMemo(() => atlasStops([], allVenues), [allVenues]);
   const active = stops.find(stop => stop.id === selected?.id);
+  const nearbyMall = selected ? (selected.id ? getMallById(selected.id) : null) || getMallByCoordinate(selected) : null;
   const encounterVenueId = active?.members.length === 1 ? active.members[0].id
     : active && chosenShop?.selectionId === active.id && active.members.some(member => member.id === chosenShop.venueId) ? chosenShop.venueId : null;
   // Contextual restaurant actions should surface when an actual venue is selected.
@@ -349,6 +355,27 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       {encountersAvailable && <p>Nearby encounter hints request at most three public venue IDs at a time. Your GPS coordinates are not sent for these hints, and proximity never confirms a claim.</p>}
       <p>{Math.round(location.mode === "live" ? location.distanceMetres : walk.sessionMetres)} metres explored this session.</p><Link href="/collect">Collect a verified discovery</Link>
     </details>
+    {nearbyMall && <div style={{ margin: "10px 0" }}>
+      <button type="button" className={styles.motionButton}
+        style={{ width: "100%", background: "#edf6e6", borderColor: "#75a78a", color: "#183d32", fontWeight: 800, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        onClick={() => setActiveMall(nearbyMall)}><Layers size={17}/>Explore {nearbyMall.name} Directory & Floors ({nearbyMall.shops.length} shops)</button>
+    </div>}
+    {selected && <div style={{ margin: "8px 0" }}>
+      <button type="button" className={styles.motionButton}
+        style={{ width: "100%", background: "#fffdf3", borderColor: "#ffd445", color: "#183d32", fontWeight: 700, padding: "9px 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        onClick={() => {
+          setActiveArCollectible({
+            id: "a0000000-0000-4000-8000-000000000099",
+            venueId: encounterVenueId ?? "b0000000-0000-4000-8000-000000000002",
+            venueName: active?.name ?? selectedName ?? "Melbourne Landmark",
+            name: `${active?.name ?? selectedName ?? "Melbourne"} Discovery Token`,
+            description: "A shimmering spatial collectible hovering at this verified location.",
+            rarity: "rare", icon: "sparkles",
+            coordinates: selected ? { latitude: selected.latitude, longitude: selected.longitude } : { latitude: player.latitude, longitude: player.longitude },
+            rewardXp: 100, cooldownHours: 24, requiresStaffVerification: false,
+          });
+        }}><Sparkles size={16}/>Scan with AR Camera</button>
+    </div>}
     {active && active.members.length > 0 && <div className={styles.members}>{active.members.length > 1 && encountersAvailable && <p>Choose a shop for its restaurant encounter. Shops in this building have separate pools and staff confirmations.</p>}{active.members.map(member => <div key={member.id}>
       {member.href ? <Link href={member.href}>{member.name}<ArrowUpRight size={14}/></Link> : <strong>{member.name}</strong>}<span>{member.area}</span>
       {encountersAvailable && active.members.length > 1 && <button type="button" className={styles.motionButton} aria-pressed={encounterVenueId === member.id}
@@ -370,5 +397,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       </div>
     </details>
     </MapFrame>
+    {activeMall && <MallModal mall={activeMall} onClose={() => setActiveMall(null)} />}
+    {activeArCollectible && <ARRewardView collectible={activeArCollectible} playerLocation={{ longitude: player.longitude, latitude: player.latitude, accuracyMetres: location.fix?.accuracy ?? 8 }} onClose={() => setActiveArCollectible(null)} />}
   </section>;
 }

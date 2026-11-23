@@ -141,3 +141,12 @@ test("global satellite requests require an explicit key and retain the street da
   assert.ok(withKey.style.sources.openmaptiles);
   assert.ok(withKey.style.layers.some(layer => layer.id === "street-names"));
 });
+
+test("style includes approved Melbourne pilot boundary and visual exploration mask", () => {
+  const result = worldMapStyle(street);
+  assert.ok(result.style.sources[MAP_SOURCE_IDS.pilotBoundary]);
+  assert.ok(result.style.sources[MAP_SOURCE_IDS.pilotMask]);
+  assert.ok(result.style.layers.some(layer => layer.id === "food-go-pilot-boundary-line"));
+  assert.ok(result.style.layers.some(layer => layer.id === "food-go-pilot-boundary-glow"));
+  assert.ok(result.style.layers.some(layer => layer.id === "food-go-pilot-mask"));
+});
