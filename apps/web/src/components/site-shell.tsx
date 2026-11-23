@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, BookOpen, ChevronDown, Gift, Store, UserRound, Zap } from "lucide-react";
+import { ArrowUpRight, Bell, BookOpen, ChevronDown, Coins, Gift, Star, Store, UserRound, Zap } from "lucide-react";
 import { Brand } from "./brand";
 import { FoodNavigation } from "./food-navigation";
 import type { CatalogueMode } from "@/lib/catalogue-contracts";
@@ -26,6 +26,10 @@ export function SiteShell({
   const journey = useJourney();
   const ownerView = accountType === "partner" && pathname.startsWith("/partner");
   const exampleNeighbourhood = pathname === "/explore-preview";
+  const level = journey?.data?.progress.level ?? 24;
+  const xp = journey?.data?.progress.xp ?? 3820;
+  const coins = xp;
+
   return (
     <div className="site-shell">
       <a className="skip-link" href="#main-content">
@@ -37,7 +41,31 @@ export function SiteShell({
             <Brand />
           </Link>
           <FoodNavigation pathname={pathname} owner={ownerView} />
-          <div className="header-actions">
+
+          {/* Unified FoodGo mobile stats bar */}
+          <div className="mobile-header-stats" aria-label="Player level and currency">
+            <Link href="/profile" className="mobile-level-pill" title={`Level ${level} (${xp} XP)`}>
+              <Star size={13} fill="#f6c944" className="star-icon" />
+              <span>Lv. {level}</span>
+              <div className="pill-progress" aria-hidden="true">
+                <div className="pill-progress-fill" style={{ width: "65%" }} />
+              </div>
+            </Link>
+
+            <Link href="/profile" className="mobile-coins-pill" title={`${coins} coins`}>
+              <Coins size={14} className="coin-icon" />
+              <span>{coins.toLocaleString("en-AU")}</span>
+              <span className="coin-plus-icon">+</span>
+            </Link>
+
+            <Link href="/quests" className="mobile-bell-btn" aria-label="Quests and notifications">
+              <Bell size={18} />
+              <span className="bell-badge-dot" aria-hidden="true" />
+            </Link>
+          </div>
+
+          {/* Desktop header actions */}
+          <div className="header-actions desktop-header-actions">
             {!ownerView && <details className={shell.collectionMenu} key={pathname}
               onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }}
               onKeyDown={event => { if (event.key === "Escape" && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>

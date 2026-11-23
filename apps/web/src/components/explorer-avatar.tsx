@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { AVATARS, type AvatarId } from "@food-go/domain/avatar";
+import { AVATAR_ASSET_CATALOGUE } from "@/lib/avatar-assets";
 import type { AvatarAction } from "./explorer-avatar-scene";
 import styles from "./explorer-avatar.module.css";
 
@@ -75,7 +76,7 @@ export function ExplorerAvatar({ avatarId = "explorer", action = "idle", actionT
   const [motionAllowed, setMotionAllowed] = useState(false);
   const [reduced, setReduced] = useState(false);
   const avatar = AVATARS.find((item) => item.id === avatarId) || AVATARS[0];
-  const uses3D = avatar.id !== "explorer" && mode !== "portrait";
+  const uses3D = Boolean((avatar.id in AVATAR_ASSET_CATALOGUE || avatar.id !== "explorer") && mode !== "portrait");
 
   useEffect(() => {
     latest.current = { animate, action, actionToken, walking, heading, mapBearing, distanceMetres, distanceTransitionMs };

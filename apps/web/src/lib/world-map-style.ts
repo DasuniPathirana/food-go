@@ -181,14 +181,13 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
   ];
   if (building?.type === "fill-extrusion") additions.push({
     ...building, id: "food-go-world-buildings", minzoom: 14,
-    // `within` only evaluates point/line features in the installed style
-    // engine. Polygon distance handles intersecting building footprints too,
-    // so the world source cannot draw duplicate roofs over the local survey.
     filter: ["all", ["!", ["has", "hide_3d"]], [">", ["distance", survey], 0]],
     paint: {
       ...building.paint,
+      "fill-extrusion-height": ["get", "render_height"],
+      "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
       "fill-extrusion-color": "#e9e7da",
-      "fill-extrusion-opacity": 0.9,
+      "fill-extrusion-opacity": 0.55,
       "fill-extrusion-vertical-gradient": true,
     },
   });
@@ -202,9 +201,11 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
       [">", ["distance", { type: "Point", coordinates: [144.9677, -37.8154] }], 12],
     ],
     paint: {
-      "fill-extrusion-height": ["get", "height"], "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
+      "fill-extrusion-height": ["get", "height"],
+      "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
       "fill-extrusion-color": ["interpolate", ["linear"], ["get", "height"], 0, "#f4ead6", 40, "#ebe9dc", 120, "#c9d7cb", 250, "#b5cec5"],
-      "fill-extrusion-opacity": 0.9, "fill-extrusion-vertical-gradient": true,
+      "fill-extrusion-opacity": 0.65,
+      "fill-extrusion-vertical-gradient": true,
     },
   }, {
     id: "food-go-accuracy-fill", source: MAP_SOURCE_IDS.accuracy, type: "fill",

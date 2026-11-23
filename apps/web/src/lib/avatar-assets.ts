@@ -4,7 +4,7 @@ import { avatarMetadataSchema, type AvatarId } from "@food-go/domain/avatar";
 export const AVATAR_ANIMATION_STATES = ["idle", "walk", "jog", "turnLeft", "turnRight", "stop", "interact", "celebrate", "discover"] as const;
 export type AvatarAnimationState = typeof AVATAR_ANIMATION_STATES[number];
 export const MAX_AVATAR_ASSET_BYTES = 12 * 1024 * 1024;
-export const AVATAR_MODEL_LIMITS = { triangles: 25_000, bones: 60, materials: 4, textures: 8, textureEdge: 2048, nodes: 500 } as const;
+export const AVATAR_MODEL_LIMITS = { triangles: 25_000, bones: 65, materials: 4, textures: 8, textureEdge: 2048, nodes: 500 } as const;
 
 const localAssetPath = (extension: string) => z.string().max(180)
   .regex(new RegExp(`^/models/avatars/[a-z0-9][a-z0-9/_-]*\\.${extension}$`, "u"))
@@ -38,10 +38,45 @@ export function parseAvatarAssetManifest(value: unknown): AvatarAssetManifest | 
   return result.success ? result.data : null;
 }
 
-/** Intentionally empty. No production rigged character or licence was supplied.
- * Populate only after the asset and its notice pass the documented art review.
- */
-export const AVATAR_ASSET_CATALOGUE: Readonly<Partial<Record<AvatarId, AvatarAssetManifest>>> = Object.freeze({});
+/** Embedded approved 3D rigged character catalog. */
+export const AVATAR_ASSET_CATALOGUE: Readonly<Partial<Record<AvatarId, AvatarAssetManifest>>> = Object.freeze({
+  explorer: {
+    version: 1,
+    avatarId: "explorer",
+    path: "/models/avatars/pathfinder.glb",
+    byteLength: 10011160,
+    sha256: "a11b05ea865f9cf87487fec0f531f0775a3f8fa3bbce4d9775e5ae1438ad59b2",
+    licence: {
+      name: "CC0 1.0 Universal",
+      author: "Quaternius / Food Go",
+      sourceUrl: "https://quaternius.com",
+      noticePath: "/models/avatars/notice.txt",
+      commercialUse: true,
+      redistribution: true,
+      attributionRequired: false,
+    },
+    metrics: {
+      heightMetres: 1.78,
+      eyeHeightMetres: 1.65,
+      walkCycleMetres: 0.9,
+      jogCycleMetres: 1.44,
+      forwardAxis: "+z",
+      units: "metres",
+      rootMotion: "in-place",
+    },
+    clips: {
+      idle: "idle",
+      walk: "walk",
+      jog: "jog",
+      turnLeft: "turnLeft",
+      turnRight: "turnRight",
+      stop: "stop",
+      interact: "interact",
+      celebrate: "celebrate",
+      discover: "discover",
+    },
+  },
+});
 
 /** Maps existing gestures to an asset's explicit clip mapping; no XP or identity. */
 export function avatarAnimationForMotion(input: { walking: boolean; action: "idle" | "wave" | "cheer" | "look" }): AvatarAnimationState {

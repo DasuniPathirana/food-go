@@ -215,7 +215,7 @@ export function FoodGoHud({
         </button>
       </div>
 
-      {/* ---------------- BOTTOM SECTION: Location Pill & Navigation Dock ---------------- */}
+      {/* ---------------- BOTTOM SECTION: Location Pill ---------------- */}
       <div className={styles.bottomArea}>
         <button
           type="button"
@@ -227,65 +227,6 @@ export function FoodGoHud({
           <span>{locationName}</span>
           <ChevronDown size={14} className={styles.locationArrow} />
         </button>
-
-        <nav className={styles.bottomNav} aria-label="Game navigation">
-          <Link
-            href="/feed"
-            className={styles.navItem}
-            data-active={currentSection === "feed"}
-          >
-            <span className={styles.navIconWrapper}>
-              <BookOpen size={19} strokeWidth={2.1} />
-            </span>
-            <span>Feed</span>
-          </Link>
-
-          <Link
-            href="/deals"
-            className={styles.navItem}
-            data-active={currentSection === "deals"}
-          >
-            <span className={styles.navIconWrapper}>
-              <Ticket size={19} strokeWidth={2.1} />
-            </span>
-            <span>Deals</span>
-          </Link>
-
-          <Link
-            href="/"
-            className={styles.exploreItem}
-            data-active={currentSection === "explore"}
-            aria-label="Explore Map"
-          >
-            <span className={styles.exploreHexagon}>
-              <Compass size={28} strokeWidth={2.3} />
-            </span>
-            <span className={styles.exploreLabel}>Explore</span>
-          </Link>
-
-          <Link
-            href="/quests"
-            className={styles.navItem}
-            data-active={currentSection === "quests"}
-          >
-            <span className={styles.navIconWrapper}>
-              <Flag size={19} strokeWidth={2.1} />
-              <span className={styles.navBadge} aria-hidden="true" />
-            </span>
-            <span>Quests</span>
-          </Link>
-
-          <Link
-            href="/outback"
-            className={styles.navItem}
-            data-active={currentSection === "outback"}
-          >
-            <span className={styles.navIconWrapper}>
-              <Mountain size={19} strokeWidth={2.1} />
-            </span>
-            <span>Outback</span>
-          </Link>
-        </nav>
       </div>
     </aside>
   );

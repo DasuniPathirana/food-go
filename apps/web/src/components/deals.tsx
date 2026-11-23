@@ -137,10 +137,30 @@ export function DemoDeals() {
 }
 
 export function ConnectedDeals({ result }: { result: PromotionResult }) {
-  return <div className={styles.page}>
-    <header className={`${styles.heading} ${styles.connectedHeading}`}><div><span className={styles.dealEyebrow}>Good food. Local rewards.</span><h1>Deals</h1><p>A new favourite, a table with friends, a little more for your money.</p></div></header>
-    <DealCategories result={result}/>
-  </div>;
+  return (
+    <div className={styles.page}>
+      <header className={`${styles.heading} ${styles.connectedHeading}`}>
+        <div className={styles.headingContent}>
+          <span className={styles.dealEyebrow}>Good food. Local rewards.</span>
+          <h1 className={styles.dealPageTitle}>Deals</h1>
+          <p className={styles.dealSubtitle}>
+            Discover tasty offers, special savings, and rewards from your favourite local spots.
+          </p>
+        </div>
+        <div className={styles.heroTicketIllustration} aria-hidden="true">
+          <div className={styles.heroPedestal}>
+            <div className={styles.heroTicketAura} />
+            <div className={styles.heroTicketBadge}>
+              <span className={styles.heroPercentSign}>%</span>
+            </div>
+            <div className={styles.heroPedestalBase} />
+          </div>
+        </div>
+      </header>
+
+      <DealCategories result={result} />
+    </div>
+  );
 }
 
 export function DemoPromoStrip() {

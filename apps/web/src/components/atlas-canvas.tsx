@@ -295,18 +295,15 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         parkSignature.current = signature;
         setParkTrees(trees);
       }
-      const roofs = decorate ? rooftopsFromMap(map).slice(0, window.innerWidth < 640 ? 22 : 32) : [];
-      const roofsKey = roofs.map(roof => roof.id + ":" + roof.height).join("|");
-      if (roofsKey !== roofSignature.current) {
-        roofSignature.current = roofsKey;
+      // Client preference: Keep generic buildings simple and flat; 3D models are reserved for food venues.
+      const roofs: ReturnType<typeof rooftopsFromMap> = [];
+      if (roofSignature.current !== "simplified") {
+        roofSignature.current = "simplified";
         setRoofDetails(roofs);
       }
-      // A small batched set of real-building facade strips changes the visual
-      // quality at closer camera distances without faking geography.
-      const facades = decorate ? facadesFromMap(map, window.innerWidth < 640 ? 28 : 64) : [];
-      const facadeKey = facades.map(item => item.id + ":" + item.height).join("|");
-      if (facadeKey !== facadeSignature.current) {
-        facadeSignature.current = facadeKey;
+      const facades: ReturnType<typeof facadesFromMap> = [];
+      if (facadeSignature.current !== "simplified") {
+        facadeSignature.current = "simplified";
         setFacadeDetails(facades);
       }
       const lights=decorate ? streetLampsFromMap(map,window.innerWidth<640?34:62):[];
