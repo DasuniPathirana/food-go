@@ -26,9 +26,10 @@ export function SiteShell({
   const journey = useJourney();
   const ownerView = accountType === "partner" && pathname.startsWith("/partner");
   const exampleNeighbourhood = pathname === "/explore-preview";
-  const level = journey?.data?.progress.level ?? 24;
-  const xp = journey?.data?.progress.xp ?? 3820;
-  const coins = xp;
+  const isGuest = !signedIn || !journey?.data;
+  const level = journey?.data?.progress.level;
+  const xp = journey?.data?.progress.xp;
+  const coins = xp ?? 0;
 
   return (
     <div className="site-shell">
@@ -44,23 +45,32 @@ export function SiteShell({
 
           {/* Unified FoodGo mobile stats bar */}
           <div className="mobile-header-stats" aria-label="Player level and currency">
-            <Link href="/profile" className="mobile-level-pill" title={`Level ${level} (${xp} XP)`}>
-              <Star size={13} fill="#f6c944" className="star-icon" />
-              <span>Lv. {level}</span>
-              <div className="pill-progress" aria-hidden="true">
-                <div className="pill-progress-fill" style={{ width: "65%" }} />
-              </div>
-            </Link>
+            {!isGuest && level != null && xp != null ? (
+              <>
+                <Link href="/profile" className="mobile-level-pill" title={`Level ${level} (${xp} XP)`}>
+                  <Star size={13} fill="#f6c944" className="star-icon" />
+                  <span>Lv. {level}</span>
+                  <div className="pill-progress" aria-hidden="true">
+                    <div className="pill-progress-fill" style={{ width: `${Math.min(100, (xp % 1000) / 10)}%` }} />
+                  </div>
+                </Link>
 
-            <Link href="/profile" className="mobile-coins-pill" title={`${coins} coins`}>
-              <Coins size={14} className="coin-icon" />
-              <span>{coins.toLocaleString("en-AU")}</span>
-              <span className="coin-plus-icon">+</span>
-            </Link>
+                <Link href="/profile" className="mobile-coins-pill" title={`${coins} coins`}>
+                  <Coins size={14} className="coin-icon" />
+                  <span>{coins.toLocaleString("en-AU")}</span>
+                  <span className="coin-plus-icon">+</span>
+                </Link>
+              </>
+            ) : (
+              <Link href="/auth/sign-in" className="mobile-guest-pill" aria-label="Sign in">
+                <UserRound size={14} />
+                <span>Sign in</span>
+              </Link>
+            )}
 
             <Link href="/quests" className="mobile-bell-btn" aria-label="Quests and notifications">
               <Bell size={18} />
-              <span className="bell-badge-dot" aria-hidden="true" />
+              {signedIn && <span className="bell-badge-dot" aria-hidden="true" />}
             </Link>
           </div>
 

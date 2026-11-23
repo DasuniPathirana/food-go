@@ -3513,6 +3513,19 @@ h1,h2,h3 { font-optical-sizing: auto; }
     background: #ff6b35;
     box-shadow: 0 0 4px #ff6b35;
   }
+  .mobile-guest-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(9, 36, 31, 0.92);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    border-radius: 9999px;
+    padding: 6px 12px;
+    color: #00d2aa;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+  }
   .site-shell {
     padding-bottom: calc(88px + env(safe-area-inset-bottom, 12px));
   }

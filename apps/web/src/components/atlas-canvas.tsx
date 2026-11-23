@@ -126,17 +126,15 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       let cached = obstacleCache.current;
       if (!cached || now - cached.at > 500 || cached.epoch !== geometryEpoch || cached.game !== game || mapDistance(cached.point, input.point) > 15) {
         const features: unknown[] = [];
-        for (const layer of (map.getStyle()?.layers ?? []).filter(layer => layer.id === MAP_SOURCE_IDS.buildings || layer.id === "food-go-world-buildings")) {
-          if (!("source" in layer) || typeof layer.source !== "string") continue;
-          try {
-            // Filter geographically before the feature cap. A large survey can
-            // otherwise fill the result with distant roofs and omit this wall.
-            const nearby = ["<=", ["distance", { type: "Point", coordinates: [input.point.longitude, input.point.latitude] }], 75] as FilterSpecification;
-            const filter = "filter" in layer && layer.filter ? ["all", layer.filter, nearby] as FilterSpecification : nearby;
-            const found = map.querySourceFeatures(layer.source, { ...("source-layer" in layer && layer["source-layer"] ? { sourceLayer: layer["source-layer"] } : {}), filter });
-            features.push(...found.slice(0, Math.max(0, 2501 - features.length)));
-          } catch { /* Missing tiles remain a documented data limit, not a wall. */ }
-        }
+        try {
+          // Filter geographically before the feature cap. A large survey can
+          // otherwise fill the result with distant roofs and omit this wall.
+          const nearby = ["<=", ["distance", { type: "Point", coordinates: [input.point.longitude, input.point.latitude] }], 75] as FilterSpecification;
+          if (map.getSource(MAP_SOURCE_IDS.buildings)) {
+            const found = map.querySourceFeatures(MAP_SOURCE_IDS.buildings, { filter: nearby });
+            features.push(...found.slice(0, 2501));
+          }
+        } catch { /* Missing source data remains a documented limit, not a wall. */ }
         const admitted = buildCameraObstacles(features, { centre: input.point, groundElevation: ground, gameHeights: game });
         cached = { ...admitted, point: input.point, at: now, epoch: geometryEpoch, game }; obstacleCache.current = cached;
       }
@@ -329,7 +327,8 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   }, [ready, threeD, imagery, props.lowDetail]);
 
   // Real geographic 3D objects share MapLibre's camera and depth buffer.
-  // The optional ?world-demo=1 fixture is visual-only and never awards loot.
+  // ONLY explicitly approved food venues receive 3D models. Generic buildings are never rendered.
+  // The optional ?world-demo=1 fixture is visual-only and kept exclusively in explicit demo mode.
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
@@ -337,21 +336,58 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!threeD || imagery !== "game" || props.lowDetail) return;
     const centre = map.getCenter();
     const reference = { latitude: centre.lat, longitude: centre.lng };
-    const fixture: GameWorldObject[] = [
+    const isDemo = typeof window !== "undefined" && (
+      new URLSearchParams(window.location.search).get("world-demo") === "1" ||
+      window.location.pathname.startsWith("/demo") ||
+      window.location.pathname.startsWith("/explore-preview")
+    );
+
+    const fixture: GameWorldObject[] = isDemo ? [
       { id: "the-ovenhouse-model", name: "The Ovenhouse", longitude: 144.9673, latitude: -37.8149, kind: "restaurant" as const, variant: 0 },
       { id: "riverside-bakery-model", name: "Riverside Bakery", longitude: 144.9664, latitude: -37.8156, kind: "restaurant" as const, variant: 1 },
       { id: "melbourne-treasure-crystal", longitude: 144.9676, latitude: -37.8163, kind: "treasure" as const },
       { id: "melbourne-mystery-zone", longitude: 144.9677, latitude: -37.8154, kind: "mystery" as const },
-    ].filter(point => mapDistance(point, reference) < 1250);
-    const localDemoPark = mapDistance(reference,
+    ].filter(point => mapDistance(point, reference) < 1250) : [];
+
+    // Food-venue pipeline: map approved food venues to reusable 3D restaurant/cafe/bakery models
+    const approvedFoodVenues: GameWorldObject[] = places
+      .filter(valid)
+      .filter(place => mapDistance(place, reference) < 1250)
+      .filter(place => {
+        const k = (place.kind || "").toLowerCase();
+        return k === "restaurant" || k === "cafe" || k === "bakery" || k === "market" || k === "food stall" || k === "food court";
+      })
+      .slice(0, 16)
+      .map(place => {
+        const k = (place.kind || "").toLowerCase();
+        const n = (place.name || "").toLowerCase();
+        let variant = 3; // Modern Bistro default
+        let objectKind: GameWorldObject["kind"] = "restaurant";
+        if (k === "bakery" || n.includes("bakery") || n.includes("bread") || n.includes("pastry")) {
+          variant = 1;
+          objectKind = "restaurant";
+        } else if (k === "cafe" || n.includes("cafe") || n.includes("coffee") || n.includes("espresso")) {
+          variant = 2;
+          objectKind = "cafe";
+        } else if (n.includes("oven") || n.includes("house") || n.includes("pizza") || n.includes("grill")) {
+          variant = 0;
+          objectKind = "restaurant";
+        }
+        return {
+          id: place.id,
+          longitude: place.longitude,
+          latitude: place.latitude,
+          kind: objectKind,
+          variant,
+          name: place.name,
+        };
+      });
+
+    const localDemoPark = isDemo && mapDistance(reference,
       { longitude: 144.9794, latitude: -37.8134 }) < 850 ? demoParkScenery() : [];
     const nearby: GameWorldObject[] = [
       ...fixture,
-      ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
-        id: place.id, longitude: place.longitude, latitude: place.latitude,
-        kind: place.kind ?? "building" as const,
-        name: place.name,
-      })),
+      ...approvedFoodVenues,
       ...localDemoPark,
       ...parkTrees,
       ...facadeDetails,
@@ -430,8 +466,12 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    for (const layer of ["food-go-world-buildings", MAP_SOURCE_IDS.buildings])
-      if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", threeD ? "visible" : "none");
+    // Client requirement: Ensure generic city buildings are strictly hidden in 3D and game mode
+    for (const layer of map.getStyle()?.layers ?? []) {
+      if (("source-layer" in layer && layer["source-layer"] === "building") || layer.id.includes("building")) {
+        map.setLayoutProperty(layer.id, "visibility", "none");
+      }
+    }
     const limits = explorerCameraLimits(perspective, threeD);
     map.setMaxPitch(limits.maxPitch);
     map.setMaxZoom(limits.maxZoom);
@@ -441,16 +481,24 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const map = mapRef.current, Pin = pinClass.current;
     if (!ready || !map || !Pin) return;
     const pins = placeMarkers.current;
-    for (const place of places.filter(valid)) {
+    const validPlaces = places.filter(valid);
+    const centre = player && valid(player) ? { longitude: player.longitude, latitude: player.latitude } : map.getCenter() ? { longitude: map.getCenter().lng, latitude: map.getCenter().lat } : { longitude: ATLAS_CENTER[0], latitude: ATLAS_CENTER[1] };
+    const sorted = [...validPlaces].sort((a, b) => mapDistance(centre, a) - mapDistance(centre, b));
+    const closestId = sorted[0]?.id;
+
+    for (const place of validPlaces) {
       const distance = player && valid(player) ? mapDistance(player, place) : undefined;
-      const button = createMapPlaceMarker(place, place.distanceMetres ?? distance, place.rating);
+      // Clutter control: Only show full label card for selected venue, or if none selected, the single closest venue
+      const isSelected = selected && place.id === selected.id;
+      const showLabel = Boolean(isSelected || (!selected && place.id === closestId));
+      const button = createMapPlaceMarker(place, place.distanceMetres ?? distance, place.rating, showLabel);
       button.style.position = "absolute";
       button.onclick = event => { event.stopPropagation(); latest.current.onSelect({ longitude: place.longitude, latitude: place.latitude, id: place.id }); };
       pins.set(place.id, new Pin({ element: button, anchor: "bottom", subpixelPositioning: true })
         .setLngLat([place.longitude, place.latitude]).addTo(map));
     }
     return () => { for (const marker of pins.values()) marker.remove(); pins.clear(); };
-  }, [ready, places, player]);
+  }, [ready, places, player, selected?.id]);
 
   useEffect(() => {
     if (!props.zoomInTrigger || !ready || !mapRef.current) return;
