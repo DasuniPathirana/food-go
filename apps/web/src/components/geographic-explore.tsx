@@ -3,14 +3,16 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import type { LineString } from "geojson";
 import { ArrowUpRight, Box, ChevronUp, Compass, Eye, Hand, Layers, MapPin, Pause, PersonStanding, Play, Search, Settings2, Sparkles, X, ZoomIn } from "lucide-react";
-import { atlasStops, geographicPoint, pointDirections } from "@/lib/atlas-places";
+import { atlasStops, geographicPoint, pointDirections, type AtlasDestination } from "@/lib/atlas-places";
 import { ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
 import type { MapSearchResult } from "@/lib/map-services";
 import { searchBrowserMapPlaces } from "@/lib/browser-map-search";
 import { useAvatarPreferences } from "@/lib/avatar-preferences";
 import type { AtlasCanvasProps, AtlasImagery, AtlasSelection } from "./atlas-canvas";
+import { FoodGoHud } from "./explore/foodgo-hud";
 import { MapExpandButton, MapFrame } from "./map-frame";
 import { MapPlayer } from "./map-player";
 import { DemoTreasureEncounter } from "./demo-treasure-encounter";
@@ -35,8 +37,38 @@ const FlatCanvas = dynamic(() => import("./world-map-fallback").then(module => m
 const EncounterPanel = dynamic(() => import("./encounter-panel").then(module => module.EncounterPanel));
 const noVenues: CatalogueVenue[] = [];
 // Open Swanston Street geometry near Federation Square, never a claimed GPS fix.
-const initialPosition = { longitude: 144.9671462327242, latitude: -37.81681344435442 };
+const initialPosition = { longitude: 144.9671, latitude: -37.8162 };
 const initialHeading = 340.0423857123138;
+
+const HERO_LANDMARKS: readonly AtlasDestination[] = [
+  {
+    id: "the-ovenhouse",
+    name: "The Ovenhouse",
+    area: "Swanston St · CBD",
+    latitude: -37.8149,
+    longitude: 144.9673,
+    kind: "restaurant",
+  },
+  {
+    id: "riverside-bakery",
+    name: "Riverside Bakery",
+    area: "Collins St · CBD",
+    latitude: -37.8156,
+    longitude: 144.9664,
+    kind: "cafe",
+  },
+];
+
+const defaultQuestRoute: LineString = {
+  type: "LineString",
+  coordinates: [
+    [144.9671, -37.8162],
+    [144.9674, -37.8158],
+    [144.9677, -37.8154],
+    [144.9675, -37.8151],
+    [144.9673, -37.8149],
+  ],
+};
 // Search credentials remain independent of the removed satellite style choice.
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
 export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
@@ -62,7 +94,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   // One player-facing Food Go world. Keep renderer fallback for devices without WebGL.
   const imagery: AtlasImagery = "game";
   const [lowDetail, setLowDetail] = useState(false);
-  const [mapBearing, setMapBearing] = useState(-18);
+  const [mapBearing, setMapBearing] = useState(-42);
   const [threeD, setThreeD] = useState(true), [loaded, setLoaded] = useState(false);
   const [perspective, setPerspective] = useState<ExplorerPerspective>("overhead");
   const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl");
@@ -70,6 +102,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [demoTreasureToken, setDemoTreasureToken] = useState(0);
   const [demoFocus, setDemoFocus] = useState<(AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null>(null);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
+  const [zoomInNonce, setZoomInNonce] = useState(0);
+  const [zoomOutNonce, setZoomOutNonce] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
   const [activeMall, setActiveMall] = useState<MallData | null>(null);
@@ -85,7 +119,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [discoveryView, setDiscoveryView] = useState<Omit<ExplorationFogResult, "data"> | null>(null);
   const allVenues = useMemo(() => [...new Map([...venues, ...chosenVenues, ...venueResults].map(v => [v.id, v])).values()], [venues, chosenVenues, venueResults]);
   const encounterLandmarks = useEncounterLandmarks({ enabled: encountersAvailable, mode: location.mode, fix: location.fix, venues: allVenues });
-  const stops = useMemo(() => atlasStops([], allVenues), [allVenues]);
+  const stops = useMemo(() => atlasStops(HERO_LANDMARKS, allVenues), [allVenues]);
   const active = stops.find(stop => stop.id === selected?.id);
   const nearbyMall = selected ? (selected.id ? getMallById(selected.id) : null) || getMallByCoordinate(selected) : null;
   const encounterVenueId = active?.members.length === 1 ? active.members[0].id
@@ -236,7 +270,10 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     discoveryEnabled: discovery.enabled, discoveredCells: discovery.visibleCells, onDiscoveryView: setDiscoveryView,
     encounterSignals: encounterLandmarks.signals,
     location: location.mode === "live" ? location.rawPosition : null, accuracy: location.accuracy ?? undefined,
-    heading: location.mode === "live" ? location.heading ?? undefined : walk.heading, route: walk.route,
+    heading: location.mode === "live" ? location.heading ?? undefined : walk.heading,
+    route: walk.route || defaultQuestRoute,
+    zoomInTrigger: zoomInNonce,
+    zoomOutTrigger: zoomOutNonce,
     playerContent: <MapPlayer avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}
       close={perspective === "close"}
       heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
@@ -285,6 +322,35 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
           requesting={location.status === "requesting"} following={follow} expanded={avatarOpen} onLocate={locate} onCustomise={customise}/>
+        <FoodGoHud
+          level={24}
+          xp={3820}
+          coins={3820}
+          activeQuest={{
+            title: "Active Quest",
+            description: "Visit The Ovenhouse and leave a review",
+            current: 0,
+            total: 1,
+          }}
+          locationName="Melbourne"
+          onSearch={text => {
+            setQuery(text);
+            if (field.current) {
+              field.current.value = text;
+              field.current.form?.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+            }
+          }}
+          onFilterClick={() => {
+            if (worldSheet.current) worldSheet.current.open = !worldSheet.current.open;
+          }}
+          onRecenter={recenter}
+          onZoomIn={() => setZoomInNonce(n => n + 1)}
+          onZoomOut={() => setZoomOutNonce(n => n + 1)}
+          onLayersToggle={() => setThreeD(v => !v)}
+          onLocationClick={locate}
+          onQuestClick={() => selectPoint({ longitude: 144.9675, latitude: -37.8148, id: "the-ovenhouse" })}
+          currentSection="explore"
+        />
         <div className={styles.perspectives} role="group" aria-label="Explorer view">
           <button type="button" title="Overhead view" aria-label="Overhead view" aria-pressed={perspective === "overhead" || renderer === "fallback"} onClick={() => changePerspective("overhead")}><Compass size={16}/><span>Overview</span></button>
           <details ref={cameraMenu} className={styles.cameraMenu}

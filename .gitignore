@@ -8,8 +8,6 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
-.env
-.env.*
 !.env.example
 !**/.env.example
 *.pem
@@ -27,3 +25,4 @@ artifacts/
 .vercel/
 **/supabase/.temp/
 **/supabase/.branches/
+config.bat
