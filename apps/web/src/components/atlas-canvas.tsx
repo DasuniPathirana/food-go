@@ -8,6 +8,12 @@ import type { LineString, Polygon } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
 import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
+import { createGameWorldObjectLayer, GAME_WORLD_OBJECT_LAYER, type GameWorldObject } from "@/lib/game-world-objects";
+import { parkTreesFromMap } from "@/lib/game-world-greenery";
+import { rooftopsFromMap } from "@/lib/game-world-architecture";
+import { facadesFromMap, type FacadeObject } from "@/lib/game-world-facades";
+import { streetLampsFromMap } from "@/lib/game-world-streetscape";
+import { demoParkScenery } from "@/lib/demo-park-scenery";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
 import { mapDistance } from "@/lib/map-game";
@@ -35,6 +41,9 @@ export type AtlasCanvasProps = {
   location?: AtlasSelection | null; accuracy?: number; heading?: number; route?: LineString | null;
   onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
   onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
+  onDemoTreasure?: () => void;
+  /** Explicit map-only focus for the opt-in, non-redeemable demo tour. */
+  demoFocus?: (AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null;
 };
 
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
@@ -80,6 +89,16 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
   const eyeInput = useRef<ReturnType<typeof attachFirstPersonInput> | null>(null);
   const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
+  const [parkTrees, setParkTrees] = useState<GameWorldObject[]>([]);
+  const [roofDetails, setRoofDetails] = useState<GameWorldObject[]>([]);
+  const [facadeDetails, setFacadeDetails] = useState<FacadeObject[]>([]);
+  const facadeSignature = useRef("");
+  const [streetLights,setStreetLights] = useState<GameWorldObject[]>([]);
+  const streetLightSignature=useRef("");
+  const roofSignature = useRef("");
+  const parkSignature = useRef("");
+  const [worldEpoch, setWorldEpoch] = useState(0);
+  const worldRegion = useRef<AtlasSelection | null>(null);
   const [zoom, setZoom] = useState(homeZoom);
   const [bearing, setBearing] = useState(-18);
   const [tileIssue, setTileIssue] = useState(false);
@@ -168,6 +187,13 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       }
       map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
       map.on("click", event => {
+        if (new URLSearchParams(window.location.search).get("world-demo") === "1") {
+          const chest = map.project([144.96915, -37.81790]);
+          if (Math.hypot(event.point.x - chest.x, event.point.y - chest.y) <= 42) {
+            latest.current.onDemoTreasure?.();
+            return;
+          }
+        }
         const point = event.lngLat.wrap();
         latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
       });
@@ -229,9 +255,118 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   useEffect(() => {
     const map = mapRef.current;
+    const target = props.demoFocus;
+    if (!ready || !map || !target || !valid(target)) return;
+    // Public map movement only; changes neither the device GPS nor rewards.
+    map.easeTo({
+      center: [target.longitude, target.latitude],
+      zoom: target.zoom, pitch: target.pitch,
+      duration: duration(),
+    });
+  }, [ready, props.demoFocus?.nonce]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!ready || !map) return;
     map.setPixelRatio(props.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2));
   }, [ready, props.lowDetail]);
+
+  // Park meshes are placed only inside visible mapped green polygons.
+  // They are aesthetic vegetation, not individual surveyed tree positions.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    const update = () => {
+      const decorate = threeD && imagery === "game" && !props.lowDetail;
+      const trees = decorate ? parkTreesFromMap(map) : [];
+      const signature = trees.map(tree => tree.id).join("|");
+      if (signature !== parkSignature.current) {
+        parkSignature.current = signature;
+        setParkTrees(trees);
+      }
+      const roofs = decorate ? rooftopsFromMap(map).slice(0, window.innerWidth < 640 ? 22 : 32) : [];
+      const roofsKey = roofs.map(roof => roof.id + ":" + roof.height).join("|");
+      if (roofsKey !== roofSignature.current) {
+        roofSignature.current = roofsKey;
+        setRoofDetails(roofs);
+      }
+      // A small batched set of real-building facade strips changes the visual
+      // quality at closer camera distances without faking geography.
+      const facades = decorate ? facadesFromMap(map, window.innerWidth < 640 ? 28 : 64) : [];
+      const facadeKey = facades.map(item => item.id + ":" + item.height).join("|");
+      if (facadeKey !== facadeSignature.current) {
+        facadeSignature.current = facadeKey;
+        setFacadeDetails(facades);
+      }
+      const lights=decorate ? streetLampsFromMap(map,window.innerWidth<640?34:62):[];
+      const lightsKey=lights.map(l=>l.id).join("|");
+      if(lightsKey!==streetLightSignature.current){
+        streetLightSignature.current=lightsKey;
+        setStreetLights(lights);
+      }
+    };
+    const moved = () => {
+      const centre = map.getCenter();
+      const here = { longitude: centre.lng, latitude: centre.lat };
+      if (!worldRegion.current || mapDistance(worldRegion.current, here) > 160) {
+        worldRegion.current = here;
+        setWorldEpoch(value => value + 1);
+      }
+      update();
+    };
+    update();
+    map.on("idle", update);
+    map.on("moveend", moved);
+    return () => { map.off("idle", update); map.off("moveend", moved); };
+  }, [ready, threeD, imagery, props.lowDetail]);
+
+  // Real geographic 3D objects share MapLibre's camera and depth buffer.
+  // The optional ?world-demo=1 fixture is visual-only and never awards loot.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER);
+    if (!threeD || imagery !== "game" || props.lowDetail) return;
+    const centre = map.getCenter();
+    const reference = { latitude: centre.lat, longitude: centre.lng };
+    const demo = new URLSearchParams(window.location.search).get("world-demo") === "1";
+    // High-priority demo landmarks and restaurant locations must appear before
+    // optional trees/roofs. Otherwise the scene object budget can cut off the
+    // clickable visual chest when many park features are loaded.
+    const fixture: GameWorldObject[] = demo ? ([
+      { id: "demo-city-food-station-visual-only", longitude: 144.96783,
+        latitude: -37.81736, kind: "restaurant" },
+      { id: "demo-city-cafe-visual-only", longitude: 144.96885,
+        latitude: -37.81742, kind: "cafe" },
+      { id: "demo-park-food-station-visual-only", longitude: 144.97911,
+        latitude: -37.81305, kind: "market" },
+      { id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
+        latitude: -37.81790, kind: "treasure" },
+    ] satisfies GameWorldObject[]).filter(point => mapDistance(point, reference) < 1250) : [];
+    const localDemoPark = demo && mapDistance(reference,
+      { longitude: 144.9794, latitude: -37.8134 }) < 850 ? demoParkScenery() : [];
+    const nearby: GameWorldObject[] = [
+      ...fixture,
+      ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
+        id: place.id, longitude: place.longitude, latitude: place.latitude,
+        kind: place.kind ?? "building" as const,
+      })),
+      ...localDemoPark,
+      ...parkTrees,
+      ...facadeDetails,
+      ...roofDetails,
+      ...streetLights,
+    ];
+    if (valid(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
+      id: "selected-waypoint", longitude: selected.longitude,
+      latitude: selected.latitude, kind: "waypoint",
+    });
+    if (nearby.length === 0) return;
+    const layer = createGameWorldObjectLayer(nearby);
+    const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
+    map.addLayer(layer, label);
+    return () => { if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER); };
+  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, roofDetails, facadeDetails, streetLights, worldEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -243,7 +378,13 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       // Labels, restaurant markers, attribution and route guidance stay legible.
       const before = map.getStyle().layers.find(layer => layer.type === "symbol")?.id;
       map.addLayer({ id: layerId, type: "fill", source: sourceId,
-        paint: { "fill-color": "#d1e2d4", "fill-opacity": .3, "fill-antialias": false } }, before);
+        paint: { "fill-color": "#698f84", "fill-opacity": .46, "fill-antialias": true } }, before);
+      // Diffused borders make the geographic reveal legible without faking
+      // discovered cells or applying a costly screen-space blur to the world.
+      map.addLayer({ id: "food-go-discovery-fog-glow", type: "line", source: sourceId,
+        paint: { "line-color": "#c2e5cc", "line-width": 5, "line-blur": 2.4, "line-opacity": .45 } }, before);
+      map.addLayer({ id: "food-go-discovery-fog-rim", type: "line", source: sourceId,
+        paint: { "line-color": "#dfefcb", "line-width": 1.2, "line-opacity": .48 } }, before);
     }
     const refresh = () => {
       const bounds = map.getBounds();
@@ -438,7 +579,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   const map = mapRef.current;
   function pauseCameraTracking() { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
-  return <div className={css.scene}>
+  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-game-roof-count={roofDetails.length} data-game-facade-count={facadeDetails.length} data-game-street-light-count={streetLights.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
         event.preventDefault(); const centre = map.getCenter().wrap();

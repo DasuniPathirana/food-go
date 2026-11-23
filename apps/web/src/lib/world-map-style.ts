@@ -13,7 +13,7 @@ export const MAP_SOURCE_IDS = {
   accuracy: "food-go-accuracy",
 } as const;
 export const emptyMapFeatures = () => ({ type: "FeatureCollection" as const, features: [] });
-export const GAME_BUILDING_PALETTE = ["#ded2b9", "#c8b79e", "#bbc6bc", "#e8dfcc"] as const;
+export const GAME_BUILDING_PALETTE = ["#9eaFA4", "#d4a789", "#acc8b9", "#c19489", "#dfc7a2", "#859f9b"] as const;
 
 /** A building keeps its material as the camera moves. Prefer the provider's
  * stable feature ID, then numeric source IDs, then measured height as a fallback.
@@ -22,7 +22,7 @@ function gameBuildingColour(height: ExpressionSpecification): ExpressionSpecific
   const fallback: ExpressionSpecification = ["*", height, 131];
   const identity: ExpressionSpecification = ["to-number", ["coalesce", ["id"], ["get", "osm_id"], ["get", "id"], fallback], fallback];
   const bucket: ExpressionSpecification = ["%", ["abs", ["round", identity]], GAME_BUILDING_PALETTE.length];
-  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2], GAME_BUILDING_PALETTE[3]];
+  return ["match", bucket, 0, GAME_BUILDING_PALETTE[0], 1, GAME_BUILDING_PALETTE[1], 2, GAME_BUILDING_PALETTE[2], 3, GAME_BUILDING_PALETTE[3], 4, GAME_BUILDING_PALETTE[4], 5, GAME_BUILDING_PALETTE[5], GAME_BUILDING_PALETTE[0]];
 }
 
 /** Keep roof parts ordered instead of flattening several heights onto one plane. */
@@ -69,19 +69,19 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
   };
   for (const layer of layers) {
     const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    if (layer.type === "background") add(layer, "background-color", "#e5ead8", "#000000");
+    if (layer.type === "background") add(layer, "background-color", "#c9ded2", "#000000");
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
-      const landColour = sourceLayer === "water" || layer.id === "water" ? "#75c6d5"
-        : sourceLayer === "park" || layer.id === "park" ? "#96c68b"
-          : layer.id.includes("wood") ? "#75a78a"
-            : /grass|cemetery|pitch/u.test(layer.id) ? "#b6cf9e"
+      const landColour = sourceLayer === "water" || layer.id === "water" ? "#5aaec4"
+        : sourceLayer === "park" || layer.id === "park" ? "#88b58d"
+          : layer.id.includes("wood") ? "#669b7c"
+            : /grass|cemetery|pitch/u.test(layer.id) ? "#a4c797"
               : layer.id.includes("wetland") ? "#c6e5d9"
                 : layer.id.includes("sand") ? "#f5ecd2"
                   : /ice|glacier/u.test(layer.id) ? "#f6fbff"
                     : layer.id.includes("hospital") ? "#f1e3e8"
                       : /school|track/u.test(layer.id) ? "#eee8d7"
-                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#e4e7d5"
+                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#d2ddcd"
                           : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
       if (sourceLayer === "building") add(layer, "fill-color", gameBuildingColour(["coalesce", ["get", "render_height"], ["get", "height"], 4]), "#000000");
@@ -90,17 +90,23 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
     }
     if (layer.type === "line") {
-      if (sourceLayer === "waterway") add(layer, "line-color", "#75c6d5", "#000000");
+      if (sourceLayer === "waterway") add(layer, "line-color", "#5aaec4", "#000000");
       if (sourceLayer === "park") add(layer, "line-color", "#6c9c72", "#000000");
       if (sourceLayer === "boundary") {
         add(layer, "line-color", "#a3b3c1", "#000000"); add(layer, "line-opacity", 0.35, 1);
       }
       if (sourceLayer === "transportation" && /^(road|bridge|tunnel)_/u.test(layer.id)) {
         const rail = layer.id.includes("rail"), casing = layer.id.endsWith("casing");
-        add(layer, "line-color", rail ? "#9aada4" : casing ? "#bcc7b4" : "#fffdf1", "#000000");
+        const walking = /path|footway|pedestrian|steps|cycleway/u.test(layer.id);
+        // Pedestrian networks remain real, but should not become stark white
+        // dashed decorations that overpower the park scene.
+        add(layer, "line-color", rail ? "#9aada4" : walking
+          ? casing ? "#a7bfa0" : "#d6dfcd"
+          : casing ? "#a5bcb2" : "#f3ebe0", "#000000");
         if (rail) add(layer, "line-opacity", 0.28, 1);
         else {
-          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], casing ? 1.1 : 1.06), 1);
+          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], walking ? 0.88 : casing ? 1.1 : 1.06), 1);
+          if (walking) add(layer, "line-opacity", 0.67, 1);
           if (casing) add(layer, "line-blur", 0.35, 0);
         }
       }
@@ -108,14 +114,14 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
     if (layer.type === "symbol") {
       if (sourceLayer === "transportation_name" || sourceLayer === "place") {
         add(layer, "text-color", sourceLayer === "place" ? "#3e5e51" : "#435a50", "#000000");
-        add(layer, "text-halo-color", "#fffdf1", "rgba(0,0,0,0)");
+        add(layer, "text-halo-color", "#fff7ec", "rgba(0,0,0,0)");
         add(layer, "text-halo-width", 1.5, 0);
       }
       if (sourceLayer === "water_name" || sourceLayer === "waterway") add(layer, "text-color", "#5687ae", "#000000");
       if (sourceLayer === "poi") {
         // Published Food Go markers stay distinct. Provider POIs reappear softly
         // at close zoom while real street and suburb names stay available.
-        const opacity: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 16.5, 0, 18, 0.65];
+        const opacity: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 16.5, 0, 18, 0.22];
         add(layer, "text-opacity", opacity, 1); add(layer, "icon-opacity", opacity, 1);
       }
       if (/one_way_arrow|shield/u.test(layer.id)) {
@@ -220,7 +226,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     style: {
       ...base,
       light: { anchor: "map", position: [1.4, 195, 45], color: "#fffaf0", intensity: 0.42 },
-      sky: { "sky-color": "#98cfdf", "horizon-color": "#f6f7e9", "sky-horizon-blend": 0.65 },
+      sky: { "sky-color": "#82bcca", "horizon-color": "#e4f4db", "sky-horizon-blend": 0.7 },
       sources: {
         ...base.sources,
         [MAP_SOURCE_IDS.aerial]: { type: "image", url: ATLAS_AERIAL, coordinates: corners },

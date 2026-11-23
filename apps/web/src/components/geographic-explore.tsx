@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowUpRight, Box, ChevronUp, Compass, Eye, Hand, Layers, MapPin, Pause, PersonStanding, Play, Search, Sparkles, X, ZoomIn } from "lucide-react";
+import { ArrowUpRight, Box, ChevronUp, Compass, Eye, Hand, Layers, MapPin, Pause, PersonStanding, Play, Search, Settings2, Sparkles, X, ZoomIn } from "lucide-react";
 import { atlasStops, geographicPoint, pointDirections } from "@/lib/atlas-places";
 import { ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
 import type { CatalogueVenue } from "@/lib/catalogue-contracts";
@@ -13,6 +13,8 @@ import { useAvatarPreferences } from "@/lib/avatar-preferences";
 import type { AtlasCanvasProps, AtlasImagery, AtlasSelection } from "./atlas-canvas";
 import { MapExpandButton, MapFrame } from "./map-frame";
 import { MapPlayer } from "./map-player";
+import { DemoTreasureEncounter } from "./demo-treasure-encounter";
+import { DemoWorldTour, type DemoStop } from "./demo-world-tour";
 import { ExplorerControl } from "./explorer-control";
 import { AvatarCustomizer, type AvatarAction } from "./avatar-customizer";
 import { useExplorerLocation } from "./use-explorer-location";
@@ -32,9 +34,8 @@ const noVenues: CatalogueVenue[] = [];
 // Open Swanston Street geometry near Federation Square, never a claimed GPS fix.
 const initialPosition = { longitude: 144.9671462327242, latitude: -37.81681344435442 };
 const initialHeading = 340.0423857123138;
+// Search credentials remain independent of the removed satellite style choice.
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
-const globalSatellite = !!browserMapKey;
-
 export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
   basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean;
   signedIn?: boolean; explorationAvailable?: boolean; encountersAvailable?: boolean; accountKey?: string;
@@ -43,6 +44,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const avatarPanel = useRef<HTMLDivElement>(null);
   const avatarScroll = useRef(0);
   const cameraMenu = useRef<HTMLDetailsElement>(null);
+  const worldSheet = useRef<HTMLDetailsElement>(null);
   const searchRequest = useRef<AbortController | null>(null);
   const resultsId = useId();
   const [query, setQuery] = useState(""), [searchOpen, setSearchOpen] = useState(false);
@@ -54,13 +56,16 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [selected, setSelected] = useState<AtlasSelection | null>(null);
   const [selectedName, setSelectedName] = useState("");
   const [chosenShop, setChosenShop] = useState<{ selectionId: string; venueId: string } | null>(null);
-  const [imagery, setImagery] = useState<AtlasImagery>("game");
+  // One player-facing Food Go world. Keep renderer fallback for devices without WebGL.
+  const imagery: AtlasImagery = "game";
   const [lowDetail, setLowDetail] = useState(false);
   const [mapBearing, setMapBearing] = useState(-18);
   const [threeD, setThreeD] = useState(true), [loaded, setLoaded] = useState(false);
   const [perspective, setPerspective] = useState<ExplorerPerspective>("overhead");
-  const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl"), [providerFailed, setProviderFailed] = useState(false);
+  const [renderer, setRenderer] = useState<"webgl" | "fallback">("webgl");
   const [graphicsAttempt, setGraphicsAttempt] = useState(0);
+  const [demoTreasureToken, setDemoTreasureToken] = useState(0);
+  const [demoFocus, setDemoFocus] = useState<(AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null>(null);
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
@@ -79,6 +84,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const active = stops.find(stop => stop.id === selected?.id);
   const encounterVenueId = active?.members.length === 1 ? active.members[0].id
     : active && chosenShop?.selectionId === active.id && active.members.some(member => member.id === chosenShop.venueId) ? chosenShop.venueId : null;
+  // Contextual restaurant actions should surface when an actual venue is selected.
+  useEffect(() => { if (encounterVenueId && worldSheet.current) worldSheet.current.open = true; }, [encounterVenueId]);
   const localMatches = stops.filter(stop => stop.name.toLocaleLowerCase("en-AU").includes(query.trim().toLocaleLowerCase("en-AU")));
   const directions = selected && pointDirections(selected);
   const walking = walk.phase === "walking";
@@ -89,7 +96,6 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const retryGraphics = useCallback(() => {
     setLoaded(false); setThreeD(true); setGraphicsAttempt(n => n + 1); setRenderer("webgl");
   }, []);
-  const satelliteUnavailable = useCallback(() => setProviderFailed(true), []);
   const cameraMoved = useCallback(() => setFollow(false), []);
   const recenter = useCallback(() => { setFollow(true); setFocus(n => n + 1); }, []);
   useEffect(() => {
@@ -142,6 +148,28 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       const ids = new Set([point.id, ...(stop?.members.map(member => member.id) ?? [])]);
       setChosenVenues(allVenues.filter(v => ids.has(v.id)));
     }
+  }
+  function previewDemo(stop: DemoStop) {
+    // The guided map tour is visual-only. Never alter or impersonate live GPS.
+    const point = stop === "park"
+      ? { longitude: 144.9794, latitude: -37.8134 }
+      : stop === "treasure"
+        ? { longitude: 144.96915, latitude: -37.81790 }
+        : initialPosition;
+    // The player's already-tested follow camera keeps nearby geographic
+    // provider tiles visible. The experimental free-camera tour produced empty
+    // mint terrain on the captured park view and is deliberately disabled.
+    setDemoFocus(null);
+    if (location.mode === "manual") {
+      walk.cancel(); location.place(point); walk.place(point);
+      setSelected(null); setFollow(true); setFocus(n => n + 1);
+      setPerspective("overhead");
+    } else {
+      // Live GPS remains unchanged: the tour only browses a destination.
+      setFollow(false); setPerspective("overhead"); setSelected(point);
+    }
+    setSelectedName("");
+    if (stop === "treasure") setDemoTreasureToken(token => token + 1);
   }
   function perform(next: AvatarAction) { setAction(next); setActionToken(n => n + 1); }
   function editQuery(value: string) {
@@ -196,7 +224,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
   const canvasProps: AtlasCanvasProps = {
-    places: stops, selected, imagery, threeD: threeD && !lowDetail, lowDetail, perspective, player, followPlayer: follow, focusPlayerNonce: focus,
+    places: stops, selected, imagery, threeD: threeD && !lowDetail, lowDetail, perspective, player, followPlayer: follow, focusPlayerNonce: focus, demoFocus,
     playerTransitionMs: location.mode === "live" ? 600 : 80, onBearingChange: setMapBearing,
     deviceHeading: compass.heading, onEyeLook: compass.stop,
     discoveryEnabled: discovery.enabled, discoveredCells: discovery.visibleCells, onDiscoveryView: setDiscoveryView,
@@ -208,10 +236,11 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
       distanceTransitionMs={location.mode === "live" ? 600 : 80}
       animate={!paused && (preferences.preferences.idleMotion || avatarWalking || action !== "idle")} onActivate={() => perform("wave")}/>,
-    onSelect: selectPoint, onReady: ready, onUnavailable: unavailable, onCameraInteraction: cameraMoved, onSatelliteUnavailable: satelliteUnavailable,
+    onSelect: selectPoint, onReady: ready, onUnavailable: unavailable, onCameraInteraction: cameraMoved,
+    onDemoTreasure: () => setDemoTreasureToken(token => token + 1),
   };
   return <section className={styles.atlas} aria-label="Geographic exploration">
-    <MapFrame label="Explore the world">
+    <MapFrame label="Explore the world" className={styles.fullFrame}>
       <div ref={controls} className={styles.controls}><div className={styles.placeBar}>
         <h1>Explore</h1><form className={styles.search} role="search" onSubmit={search}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}
@@ -232,22 +261,20 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <details className={styles.layerMenu}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false; }}
           onKeyDown={event => { if (event.key === "Escape" && event.currentTarget.open) { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus(); } }}>
-          <summary aria-label="Map layers"><Layers size={19}/><span>Layers</span></summary>
-          <div className={styles.layerPanel}><strong>Map style</strong><div className={styles.layers} role="group" aria-label="Map imagery">
-          {([["game","Game","Game"],["street","Streets","Streets"],["satellite", globalSatellite && !providerFailed ? "Satellite" : "Melbourne satellite","Satellite"],["aerial","Melbourne aerial","Aerial"]] as const).map(([mode,label,short]) =>
-            <button key={mode} type="button" aria-label={label} title={label} aria-pressed={imagery === mode} onClick={() => setImagery(mode)}>{short}</button>)}
-          <button type="button" aria-label="3D buildings" title={renderer === "fallback" ? "Retry 3D map" : "Show or hide 3D buildings"} aria-pressed={renderer === "webgl" && threeD && !lowDetail}
-            onClick={() => { if (renderer === "fallback") { setLowDetail(false); retryGraphics(); return; } if (lowDetail) { setLowDetail(false); setThreeD(true); } else setThreeD(v => !v); }}><Box size={16}/>3D</button>
+          <summary aria-label="Game graphics settings"><Settings2 size={19}/><span>Graphics</span></summary>
+          <div className={styles.layerPanel}><strong>Game world graphics</strong><div className={styles.layers} role="group" aria-label="Game graphics">
+          <button type="button" aria-label="3D world" title={renderer === "fallback" ? "Retry 3D game world" : "Show or hide 3D scenery"} aria-pressed={renderer === "webgl" && threeD && !lowDetail}
+            onClick={() => { if (renderer === "fallback") { setLowDetail(false); retryGraphics(); return; } if (lowDetail) { setLowDetail(false); setThreeD(true); } else setThreeD(v => !v); }}><Box size={16}/>3D world</button>
           <button type="button" aria-pressed={lowDetail} onClick={() => setLowDetail(v => !v)}>Low detail</button>
           <button type="button" aria-pressed={discovery.enabled} onClick={discovery.toggle}>Discovery fog</button>
-          </div><small>{imagery === "aerial" ? "City of Melbourne survey, local coverage." : imagery === "satellite" && (!globalSatellite || providerFailed) ? "Melbourne snapshot. World imagery needs a licensed provider." : "Real streets and geographic building footprints."}</small></div>
+          </div><small>One Food Go world. Low detail reduces effects on slower devices. Streets remain geographically accurate.</small></div>
         </details>
       </div>
       {renderer === "fallback" && <div className={styles.graphicsRecovery}>
         <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
         <button type="button" onClick={retryGraphics}>Retry 3D</button>
       </div>}
-      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoWorldTour onSelect={previewDemo}/><DemoTreasureEncounter activationToken={demoTreasureToken}/>
         {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
@@ -283,7 +310,10 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           <span className={styles.walkDistance}>{location.mode === "live" ? "Route guide · follows your live position" : `${Math.round(walk.travelled)} / ${Math.round(walk.totalDistance)} m`}</span>
         </div>}
       {avatarOpen && <div ref={avatarPanel} className={styles.avatarPanel} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeAvatar(); } }}><AvatarCustomizer compact onClose={closeAvatar} onAction={perform} motionPaused={paused}/></div>}
-    </MapFrame>
+    <details ref={worldSheet} className={styles.worldSheet}>
+      <summary aria-label="Open game details and discovery settings"><Layers size={17}/><span>Game details</span></summary>
+      <div className={styles.worldSheetBody}>
+        <nav className={styles.worldSheetLinks} aria-label="Food Go discoveries"><Link href="/?view=catalogue">Restaurants and deals</Link><Link href="/inventory">Inventory</Link><Link href="/quests">Quests</Link></nav>
     <div className={styles.explorerStatus} role="status"><div><p>{walk.message || (location.status === "manual" ? perspective === "first" && renderer === "webgl" ? "Drag to look around. Pinch to change the view angle. Tap a street to walk." : "Tap a street to explore. Tap your explorer for live location, or hold to change your look." : location.message)}</p>{compass.message && <p>{compass.message}</p>}</div>{walk.route && location.mode === "manual" && <label>Walk speed<select value={walk.speed} onChange={e => walk.setSpeed(Number(e.target.value) as 1 | 4)}><option value="1">1×</option><option value="4">4×</option></select></label>}</div>
     {encounterLandmarks.nearby.length > 0 && <div className={styles.gameBar} aria-label="Nearby restaurant encounters"><span>Nearby restaurant encounters</span>{encounterLandmarks.nearby.map(venue => <button key={venue.venueId} type="button" onClick={() => {
       const stop = stops.find(place => place.members.some(member => member.id === venue.venueId));
@@ -328,16 +358,17 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       enabled={encountersAvailable} accountKey={accountKey} proximity={{ mode: location.mode, fix: location.fix }}/>}
     <div className={styles.credits}>
       <span>Streets by OpenFreeMap and OpenStreetMap.</span><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Fix the map</a>
-      {imagery === "game" && renderer === "webgl" && <span>Game view uses real streets and stylised building heights.</span>}
+      {renderer === "webgl" && <span>Game world follows real street geography.</span>}
       {searchAttribution && <span>{searchAttribution.includes("MapTiler")
         ? <>Place search by <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener noreferrer">MapTiler</a> | <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a></>
         : searchAttribution}</span>}
       {walk.attribution && <span>{walk.attribution}</span>}
       <a href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">Melbourne imagery sources</a>
-      {imagery === "satellite" && (!globalSatellite || providerFailed) && <span>Satellite image covers Melbourne CBD. Worldwide satellite requires a configured map provider.</span>}
-      {imagery === "aerial" && <span>Aerial survey covers Melbourne CBD.</span>}
       {renderer === "fallback" && <span>Interactive 2D map</span>}
       {catalogueUnavailable && <span>Food Go venue listings are temporarily unavailable.</span>}
     </div>
+      </div>
+    </details>
+    </MapFrame>
   </section>;
 }
