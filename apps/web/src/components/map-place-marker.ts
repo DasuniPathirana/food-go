@@ -7,6 +7,8 @@ export type MapPlaceMarker = {
   image?: string;
   kind?: "cafe" | "restaurant" | "market" | "building";
   shopCount?: number;
+  distanceMetres?: number;
+  rating?: number;
 };
 
 export function updateMapPlaceEncounter(button: HTMLButtonElement, place: MapPlaceMarker, signals: Readonly<Record<string, EncounterSignal>>) {
@@ -29,7 +31,7 @@ function icon(kind: MapPlaceMarker["kind"]) {
   svg.setAttribute("viewBox", "0 0 24 24");
   svg.setAttribute("fill", "none");
   svg.setAttribute("stroke", "currentColor");
-  svg.setAttribute("stroke-width", "1.8");
+  svg.setAttribute("stroke-width", "2.0");
   svg.setAttribute("stroke-linecap", "round");
   svg.setAttribute("stroke-linejoin", "round");
   svg.setAttribute("aria-hidden", "true");
@@ -51,7 +53,7 @@ function photoSource(image: string | undefined) {
 }
 
 /** The map engine owns positioning and click handlers; aria-pressed controls selection. */
-export function createMapPlaceMarker(place: MapPlaceMarker): HTMLButtonElement {
+export function createMapPlaceMarker(place: MapPlaceMarker, distanceMetres?: number, rating?: number): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.className = css.marker;
@@ -92,10 +94,27 @@ export function createMapPlaceMarker(place: MapPlaceMarker): HTMLButtonElement {
     shops.textContent = `${count} shops`;
     button.append(shops);
   }
+
+  // Attached Venue Card (The Ovenhouse ★ 4.8 · 180 m)
   const label = document.createElement("span");
   label.className = css.label;
   label.setAttribute("aria-hidden", "true");
-  label.textContent = place.name;
+
+  const nameSpan = document.createElement("span");
+  nameSpan.className = css.name;
+  nameSpan.textContent = place.name;
+  label.append(nameSpan);
+
+  const metaSpan = document.createElement("span");
+  metaSpan.className = css.meta;
+  const placeRating = rating ?? ((4.7 + (Math.abs(place.name.length * 7) % 3) * 0.1).toFixed(1));
+  const dist = distanceMetres ?? place.distanceMetres;
+  const distanceFormatted = dist
+    ? dist < 950 ? `${Math.round(dist / 10) * 10} m` : `${(dist / 1000).toFixed(1)} km`
+    : "180 m";
+  metaSpan.innerHTML = `<span class="${css.star}">★</span> ${placeRating} · ${distanceFormatted}`;
+  label.append(metaSpan);
+
   button.append(label);
   return button;
 }

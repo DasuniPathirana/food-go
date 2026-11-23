@@ -3411,6 +3411,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--link); }
 h1,h2,h3 { font-optical-sizing: auto; }
 
 .brand-go { font-weight: inherit; }
+.site-shell:has([aria-label="Geographic exploration"]) .site-header,
+.site-shell:has([aria-label="Geographic exploration"]) .site-footer,
+.site-shell:has([aria-label="Geographic exploration"]) > nav {
+  display: none !important;
+}
 .main-content.discovery-main:has([aria-label="Geographic exploration"]) { padding: 0; max-width: none; }
 .main-content.discovery-main:has([aria-label="Explore map"]) { padding: 0; max-width: none; }
 .brand-icon, .brand-go, .brand-dot { color: var(--petrol); }

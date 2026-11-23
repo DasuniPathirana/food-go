@@ -1,5 +1,11 @@
-.atlas { width: 100%; color: var(--ink); }
-.controls { position: relative; z-index: 24; display: flex; align-items: center; gap: 12px; margin: 0; padding: 8px clamp(12px, 2vw, 26px); background: var(--paper); border-bottom: 1px solid #d7dbd1; }
+.atlas { width: 100%; height: 100dvh; position: relative; overflow: hidden; color: var(--ink); }
+.controls { display: none; }
+.scene button[data-expand-map] { display: none; }
+.scene [class*="tools"] { display: none; }
+.scene div:has(> [data-explorer-control]) { display: none; }
+.scene [data-explorer-control] { display: none; }
+.scene .perspectives { display: none; }
+.modeStatus { display: none; }
 .placeBar { display: flex; align-items: center; gap: 18px; min-width: 0; flex: 1; }
 .atlas .placeBar h1 { margin: 0; color: var(--petrol); font: 800 30px/1 var(--font-display); letter-spacing: -.015em; }
 .search { position: relative; width: min(100%, 460px); min-width: 0; }
@@ -27,15 +33,12 @@
 .layers { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .layers button { display: flex; justify-content: center; align-items: center; gap: 6px; min-height: 44px; padding: 6px 10px; border: 1px solid #c6d0c6; border-radius: 4px; background: white; color: var(--ink); font: 700 14px/1.1 var(--font-body); }
 .layers button[aria-pressed=true] { background: var(--petrol); color: white; border-color: var(--petrol); }
-.stage { display: flex; flex-direction: column; height: max(230px, calc(100dvh - var(--atlas-top, 137px))); margin: 0; overflow: clip; background: #dce6d6; }
+.stage { display: flex; flex-direction: column; height: 100dvh; width: 100%; margin: 0; overflow: clip; background: #84af65; position: relative; }
 .atlas dialog:modal .stage { flex: 1; min-height: 210px; height: auto; }
-.scene { flex: 1; min-height: 0; position: relative; isolation: isolate; overflow: hidden; background: #dce6d6; }
-.loading { position: absolute; top: 68px; left: 16px; padding: 6px 10px; border-radius: 4px; background: #fffdf4; color: var(--ink); pointer-events: none; font-size: 13px; }
-.modeStatus { position: absolute; left: 16px; top: 16px; z-index: 3; display: flex; align-items: center; gap: 6px; max-width: calc(100% - 85px); padding: 7px 10px; border: 1px solid #c2cdbd; border-radius: 4px; background: #fffdf4ed; color: #315246; font: 700 12px/1.2 var(--font-body); pointer-events: none; box-shadow: 0 1px 4px #193a3010; }
-.statusDot { flex: none; width: 6px; height: 6px; background: #9b7443; border-radius: 50%; }
-.modeStatus[data-location-status=live] .statusDot { background: #007b68; }
-.modeStatus[data-location-status=weak] .statusDot { background: #bd6a05; }
-.scene .perspectives { position: absolute; right: max(12px, env(safe-area-inset-right)); bottom: 54px; z-index: 12; display: flex; padding: 3px; border: 1px solid #adbeb0; border-radius: 6px; background: #fffdf4; box-shadow: 0 3px 10px #193a3024; }
+.scene { flex: 1; min-height: 0; position: relative; isolation: isolate; overflow: hidden; background: #84af65; }
+.loading { position: absolute; top: 88px; left: 16px; z-index: 30; padding: 6px 12px; border-radius: 8px; background: rgba(9, 36, 31, 0.9); color: #ffffff; pointer-events: none; font-size: 13px; font-weight: 600; }
+.modeStatus { display: none; }
+.scene .perspectives { display: none; }
 .perspectives button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 76px; min-height: 44px; border: 0; border-radius: 3px; padding: 7px 10px; font: 700 13px/1.1 var(--font-body); color: #385b4f; background: transparent; }
 .perspectives button[aria-pressed=true] { color: white; background: var(--petrol); }
 .cameraMenu { position: relative; }
@@ -161,10 +164,12 @@
 }
 /* Keep the closed control compact and ABOVE the main game action area.
    Previously its 380px-wide hitbox blocked the avatar and mobile cameras. */
+.worldSheet:not([open]) { display: none; }
 .worldSheet {
-  position: absolute; z-index: 25;
-  top: calc(182px + env(safe-area-inset-top)); left: 12px;
-  bottom: auto; width: max-content; max-width: calc(100vw - 24px);
+  position: absolute; z-index: 60;
+  top: calc(76px + env(safe-area-inset-top)); left: 50%;
+  transform: translateX(-50%);
+  bottom: auto; width: min(420px, calc(100vw - 24px)); max-width: calc(100vw - 24px);
   border: 1px solid #c4dfd3; border-radius: 13px;
   background: #fffdf5ed; color: #173e3c;
   box-shadow: 0 8px 22px #16444424; backdrop-filter: blur(12px);

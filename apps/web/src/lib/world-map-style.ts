@@ -72,19 +72,19 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
   };
   for (const layer of layers) {
     const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    if (layer.type === "background") add(layer, "background-color", "#c9ded2", "#000000");
+    if (layer.type === "background") add(layer, "background-color", "#84af65", "#000000");
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
-      const landColour = sourceLayer === "water" || layer.id === "water" ? "#5aaec4"
-        : sourceLayer === "park" || layer.id === "park" ? "#88b58d"
-          : layer.id.includes("wood") ? "#669b7c"
-            : /grass|cemetery|pitch/u.test(layer.id) ? "#a4c797"
-              : layer.id.includes("wetland") ? "#c6e5d9"
+      const landColour = sourceLayer === "water" || layer.id === "water" ? "#4ea9d3"
+        : sourceLayer === "park" || layer.id === "park" ? "#749f57"
+          : layer.id.includes("wood") ? "#5d8944"
+            : /grass|cemetery|pitch/u.test(layer.id) ? "#8ebb6f"
+              : layer.id.includes("wetland") ? "#b8dece"
                 : layer.id.includes("sand") ? "#f5ecd2"
                   : /ice|glacier/u.test(layer.id) ? "#f6fbff"
                     : layer.id.includes("hospital") ? "#f1e3e8"
                       : /school|track/u.test(layer.id) ? "#eee8d7"
-                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#d2ddcd"
+                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#84af65"
                           : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
       if (sourceLayer === "building") add(layer, "fill-color", gameBuildingColour(["coalesce", ["get", "render_height"], ["get", "height"], 4]), "#000000");
@@ -93,8 +93,8 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       if (sourceLayer === "transportation") add(layer, "fill-opacity", 0.22, 1);
     }
     if (layer.type === "line") {
-      if (sourceLayer === "waterway") add(layer, "line-color", "#5aaec4", "#000000");
-      if (sourceLayer === "park") add(layer, "line-color", "#6c9c72", "#000000");
+      if (sourceLayer === "waterway") add(layer, "line-color", "#4ea9d3", "#000000");
+      if (sourceLayer === "park") add(layer, "line-color", "#5e8a45", "#000000");
       if (sourceLayer === "boundary") {
         add(layer, "line-color", "#a3b3c1", "#000000"); add(layer, "line-opacity", 0.35, 1);
       }
@@ -104,21 +104,21 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
         // Pedestrian networks remain real, but should not become stark white
         // dashed decorations that overpower the park scene.
         add(layer, "line-color", rail ? "#9aada4" : walking
-          ? casing ? "#a7bfa0" : "#d6dfcd"
-          : casing ? "#a5bcb2" : "#f3ebe0", "#000000");
+          ? casing ? "#ece5db" : "#ebe6dc"
+          : casing ? "#ece5db" : "#d5cec4", "#000000");
         if (rail) add(layer, "line-opacity", 0.28, 1);
         else {
-          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], walking ? 0.88 : casing ? 1.1 : 1.06), 1);
-          if (walking) add(layer, "line-opacity", 0.67, 1);
-          if (casing) add(layer, "line-blur", 0.35, 0);
+          add(layer, "line-width", widerRoad(layer.paint?.["line-width"], walking ? 0.92 : casing ? 1.18 : 1.12), 1);
+          if (walking) add(layer, "line-opacity", 0.72, 1);
+          if (casing) add(layer, "line-blur", 0.25, 0);
         }
       }
     }
     if (layer.type === "symbol") {
       if (sourceLayer === "transportation_name" || sourceLayer === "place") {
-        add(layer, "text-color", sourceLayer === "place" ? "#3e5e51" : "#435a50", "#000000");
-        add(layer, "text-halo-color", "#fff7ec", "rgba(0,0,0,0)");
-        add(layer, "text-halo-width", 1.5, 0);
+        add(layer, "text-color", sourceLayer === "place" ? "#1f3d32" : "#ffffff", "#000000");
+        add(layer, "text-halo-color", sourceLayer === "place" ? "#fffdf6" : "#7c7468", "rgba(0,0,0,0)");
+        add(layer, "text-halo-width", sourceLayer === "place" ? 1.5 : 2.0, 0);
       }
       if (sourceLayer === "water_name" || sourceLayer === "waterway") add(layer, "text-color", "#5687ae", "#000000");
       if (sourceLayer === "poi") {
@@ -194,6 +194,13 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
   });
   additions.push({
     id: MAP_SOURCE_IDS.buildings, source: MAP_SOURCE_IDS.buildings, type: "fill-extrusion", minzoom: 14,
+    filter: [
+      "all",
+      [">", ["distance", { type: "Point", coordinates: [144.9673, -37.8149] }], 16],
+      [">", ["distance", { type: "Point", coordinates: [144.9664, -37.8156] }], 16],
+      [">", ["distance", { type: "Point", coordinates: [144.9676, -37.8163] }], 12],
+      [">", ["distance", { type: "Point", coordinates: [144.9677, -37.8154] }], 12],
+    ],
     paint: {
       "fill-extrusion-height": ["get", "height"], "fill-extrusion-base": ["coalesce", ["get", "min_height"], 0],
       "fill-extrusion-color": ["interpolate", ["linear"], ["get", "height"], 0, "#f4ead6", 40, "#ebe9dc", 120, "#c9d7cb", 250, "#b5cec5"],
@@ -208,11 +215,11 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
   }, {
     id: "food-go-route-casing", source: MAP_SOURCE_IDS.route, type: "line",
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#153a38", "line-width": 9, "line-opacity": 0.8 },
+    paint: { "line-color": "#082d27", "line-width": 8, "line-opacity": 0.6 },
   }, {
     id: "food-go-route-line", source: MAP_SOURCE_IDS.route, type: "line",
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#ffd445", "line-width": 5 },
+    paint: { "line-color": "#00f0ff", "line-width": 5, "line-dasharray": [1.2, 1.8] },
   }, {
     id: "food-go-pilot-mask", source: MAP_SOURCE_IDS.pilotMask, type: "fill",
     paint: { "fill-color": "#183d32", "fill-opacity": 0.16 },

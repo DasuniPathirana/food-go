@@ -20,7 +20,7 @@ export type GameWorldObject = {
   id: string;
   longitude: number;
   latitude: number;
-  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure" | "facade" | "lamp";
+  kind: "restaurant" | "cafe" | "market" | "building" | "waypoint" | "tree" | "roof" | "treasure" | "facade" | "lamp" | "mystery";
   /** Decorative building footprint dimensions/roof altitude, in metres. */
   width?: number;
   depth?: number;
@@ -28,6 +28,7 @@ export type GameWorldObject = {
   variant?: number;
   base?: number;
   ring?: readonly (readonly number[])[];
+  name?: string;
 };
 
 const hues = {
@@ -41,6 +42,7 @@ const hues = {
   treasure: { main: 0xffd15f, trim: 0x076f71 },
   facade: { main: 0xd9cdb8, trim: 0x40736d },
   lamp: { main: 0xf8dc98, trim: 0x174949 },
+  mystery: { main: 0xffd54f, trim: 0x9c7200 },
 } as const;
 
 type TreePosition = { x: number; z: number; seed: number };
@@ -180,36 +182,346 @@ function seedFromId(id: string): number {
   return n;
 }
 
-function makeBeacon(kind: GameWorldObject["kind"]): Group {
-  const tone = hues[kind];
+function createStripedAwningTexture(colorA: string, colorB: string, stripeCount = 8): CanvasTexture {
+  if (typeof document === "undefined") {
+    return new CanvasTexture({} as HTMLCanvasElement);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const w = 128 / stripeCount;
+    for (let i = 0; i < stripeCount; i++) {
+      ctx.fillStyle = i % 2 === 0 ? colorA : colorB;
+      ctx.fillRect(i * w, 0, w, 128);
+    }
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function createPinIconTexture(type: "restaurant" | "bakery" | "cafe"): CanvasTexture {
+  if (typeof document === "undefined") {
+    return new CanvasTexture({} as HTMLCanvasElement);
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const grad = ctx.createRadialGradient(64, 64, 8, 64, 64, 62);
+    grad.addColorStop(0, "#ffe57f");
+    grad.addColorStop(0.7, "#f59e0b");
+    grad.addColorStop(1, "#b45309");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(64, 64, 60, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (type === "bakery") {
+      ctx.beginPath();
+      ctx.arc(64, 64, 28, 0.35 * Math.PI, 1.65 * Math.PI, false);
+      ctx.arc(64, 64, 16, 1.65 * Math.PI, 0.35 * Math.PI, true);
+      ctx.closePath();
+      ctx.fill();
+    } else if (type === "cafe") {
+      ctx.beginPath();
+      ctx.roundRect(42, 46, 40, 32, [0, 0, 10, 10]);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(82, 58, 10, -Math.PI / 2, Math.PI / 2, false);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(48, 36); ctx.lineTo(48, 52);
+      ctx.moveTo(42, 36); ctx.lineTo(42, 48); ctx.lineTo(54, 48); ctx.lineTo(54, 36);
+      ctx.moveTo(48, 52); ctx.lineTo(48, 92);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(76, 36);
+      ctx.quadraticCurveTo(86, 48, 76, 62);
+      ctx.lineTo(76, 92);
+      ctx.stroke();
+    }
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makeGlowingPin(type: "restaurant" | "bakery" | "cafe"): Group {
+  const pin = new Group();
+  const goldMetal = new MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.7, roughness: 0.25, metalness: 0.6 });
+  const haloMat = new MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.45, depthWrite: false });
+  const beamMat = new MeshBasicMaterial({ color: 0xffe082, transparent: true, opacity: 0.2, depthWrite: false });
+
+  const ring = new Mesh(new TorusGeometry(1.4, 0.14, 12, 32), goldMetal);
+  pin.add(ring);
+
+  const halo = new Mesh(new TorusGeometry(1.58, 0.28, 8, 32), haloMat);
+  pin.add(halo);
+
+  const iconTex = createPinIconTexture(type);
+  const faceMat = new MeshBasicMaterial({ map: iconTex, transparent: true });
+  const discGeo = new CylinderGeometry(1.3, 1.3, 0.16, 28);
+  discGeo.rotateX(Math.PI / 2);
+  const disc = new Mesh(discGeo, faceMat);
+  pin.add(disc);
+
+  const beam = new Mesh(new ConeGeometry(1.6, 5.2, 16, 1, true), beamMat);
+  beam.rotation.x = Math.PI;
+  beam.position.y = -2.6;
+  pin.add(beam);
+
+  return pin;
+}
+
+function makeOvenhouseBuilding(): Group {
+  const root = new Group();
+  const stucco = new MeshStandardMaterial({ color: 0xf4ecd8, roughness: 0.75, metalness: 0.05 });
+  const stoneBase = new MeshStandardMaterial({ color: 0x8a7b6c, roughness: 0.88, metalness: 0.1 });
+  const terracottaRoof = new MeshStandardMaterial({ color: 0xc2503a, roughness: 0.82, metalness: 0.05 });
+  const brickChimney = new MeshStandardMaterial({ color: 0x9c3c2b, roughness: 0.85 });
+  const woodTrim = new MeshStandardMaterial({ color: 0x4a3525, roughness: 0.7 });
+  const creamTrim = new MeshStandardMaterial({ color: 0xfaf8f2, roughness: 0.6 });
+  const windowGlow = new MeshStandardMaterial({ color: 0xffe89f, emissive: 0xffc44d, emissiveIntensity: 1.1, roughness: 0.2 });
+  const umbrellaCanvas = new MeshStandardMaterial({ color: 0xf8f3e6, roughness: 0.9 });
+  const umbrellaPole = new MeshStandardMaterial({ color: 0x634731, roughness: 0.6 });
+
+  const plinth = new Mesh(new BoxGeometry(9.4, 0.35, 8.4), stoneBase);
+  plinth.position.y = 0.17;
+  root.add(plinth);
+
+  const body = new Mesh(new BoxGeometry(7.6, 4.4, 6.4), stucco);
+  body.position.set(-0.3, 2.4, -0.4);
+  root.add(body);
+
+  const frontWindow = new Mesh(new BoxGeometry(3.6, 2.2, 0.2), windowGlow);
+  frontWindow.position.set(-0.3, 2.4, 2.85);
+  root.add(frontWindow);
+
+  const cornerWindow = new Mesh(new BoxGeometry(0.2, 2.2, 2.8), windowGlow);
+  cornerWindow.position.set(3.55, 2.4, -0.4);
+  root.add(cornerWindow);
+
+  const windowFrame = new Mesh(new BoxGeometry(3.8, 2.4, 0.1), woodTrim);
+  windowFrame.position.set(-0.3, 2.4, 2.8);
+  root.add(windowFrame);
+
+  const roofBase = new Mesh(new BoxGeometry(8.2, 0.4, 7.0), creamTrim);
+  roofBase.position.set(-0.3, 4.7, -0.4);
+  root.add(roofBase);
+
+  const roofHip = new Mesh(new ConeGeometry(5.4, 2.4, 4), terracottaRoof);
+  roofHip.position.set(-0.3, 6.0, -0.4);
+  roofHip.rotation.y = Math.PI / 4;
+  root.add(roofHip);
+
+  const chimney = new Mesh(new BoxGeometry(0.9, 2.2, 0.9), brickChimney);
+  chimney.position.set(-2.4, 6.4, -1.8);
+  root.add(chimney);
+  const chimneyPot = new Mesh(new CylinderGeometry(0.35, 0.4, 0.4, 8), creamTrim);
+  chimneyPot.position.set(-2.4, 7.6, -1.8);
+  root.add(chimneyPot);
+
+  const greenStripeTex = createStripedAwningTexture("#1e7e5a", "#fcf8f0", 8);
+  const awningMat = new MeshStandardMaterial({ map: greenStripeTex, roughness: 0.7 });
+  const awning = new Mesh(new BoxGeometry(4.4, 0.12, 1.8), awningMat);
+  awning.position.set(-0.3, 3.8, 3.6);
+  awning.rotation.x = 0.28;
+  root.add(awning);
+
+  const patioGround = new Mesh(new BoxGeometry(4.8, 0.08, 3.6), stoneBase);
+  patioGround.position.set(2.0, 0.38, 3.2);
+  root.add(patioGround);
+
+  const pole = new Mesh(new CylinderGeometry(0.06, 0.06, 2.8, 8), umbrellaPole);
+  pole.position.set(2.8, 1.7, 3.2);
+  root.add(pole);
+  const canopy = new Mesh(new ConeGeometry(1.6, 0.65, 8), umbrellaCanvas);
+  canopy.position.set(2.8, 3.1, 3.2);
+  root.add(canopy);
+
+  const table = new Mesh(new CylinderGeometry(0.55, 0.55, 0.8, 12), woodTrim);
+  table.position.set(1.5, 0.78, 3.2);
+  root.add(table);
+  for (let c = 0; c < 3; c++) {
+    const chair = new Mesh(new BoxGeometry(0.4, 0.5, 0.4), woodTrim);
+    const angle = (c * 2 * Math.PI) / 3;
+    chair.position.set(1.5 + Math.cos(angle) * 0.9, 0.65, 3.2 + Math.sin(angle) * 0.9);
+    root.add(chair);
+  }
+
+  const pin = makeGlowingPin("restaurant");
+  pin.position.set(-0.3, 11.2, -0.4);
+  root.add(pin);
+
+  return root;
+}
+
+function makeRiversideBakeryBuilding(): Group {
+  const root = new Group();
+  const brick = new MeshStandardMaterial({ color: 0x9b3e2b, roughness: 0.82 });
+  const stone = new MeshStandardMaterial({ color: 0xdfd8c5, roughness: 0.78 });
+  const darkWood = new MeshStandardMaterial({ color: 0x3d2719, roughness: 0.65 });
+  const windowGlow = new MeshStandardMaterial({ color: 0xffe89f, emissive: 0xffb84d, emissiveIntensity: 1.1, roughness: 0.2 });
+  const leafMat = new MeshStandardMaterial({ color: 0x3e7e55, roughness: 0.8 });
+  const potMat = new MeshStandardMaterial({ color: 0xb35c3b, roughness: 0.85 });
+
+  const plinth = new Mesh(new BoxGeometry(8.6, 0.35, 7.6), stone);
+  plinth.position.y = 0.17;
+  root.add(plinth);
+
+  const body = new Mesh(new BoxGeometry(7.4, 4.6, 6.2), brick);
+  body.position.set(0, 2.5, 0);
+  root.add(body);
+
+  for (const x of [-3.7, 3.7]) {
+    const quoin = new Mesh(new BoxGeometry(0.3, 4.6, 0.3), stone);
+    quoin.position.set(x, 2.5, 3.1);
+    root.add(quoin);
+  }
+
+  const bakeryWindow = new Mesh(new BoxGeometry(4.2, 2.2, 0.2), windowGlow);
+  bakeryWindow.position.set(0, 2.3, 3.15);
+  root.add(bakeryWindow);
+
+  const signBoard = new Mesh(new BoxGeometry(5.2, 0.65, 0.2), darkWood);
+  signBoard.position.set(0, 3.9, 3.2);
+  root.add(signBoard);
+
+  const redStripeTex = createStripedAwningTexture("#c83228", "#fcf8f0", 8);
+  const awningMat = new MeshStandardMaterial({ map: redStripeTex, roughness: 0.7 });
+  const awning = new Mesh(new BoxGeometry(4.8, 0.12, 1.8), awningMat);
+  awning.position.set(0, 3.4, 3.8);
+  awning.rotation.x = 0.28;
+  root.add(awning);
+
+  const cornice = new Mesh(new BoxGeometry(7.8, 0.5, 6.6), stone);
+  cornice.position.set(0, 4.9, 0);
+  root.add(cornice);
+
+  for (const x of [-2.8, 2.8]) {
+    const pot = new Mesh(new CylinderGeometry(0.35, 0.28, 0.6, 10), potMat);
+    pot.position.set(x, 0.65, 3.5);
+    root.add(pot);
+    const topiary = new Mesh(new SphereGeometry(0.55, 8, 8), leafMat);
+    topiary.position.set(x, 1.3, 3.5);
+    root.add(topiary);
+  }
+
+  const table = new Mesh(new CylinderGeometry(0.5, 0.5, 0.75, 12), darkWood);
+  table.position.set(-1.6, 0.72, 4.2);
+  root.add(table);
+  for (let c = 0; c < 2; c++) {
+    const chair = new Mesh(new BoxGeometry(0.35, 0.45, 0.35), darkWood);
+    chair.position.set(-1.6 + (c === 0 ? -0.7 : 0.7), 0.6, 4.2);
+    root.add(chair);
+  }
+
+  const pin = makeGlowingPin("bakery");
+  pin.position.set(0, 10.8, 0);
+  root.add(pin);
+
+  return root;
+}
+
+function makeLanewayCafeBuilding(): Group {
+  const root = new Group();
+  const stone = new MeshStandardMaterial({ color: 0x475156, roughness: 0.85 });
+  const timber = new MeshStandardMaterial({ color: 0x5a3f2a, roughness: 0.7 });
+  const windowGlow = new MeshStandardMaterial({ color: 0xffe89f, emissive: 0xffb84d, emissiveIntensity: 1.1, roughness: 0.2 });
+
+  const body = new Mesh(new BoxGeometry(6.4, 4.0, 5.6), stone);
+  body.position.set(0, 2.0, 0);
+  root.add(body);
+
+  const counter = new Mesh(new BoxGeometry(3.6, 1.2, 0.8), timber);
+  counter.position.set(0, 0.6, 2.8);
+  root.add(counter);
+
+  const cafeWindow = new Mesh(new BoxGeometry(3.6, 1.8, 0.2), windowGlow);
+  cafeWindow.position.set(0, 2.2, 2.85);
+  root.add(cafeWindow);
+
+  const blackStripeTex = createStripedAwningTexture("#22282a", "#f5ecd8", 6);
+  const awningMat = new MeshStandardMaterial({ map: blackStripeTex, roughness: 0.7 });
+  const awning = new Mesh(new BoxGeometry(4.2, 0.12, 1.6), awningMat);
+  awning.position.set(0, 3.2, 3.4);
+  awning.rotation.x = 0.28;
+  root.add(awning);
+
+  const pin = makeGlowingPin("cafe");
+  pin.position.set(0, 9.8, 0);
+  root.add(pin);
+
+  return root;
+}
+
+function makeModernBistroBuilding(): Group {
+  const root = new Group();
+  const glassMat = new MeshStandardMaterial({ color: 0x2d4f54, roughness: 0.2, metalness: 0.4, transparent: true, opacity: 0.85 });
+  const frameMat = new MeshStandardMaterial({ color: 0x262422, roughness: 0.5, metalness: 0.7 });
+  const woodMat = new MeshStandardMaterial({ color: 0x8a6240, roughness: 0.7 });
+  const windowGlow = new MeshStandardMaterial({ color: 0xffe89f, emissive: 0xffb84d, emissiveIntensity: 0.9, roughness: 0.2 });
+
+  const base = new Mesh(new BoxGeometry(7.2, 4.2, 6.0), glassMat);
+  base.position.set(0, 2.1, 0);
+  root.add(base);
+
+  const interior = new Mesh(new BoxGeometry(6.4, 3.6, 5.2), windowGlow);
+  interior.position.set(0, 2.1, 0);
+  root.add(interior);
+
+  for (const x of [-3.6, 3.6]) {
+    const pillar = new Mesh(new BoxGeometry(0.4, 4.4, 0.4), frameMat);
+    pillar.position.set(x, 2.2, 3.0);
+    root.add(pillar);
+  }
+
+  const pergola = new Mesh(new BoxGeometry(6.8, 0.18, 5.6), woodMat);
+  pergola.position.set(0, 4.4, 0);
+  root.add(pergola);
+
+  const pin = makeGlowingPin("restaurant");
+  pin.position.set(0, 10.2, 0);
+  root.add(pin);
+
+  return root;
+}
+
+function makeBeacon(kind: GameWorldObject["kind"], object?: GameWorldObject): Group {
+  const name = (object?.name ?? "").toLowerCase();
+  if (kind === "restaurant" || kind === "cafe" || kind === "market" || kind === "building") {
+    if (name.includes("oven") || name.includes("house") || object?.variant === 0) {
+      return makeOvenhouseBuilding();
+    }
+    if (name.includes("bakery") || name.includes("riverside") || name.includes("bread") || object?.variant === 1) {
+      return makeRiversideBakeryBuilding();
+    }
+    if (name.includes("cafe") || name.includes("coffee") || name.includes("espresso") || kind === "cafe" || object?.variant === 2) {
+      return makeLanewayCafeBuilding();
+    }
+    return makeModernBistroBuilding();
+  }
+
+  const tone = hues[kind] ?? hues.building;
   const group = new Group();
   const brass = new MeshStandardMaterial({ color: tone.main, metalness: 0.3, roughness: 0.42 });
   const petrol = new MeshStandardMaterial({ color: tone.trim, metalness: 0.18, roughness: 0.65 });
   const cream = new MeshStandardMaterial({ color: 0xfff3d8, emissive: tone.main, emissiveIntensity: 0.22, roughness: 0.4 });
-  if (kind === "restaurant" || kind === "cafe" || kind === "market") {
-    // A recognizable Food Go food-discovery station, not an invented restaurant
-    // building. Real venue identity/approval still comes from the catalogue.
-    const base = new Mesh(new CylinderGeometry(2.05, 2.35, .38, 16), petrol);
-    base.position.y = .19; group.add(base);
-    const podium = new Mesh(new CylinderGeometry(1.4, 1.62, 1.0, 12), brass);
-    podium.position.y = .85; group.add(podium);
-    const counter = new Mesh(new CylinderGeometry(1.82, 1.72, .18, 16), cream);
-    counter.position.y = 1.45; group.add(counter);
-    const bowl = new Mesh(new CylinderGeometry(1.12, .66, .95, 14, 1, true), petrol);
-    bowl.position.y = 2.1; group.add(bowl);
-    const rim = new Mesh(new TorusGeometry(1.09, .14, 9, 28), brass);
-    rim.rotation.x = Math.PI / 2; rim.position.y = 2.6; group.add(rim);
-    const food = new Mesh(new DodecahedronGeometry(.82, 0), cream);
-    food.position.y = 2.55; group.add(food);
-    for (let i = 0; i < 3; i++) {
-      const steam = new Mesh(new TorusGeometry(.28, .057, 5, 20, Math.PI * 1.25), cream);
-      steam.position.set((i-1)*.42, 3.55 + (i%2)*.35, 0);
-      steam.rotation.y = i * .6; group.add(steam);
-    }
-    const halo = new Mesh(new TorusGeometry(2.1, .1, 8, 32), brass);
-    halo.rotation.x = Math.PI / 2; halo.position.y = .48; group.add(halo);
-    return group;
-  }
+
   const pedestal = new Mesh(new CylinderGeometry(1.8, 2.2, 0.42, 10), petrol);
   pedestal.position.y = 0.21;
   group.add(pedestal);
@@ -285,30 +597,122 @@ function makeRoof(point: GameWorldObject): Group {
 }
 
 function makeTreasure(): Group {
-  // A Food Go original, stylised non-redeemable discovery chest.
+  // A glowing faceted golden crystal on mossy stones with ground ring and floating sparkles
   const root = new Group();
-  const dark = new MeshStandardMaterial({ color: 0x096b68, metalness: .35, roughness: .4 });
-  const gold = new MeshStandardMaterial({ color: 0xffc959, metalness: .42, roughness: .35 });
-  const light = new MeshStandardMaterial({ color: 0xfff2be, emissive: 0xefbb50, emissiveIntensity: .42 });
-  const disk = new Mesh(new CylinderGeometry(2.4, 2.6, .3, 20), dark);
-  disk.position.y = .15; root.add(disk);
-  const ring = new Mesh(new TorusGeometry(2.2, .13, 8, 30), gold);
-  ring.rotation.x = Math.PI/2; ring.position.y = .38; root.add(ring);
-  const box = new Mesh(new BoxGeometry(2.9, 1.3, 1.9), dark);
-  box.position.y = 1.02; root.add(box);
-  const lid = new Mesh(new BoxGeometry(3.12, .46, 2.1), gold);
-  lid.position.y = 1.9; root.add(lid);
-  for (const x of [-1.02, 1.02]) {
-    const strap = new Mesh(new BoxGeometry(.18, 1.66, 2.06), gold);
-    strap.position.set(x, 1.16, 0); root.add(strap);
+  const stoneMat = new MeshStandardMaterial({ color: 0x6e736e, roughness: 0.9 });
+  const mossMat = new MeshStandardMaterial({ color: 0x4e8544, roughness: 0.85 });
+  const goldCrystal = new MeshStandardMaterial({
+    color: 0xffd54f,
+    emissive: 0xff9800,
+    emissiveIntensity: 1.35,
+    roughness: 0.18,
+    metalness: 0.6,
+  });
+  const haloMat = new MeshBasicMaterial({ color: 0xffe082, transparent: true, opacity: 0.6, depthWrite: false });
+  const sparkleMat = new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
+
+  // 1. Mossy stone base
+  const mound = new Mesh(new CylinderGeometry(2.4, 2.8, 0.3, 16), mossMat);
+  mound.position.y = 0.15;
+  root.add(mound);
+
+  // Clusters of small rocks around the base
+  for (let i = 0; i < 7; i++) {
+    const angle = (i * 2 * Math.PI) / 7;
+    const stone = new Mesh(new DodecahedronGeometry(0.45 + (i % 3) * 0.1, 0), stoneMat);
+    stone.position.set(Math.cos(angle) * 1.8, 0.35, Math.sin(angle) * 1.8);
+    root.add(stone);
   }
-  const lock = new Mesh(new OctahedronGeometry(.44), light);
-  lock.position.set(0, 1.38, 1.08); root.add(lock);
+
+  // 2. Glowing Golden Ground Ring
+  const groundRing = new Mesh(new TorusGeometry(2.6, 0.12, 8, 32), haloMat);
+  groundRing.rotation.x = Math.PI / 2;
+  groundRing.position.y = 0.32;
+  root.add(groundRing);
+
+  // 3. Central Faceted Golden Crystal
+  const crystalGeo = new OctahedronGeometry(1.6, 0);
+  crystalGeo.scale(0.85, 2.2, 0.85);
+  const mainCrystal = new Mesh(crystalGeo, goldCrystal);
+  mainCrystal.position.y = 2.4;
+  root.add(mainCrystal);
+
+  // Flanking smaller crystals
   for (let i = 0; i < 4; i++) {
-    const glimmer = new Mesh(new OctahedronGeometry(.3 + i * .045), light);
-    glimmer.position.set(Math.cos(i*Math.PI/2)*2.4, 2.85 + (i%2)*.65, Math.sin(i*Math.PI/2)*1.3);
-    root.add(glimmer);
+    const angle = (i * Math.PI) / 2 + 0.3;
+    const subGeo = new OctahedronGeometry(0.9, 0);
+    subGeo.scale(0.65, 1.4, 0.65);
+    const subCrystal = new Mesh(subGeo, goldCrystal);
+    subCrystal.position.set(Math.cos(angle) * 0.9, 1.2, Math.sin(angle) * 0.9);
+    subCrystal.rotation.z = Math.cos(angle) * 0.25;
+    subCrystal.rotation.x = Math.sin(angle) * 0.25;
+    root.add(subCrystal);
   }
+
+  // 4. Floating Sparkle Particles
+  for (let i = 0; i < 6; i++) {
+    const sparkle = new Mesh(new OctahedronGeometry(0.18 + (i % 2) * 0.08, 0), sparkleMat);
+    const angle = i * 1.1;
+    sparkle.position.set(Math.cos(angle) * 1.4, 2.0 + (i % 4) * 0.6, Math.sin(angle) * 1.4);
+    root.add(sparkle);
+  }
+
+  return root;
+}
+
+function makeMysteryZone(): Group {
+  const root = new Group();
+  const ringMat = new MeshBasicMaterial({ color: 0xffe57f, transparent: true, opacity: 0.85, depthWrite: false });
+  const fillMat = new MeshBasicMaterial({ color: 0xffd54f, transparent: true, opacity: 0.25, depthWrite: false });
+  const markMat = new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
+
+  // 1. Glowing soft circular ground fill
+  const groundFill = new Mesh(new CircleGeometry(3.2, 28), fillMat);
+  groundFill.rotation.x = -Math.PI / 2;
+  groundFill.position.y = 0.08;
+  root.add(groundFill);
+
+  // 2. Dashed Glowing Ring (arc segments)
+  const segments = 12;
+  for (let i = 0; i < segments; i++) {
+    const arc = new Mesh(new TorusGeometry(3.2, 0.12, 6, 8, Math.PI / (segments * 1.3)), ringMat);
+    arc.rotation.x = Math.PI / 2;
+    arc.rotation.z = (i * 2 * Math.PI) / segments;
+    arc.position.y = 0.12;
+    root.add(arc);
+  }
+
+  // 3. Hovering 3D Glowing Question Mark "?"
+  if (typeof document !== "undefined") {
+    const canvas = document.createElement("canvas");
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.font = "bold 88px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "#ffeb3b";
+      ctx.shadowBlur = 18;
+      ctx.fillText("?", 64, 64);
+    }
+    const qTex = new CanvasTexture(canvas);
+    qTex.needsUpdate = true;
+    const qMat = new MeshBasicMaterial({ map: qTex, transparent: true, side: 2 });
+    const qDisc = new Mesh(new CircleGeometry(1.6, 20), qMat);
+    qDisc.position.y = 2.4;
+    root.add(qDisc);
+  }
+
+  // Floating sparkle particles
+  for (let i = 0; i < 5; i++) {
+    const angle = i * 1.3;
+    const sparkle = new Mesh(new OctahedronGeometry(0.18, 0), markMat);
+    sparkle.position.set(Math.cos(angle) * 1.8, 1.8 + (i % 3) * 0.5, Math.sin(angle) * 1.8);
+    root.add(sparkle);
+  }
+
   return root;
 }
 
@@ -322,6 +726,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
   let renderer: WebGLRenderer | null = null;
   let localToMercator = new Matrix4();
   let enabled = valid.length > 0;
+  let mapInstance: any = null;
 
   if (enabled) {
     const origin = MercatorCoordinate.fromLngLat({ lng: valid[0].longitude, lat: valid[0].latitude }, 0);
@@ -342,7 +747,9 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       if (point.kind === "facade") continue;
       if (point.kind === "lamp") { lamps.push({ x:dx, z:dz, seed:seedFromId(point.id) }); continue; }
       const beacon = point.kind === "roof" ? makeRoof(point)
-        : point.kind === "treasure" ? makeTreasure() : makeBeacon(point.kind);
+        : point.kind === "treasure" ? makeTreasure()
+        : point.kind === "mystery" ? makeMysteryZone()
+        : makeBeacon(point.kind, point);
       beacon.position.set(dx, 0, dz);
       beacon.name = point.id;
       scene.add(beacon);
@@ -366,14 +773,20 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
     renderingMode: "3d",
     onAdd(map, gl) {
       if (!enabled) return;
+      mapInstance = map;
       renderer = new WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: false });
       renderer.autoClear = false;
     },
-    render(_gl, args) {
+    render(_gl, args: any) {
       if (!enabled || !renderer) return;
-      camera.projectionMatrix.copy(new Matrix4().fromArray(args.defaultProjectionData.mainMatrix).multiply(localToMercator));
+      const matrix = args?.modelViewProjectionMatrix
+        ?? args?.defaultProjectionData?.mainMatrix
+        ?? (Array.isArray(args) ? args : null);
+      if (!matrix) return;
+      camera.projectionMatrix.copy(new Matrix4().fromArray(matrix).multiply(localToMercator));
       renderer.resetState();
       renderer.render(scene, camera);
+      mapInstance?.triggerRepaint();
     },
     onRemove() {
       // Never forceContextLoss(): the WebGL context belongs to MapLibre.

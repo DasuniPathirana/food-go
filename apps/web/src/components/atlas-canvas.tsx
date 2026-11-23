@@ -26,7 +26,16 @@ import type { EncounterSignal } from "@/lib/encounter-landmarks";
 import css from "./atlas-canvas.module.css";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
-export type AtlasPlace = AtlasSelection & { id: string; name: string; image?: string; kind?: "cafe" | "restaurant" | "market" | "building"; shopCount?: number; members?: readonly { id: string }[] };
+export type AtlasPlace = AtlasSelection & {
+  id: string;
+  name: string;
+  image?: string;
+  kind?: "cafe" | "restaurant" | "market" | "building";
+  shopCount?: number;
+  members?: readonly { id: string }[];
+  rating?: number;
+  distanceMetres?: number;
+};
 export type AtlasImagery = "game" | "street" | "aerial" | "satellite";
 export type AtlasCanvasProps = {
   places: readonly AtlasPlace[]; selected: AtlasSelection | null; threeD: boolean; imagery: AtlasImagery;
@@ -42,12 +51,14 @@ export type AtlasCanvasProps = {
   onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
   onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
   onDemoTreasure?: () => void;
+  zoomInTrigger?: number;
+  zoomOutTrigger?: number;
   /** Explicit map-only focus for the opt-in, non-redeemable demo tour. */
   demoFocus?: (AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null;
 };
 
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
-const homeZoom = 15.3;
+const homeZoom = 16.8;
 function duration() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 380; }
 function valid(point: AtlasSelection | null | undefined): point is AtlasSelection {
   return !!point && Number.isFinite(point.longitude) && Number.isFinite(point.latitude)
@@ -174,7 +185,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       active = new gl.Map({
         container, style: composed.style, center: valid(initial.player) ? [initial.player.longitude, initial.player.latitude] : ATLAS_CENTER,
         zoom: homeZoom, minZoom: 1, ...initialLimits,
-        pitch: initial.threeD ? 44 : 0, bearing: initial.threeD ? -18 : 0,
+        pitch: initial.threeD ? 58 : 0, bearing: initial.threeD ? -42 : 0,
         cooperativeGestures: false, scrollZoom: true, renderWorldCopies: true, attributionControl: false,
         pixelRatio: initial.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2),
       });
@@ -183,7 +194,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       if (valid(initial.player) && initial.followPlayer) {
         const camera = sceneCamera.current(map, { perspective: initialPerspective, point: initial.player,
           heading: initial.heading ?? map.getBearing(), follow: true, threeD: initial.threeD, refocus: true });
-        if (camera) map.jumpTo(camera);
+        if (camera) map.jumpTo({ ...camera, pitch: initial.threeD ? 58 : camera.pitch, bearing: initial.threeD ? -42 : 0, zoom: homeZoom });
       }
       map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
       map.on("click", event => {
@@ -329,27 +340,20 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!threeD || imagery !== "game" || props.lowDetail) return;
     const centre = map.getCenter();
     const reference = { latitude: centre.lat, longitude: centre.lng };
-    const demo = new URLSearchParams(window.location.search).get("world-demo") === "1";
-    // High-priority demo landmarks and restaurant locations must appear before
-    // optional trees/roofs. Otherwise the scene object budget can cut off the
-    // clickable visual chest when many park features are loaded.
-    const fixture: GameWorldObject[] = demo ? ([
-      { id: "demo-city-food-station-visual-only", longitude: 144.96783,
-        latitude: -37.81736, kind: "restaurant" },
-      { id: "demo-city-cafe-visual-only", longitude: 144.96885,
-        latitude: -37.81742, kind: "cafe" },
-      { id: "demo-park-food-station-visual-only", longitude: 144.97911,
-        latitude: -37.81305, kind: "market" },
-      { id: "melbourne-treasure-demo-not-redeemable", longitude: 144.96915,
-        latitude: -37.81790, kind: "treasure" },
-    ] satisfies GameWorldObject[]).filter(point => mapDistance(point, reference) < 1250) : [];
-    const localDemoPark = demo && mapDistance(reference,
+    const fixture: GameWorldObject[] = [
+      { id: "the-ovenhouse-model", name: "The Ovenhouse", longitude: 144.9673, latitude: -37.8149, kind: "restaurant" as const, variant: 0 },
+      { id: "riverside-bakery-model", name: "Riverside Bakery", longitude: 144.9664, latitude: -37.8156, kind: "restaurant" as const, variant: 1 },
+      { id: "melbourne-treasure-crystal", longitude: 144.9676, latitude: -37.8163, kind: "treasure" as const },
+      { id: "melbourne-mystery-zone", longitude: 144.9677, latitude: -37.8154, kind: "mystery" as const },
+    ].filter(point => mapDistance(point, reference) < 1250);
+    const localDemoPark = mapDistance(reference,
       { longitude: 144.9794, latitude: -37.8134 }) < 850 ? demoParkScenery() : [];
     const nearby: GameWorldObject[] = [
       ...fixture,
       ...places.filter(valid).filter(place => mapDistance(place, reference) < 1250).slice(0, 20).map(place => ({
         id: place.id, longitude: place.longitude, latitude: place.latitude,
         kind: place.kind ?? "building" as const,
+        name: place.name,
       })),
       ...localDemoPark,
       ...parkTrees,
@@ -441,14 +445,25 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!ready || !map || !Pin) return;
     const pins = placeMarkers.current;
     for (const place of places.filter(valid)) {
-      const button = createMapPlaceMarker(place);
+      const distance = player && valid(player) ? mapDistance(player, place) : undefined;
+      const button = createMapPlaceMarker(place, place.distanceMetres ?? distance, place.rating);
       button.style.position = "absolute";
       button.onclick = event => { event.stopPropagation(); latest.current.onSelect({ longitude: place.longitude, latitude: place.latitude, id: place.id }); };
       pins.set(place.id, new Pin({ element: button, anchor: "bottom", subpixelPositioning: true })
         .setLngLat([place.longitude, place.latitude]).addTo(map));
     }
     return () => { for (const marker of pins.values()) marker.remove(); pins.clear(); };
-  }, [ready, places]);
+  }, [ready, places, player]);
+
+  useEffect(() => {
+    if (!props.zoomInTrigger || !ready || !mapRef.current) return;
+    mapRef.current.zoomIn({ duration: duration() });
+  }, [props.zoomInTrigger]);
+
+  useEffect(() => {
+    if (!props.zoomOutTrigger || !ready || !mapRef.current) return;
+    mapRef.current.zoomOut({ duration: duration() });
+  }, [props.zoomOutTrigger]);
 
   useEffect(() => {
     for (const place of places) {
@@ -551,11 +566,14 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         const camera = sceneCamera.current(map, { perspective, point, heading: cameraHeading,
           follow: true, threeD, refocus, groundElevation: ground, look: firstPersonLook.current });
         if (camera) {
+          const targetPose = perspective === "overhead" && threeD
+            ? { ...camera, pitch: 58, bearing: -42, zoom: camera.zoom ?? homeZoom }
+            : camera;
           const blend = cameraBlend.current;
           if (blend && blend.duration && now - blend.started < blend.duration) {
-            map.jumpTo(blendExplorerCamera(blend.from, explorerCameraPose(camera, { ...point, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }),
+            map.jumpTo(blendExplorerCamera(blend.from, explorerCameraPose(targetPose, { ...point, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }),
             (now - blend.started) / blend.duration));
-          } else { map.jumpTo(camera); cameraBlend.current = null; }
+          } else { map.jumpTo(targetPose); cameraBlend.current = null; }
         }
       }
       if (progress < 1 || (cameraBlend.current && now - cameraBlend.current.started < cameraBlend.current.duration && !cameraInterrupted.current)) animation = requestAnimationFrame(render);
