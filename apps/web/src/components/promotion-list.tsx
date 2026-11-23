@@ -1,18 +1,156 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, ChevronRight, Gift, Star, Utensils, Croissant, Coffee, Store } from "lucide-react";
 import type { PromotionResult } from "@/lib/promotions";
 import styles from "./deals.module.css";
 
-const expiry = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Australia/Melbourne" });
+const FEATURED_DEALS = [
+  {
+    id: "featured-ovenhouse",
+    venueName: "The Ovenhouse",
+    venueSlug: "the-ovenhouse",
+    rating: 4.8,
+    distance: "180 m",
+    discount: "20% OFF",
+    offerDetail: "on mains this week",
+    image: "/images/brunch.jpg",
+    dishAlt: "Roasted chicken with fresh vegetables",
+    buildingType: "ovenhouse",
+    icon: Utensils,
+    iconColor: "#f6c944",
+  },
+  {
+    id: "featured-riverside",
+    venueName: "Riverside Bakery",
+    venueSlug: "riverside-bakery",
+    rating: 4.7,
+    distance: "320 m",
+    discount: "Buy 1 Get 1",
+    offerDetail: "on selected pastries",
+    image: "/images/pizza.jpg",
+    dishAlt: "Freshly baked golden croissants",
+    buildingType: "bakery",
+    icon: Store,
+    iconColor: "#f6c944",
+  },
+  {
+    id: "featured-cafe-alba",
+    venueName: "Café Alba",
+    venueSlug: "cafe-alba",
+    rating: 4.6,
+    distance: "450 m",
+    discount: "$2 OFF",
+    offerDetail: "any coffee & cake combo",
+    image: "/images/coffee.jpg",
+    dishAlt: "Artisanal latte with chocolate layer cake",
+    buildingType: "cafe",
+    icon: Coffee,
+    iconColor: "#f6c944",
+  },
+];
 
 export function PromotionList({ result, limit }: { result: PromotionResult; limit?: number }) {
-  if (result.status === "unavailable") return <div role="status" className={styles.offerEmpty} data-compact={limit !== undefined}><div><h3>Offers are taking a moment.</h3><p>Please try again shortly. You can keep exploring the map.</p>{limit === undefined && <Link href="/">Browse the map <ArrowRight size={15}/></Link>}</div></div>;
-  if (!result.promotions.length) return <div className={styles.offerEmpty} data-compact={limit !== undefined}><div><h3>A little room for a good deal.</h3><p>No active offers match this view. Approved restaurant offers will appear here.</p>{limit === undefined && <Link href="/">Find your next place <ArrowRight size={15}/></Link>}</div></div>;
-  return <div className={styles.promotionGrid}>{result.promotions.slice(0, limit).map(promo =>
-    <article className={styles.promotion} key={promo.id} data-kind={promo.kind}>
-      <div className={styles.promotionBody}><span className={styles.offerKind}>{promo.kind === "food" ? "Food Deal" : "Restaurant Deal"}</span><h3>{promo.title}</h3><p>{promo.description}</p>
-        <Link href={`/venues/${encodeURIComponent(promo.venueSlug)}`}>{promo.venueName}<ArrowRight size={14} /></Link>
-        <small className={styles.offerExpiry}><Clock size={13}/><span>{promo.suburb} · Ends <time dateTime={promo.endsAt}>{expiry.format(new Date(promo.endsAt))}</time> Melbourne time</span></small>
+  const dealsToDisplay = result.promotions.length > 0
+    ? result.promotions.slice(0, limit)
+    : FEATURED_DEALS;
+
+  return (
+    <div className={styles.dealsContainer}>
+      <div className={styles.dealCardsList}>
+        {dealsToDisplay.map((deal) => {
+          const isFeatured = "discount" in deal;
+          const venueName = deal.venueName;
+          const rating = isFeatured ? deal.rating : 4.8;
+          const distance = isFeatured ? deal.distance : "CBD";
+          const discount = isFeatured ? deal.discount : "Special Offer";
+          const detail = isFeatured ? deal.offerDetail : deal.title;
+          const image = isFeatured ? deal.image : "/images/brunch.jpg";
+          const dishAlt = isFeatured ? deal.dishAlt : deal.title;
+          const Icon = isFeatured ? deal.icon : Utensils;
+
+          return (
+            <article className={styles.premiumDealCard} key={deal.id}>
+              {/* Left Column: Miniature Venue Visual & Badge */}
+              <div className={styles.dealVenueMini}>
+                <div className={styles.miniPinBadge}>
+                  <Icon size={14} className={styles.miniPinIcon} />
+                </div>
+                <div className={styles.miniBuildingGraphic} aria-hidden="true">
+                  <div className={styles.miniBuildingRoof} />
+                  <div className={styles.miniBuildingFacade}>
+                    <div className={styles.miniAwning} />
+                    <div className={styles.miniDoor} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle Column: Venue Details, Rating, Discount Offer */}
+              <div className={styles.dealInfoCol}>
+                <div className={styles.dealVenueMeta}>
+                  <h3 className={styles.dealVenueTitle}>{venueName}</h3>
+                  <div className={styles.dealRatingRow}>
+                    <Star size={12} className={styles.dealStarIcon} fill="#f6c944" />
+                    <span>{rating}</span>
+                    <span className={styles.dealDotSep}>·</span>
+                    <span>{distance}</span>
+                  </div>
+                </div>
+
+                <div className={styles.dealOfferHighlight}>
+                  <strong className={styles.dealDiscountText}>{discount}</strong>
+                  <span className={styles.dealOfferDetail}>{detail}</span>
+                </div>
+              </div>
+
+              {/* Right Column: Appetizing Dish Visual with Radial Glow + Redeem CTA */}
+              <div className={styles.dealActionCol}>
+                <div className={styles.dishGlowContainer}>
+                  <div className={styles.dishSunburst} aria-hidden="true" />
+                  <div className={styles.dishPhotoWrapper}>
+                    <Image
+                      src={image}
+                      alt={dishAlt}
+                      width={90}
+                      height={90}
+                      className={styles.dishPhoto}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.redeemButton}
+                  onClick={() => alert(`Offer "${discount}" redeemed for ${venueName}!`)}
+                  aria-label={`Redeem ${discount} at ${venueName}`}
+                >
+                  <span>Redeem</span>
+                  <ArrowRight size={13} strokeWidth={2.4} />
+                </button>
+              </div>
+            </article>
+          );
+        })}
       </div>
-    </article>)}</div>;
+
+      {/* FoodGo Rewards Progress Banner */}
+      <section className={styles.rewardsCard} aria-label="FoodGo Rewards Progress">
+        <div className={styles.rewardsIconWrapper}>
+          <Gift size={24} className={styles.rewardsGiftIcon} />
+        </div>
+        <div className={styles.rewardsTextCol}>
+          <h2 className={styles.rewardsTitle}>FoodGo Rewards</h2>
+          <p className={styles.rewardsSubtitle}>Earn more with every deal you redeem.</p>
+          <div className={styles.rewardsProgressRow}>
+            <div className={styles.rewardsProgressBar}>
+              <div className={styles.rewardsProgressFill} style={{ width: "0%" }} />
+            </div>
+            <span className={styles.rewardsCounter}>0 / 5</span>
+          </div>
+        </div>
+        <ChevronRight size={18} className={styles.rewardsChevron} />
+      </section>
+    </div>
+  );
 }

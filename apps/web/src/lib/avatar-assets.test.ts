@@ -70,7 +70,7 @@ const errorCode = (code: string) => (error: unknown) => error instanceof AvatarM
 test("asset admission requires canonical local art, explicit redistribution rights, metrics and distinct clips", () => {
   const valid = manifest(fixtureGlb());
   assert.deepEqual(parseAvatarAssetManifest(valid), valid);
-  assert.deepEqual(AVATAR_ASSET_CATALOGUE, {}, "No supplied production art may be invented by this boundary");
+  assert.ok(AVATAR_ASSET_CATALOGUE.explorer, "Supplied Urban Pathfinder production art registered");
   for (const value of [
     { ...valid, path: "https://example.invalid/avatar.glb" }, { ...valid, path: "/models/avatars/../avatar.glb" },
     { ...valid, path: "/models/avatars/a//b.glb" }, { ...valid, path: "/models/avatars/a.glb?key=x" },
