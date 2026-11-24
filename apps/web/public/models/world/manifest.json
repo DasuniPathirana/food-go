@@ -6,7 +6,5 @@
     "riverRock": "river-rock.glb"
   },
   "credits": "credits.txt",
-  "venueModels": {
-    "the-ovenhouse-model": "kyotoRestaurant"
-  }
+  "venueModels": {}
 }

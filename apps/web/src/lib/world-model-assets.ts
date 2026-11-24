@@ -11,11 +11,19 @@ const filenames = {
   kyotoRestaurant: "kyoto-restaurant.glb",
   parkTree: "park-tree.glb",
   riverRock: "river-rock.glb",
+  isometricCafe: "isometric-cafe.glb",
+  japaneseBakery: "japanese-bakery.glb",
+  stylizedFoodTruck: "stylized-food-truck.glb",
+  rewardCrates: "reward-crates.glb",
+  parkBench: "park-bench.glb",
+  streetLight: "street-light.glb",
 } as const;
 export type WorldAssetId = keyof typeof filenames;
+const venueAssetIds = ["kyotoRestaurant", "isometricCafe", "japaneseBakery", "stylizedFoodTruck"] as const;
+type VenueAssetId = typeof venueAssetIds[number];
 type Manifest = {
   assets: Partial<Record<WorldAssetId, string>>;
-  venueModels: Record<string, "kyotoRestaurant">;
+  venueModels: Record<string, VenueAssetId>;
 };
 export type WorldModelTarget = {
   id: string; fallback: Group; x: number; z: number;
@@ -35,7 +43,7 @@ export function parseWorldManifest(value: unknown): Manifest {
   }
   if (input.venueModels && typeof input.venueModels === "object") {
     for (const [id, model] of Object.entries(input.venueModels)) {
-      if (/^[a-zA-Z0-9_-]{1,120}$/.test(id) && model === "kyotoRestaurant") manifest.venueModels[id] = model;
+      if (/^[a-zA-Z0-9_-]{1,120}$/.test(id) && venueAssetIds.includes(model as VenueAssetId)) manifest.venueModels[id] = model as VenueAssetId;
     }
   }
   return manifest;
@@ -96,6 +104,8 @@ export async function attachWorldModels(
     const id = target.asset ?? manifest.venueModels[target.id];
     if (!id || !manifest.assets[id]) continue;
     const list = groups.get(id) ?? [];
+    // Detailed storefronts can have hundreds of draw calls. Bound the imported instances.
+    if (id !== "parkTree" && list.length >= 2) continue;
     list.push(target); groups.set(id, list);
   }
   const loader = new GLTFLoader();
