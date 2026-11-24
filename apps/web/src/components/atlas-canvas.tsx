@@ -24,7 +24,7 @@ import { buildCameraObstacles, resolveCameraClearance, type CameraObstacle } fro
 import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
 import type { EncounterSignal } from "@/lib/encounter-landmarks";
 import css from "./atlas-canvas.module.css";
-import { isInsideMelbournePilot } from "@food-go/domain";
+import { isInsideMelbournePilot, MELBOURNE_PILOT_BOUNDS } from "@food-go/domain";
 import { attachPilotFog } from "./pilot-fog";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
@@ -55,6 +55,7 @@ export type AtlasCanvasProps = {
   onDemoTreasure?: () => void;
   zoomInTrigger?: number;
   zoomOutTrigger?: number;
+  pilotOverviewNonce?: number;
   /** Explicit map-only focus for the opt-in, non-redeemable demo tour. */
   demoFocus?: (AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null;
 };
@@ -272,6 +273,16 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
 
   useEffect(() => {
     const map = mapRef.current;
+    if (!ready || !map || !props.pilotOverviewNonce) return;
+    cameraInterrupted.current = true;
+    const b = MELBOURNE_PILOT_BOUNDS;
+    const height = map.getContainer().clientHeight;
+    const padding = { top: Math.min(145, Math.floor(height * .22)), bottom: Math.min(120, Math.floor(height * .2)), left: 24, right: 55 };
+    map.fitBounds([[b.minLon, b.minLat], [b.maxLon, b.maxLat]], { bearing: 0, pitch: 0, padding, duration: duration(), maxZoom: 15 });
+  }, [ready, props.pilotOverviewNonce]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     const target = props.demoFocus;
     if (!ready || !map || !target || !valid(target)) return;
     // Public map movement only; changes neither the device GPS nor rewards.
@@ -398,8 +409,6 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       ...approvedFoodVenues,
       ...localDemoPark,
       ...parkTrees,
-      ...facadeDetails,
-      ...roofDetails,
       ...streetLights,
     ].filter(isInsideMelbournePilot);
     if (valid(selected) && isInsideMelbournePilot(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({

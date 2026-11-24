@@ -23,7 +23,7 @@ import { useDeviceCompass } from "./use-device-compass";
 import { useGeographicDiscovery } from "./use-geographic-discovery";
 import { useEncounterLandmarks } from "./use-encounter-landmarks";
 import type { ExplorationFogResult } from "@food-go/domain/exploration";
-import { getMallByCoordinate, getMallById, type MallData, type ARCollectibleItem } from "@food-go/domain";
+import { isInsideMelbournePilot, getMallByCoordinate, getMallById, type MallData, type ARCollectibleItem } from "@food-go/domain";
 import { MallModal } from "./mall-modal";
 import { ARRewardView } from "./ar-reward-view";
 import { useStreetWalk } from "./use-street-walk";
@@ -95,6 +95,9 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [zoomInNonce, setZoomInNonce] = useState(0);
   const [zoomOutNonce, setZoomOutNonce] = useState(0);
+  const [pilotOverviewNonce, setPilotOverviewNonce] = useState(0);
+  const [demoMode, setDemoMode] = useState(false);
+  useEffect(() => { setDemoMode(new URLSearchParams(window.location.search).get("world-demo") === "1" || /^\/(demo|explore-preview)(\/|$)/.test(window.location.pathname)); }, []);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
   const [activeMall, setActiveMall] = useState<MallData | null>(null);
@@ -122,7 +125,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [discoveryView, setDiscoveryView] = useState<Omit<ExplorationFogResult, "data"> | null>(null);
   const allVenues = useMemo(() => [...new Map([...venues, ...chosenVenues, ...venueResults].map(v => [v.id, v])).values()], [venues, chosenVenues, venueResults]);
   const encounterLandmarks = useEncounterLandmarks({ enabled: encountersAvailable, mode: location.mode, fix: location.fix, venues: allVenues });
-  const stops = useMemo(() => atlasStops(HERO_LANDMARKS, allVenues), [allVenues]);
+  const stops = useMemo(() => atlasStops(demoMode ? HERO_LANDMARKS : [], allVenues).filter(isInsideMelbournePilot), [allVenues, demoMode]);
   const active = stops.find(stop => stop.id === selected?.id);
   const nearbyMall = selected ? (selected.id ? getMallById(selected.id) : null) || getMallByCoordinate(selected) : null;
   const encounterVenueId = active?.members.length === 1 ? active.members[0].id
@@ -169,6 +172,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   }
   const selectPoint = useCallback((point: AtlasSelection) => {
     if (!geographicPoint(point)) return;
+    if (!isInsideMelbournePilot(point)) { setSearchMessage("This area is coming soon. Explore the Melbourne pilot area first."); setSearchOpen(true); return; }
     setSelected(point); setSelectedName(""); setSearchOpen(false);
     setChosenShop(null);
     if (location.mode === "live" && location.status === "live") void walk.planTo(point);
@@ -177,6 +181,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     setFollow(true);
   }, [location.mode, location.status, walk.planTo, walk.walkTo, walk.cancel]);
   function choose(point: AtlasSelection, name: string) {
+    if (!isInsideMelbournePilot(point)) { setSearchMessage("This area is coming soon. Explore the Melbourne pilot area first."); setSearchOpen(true); return; }
     setChosenShop(null);
     field.current?.focus({ preventScroll: true });
     if (mapDistance(player, point) > 2000) {
@@ -277,6 +282,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     route: walk.route,
     zoomInTrigger: zoomInNonce,
     zoomOutTrigger: zoomOutNonce,
+    pilotOverviewNonce,
     playerContent: <MapPlayer avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}
       close={perspective === "close"}
       heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
@@ -320,7 +326,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
         <button type="button" onClick={retryGraphics}>Retry 3D</button>
       </div>}
-      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoWorldTour onSelect={previewDemo}/><DemoTreasureEncounter activationToken={demoTreasureToken}/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/>{demoMode && <><DemoWorldTour onSelect={previewDemo}/><DemoTreasureEncounter activationToken={demoTreasureToken}/></>}
         {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
@@ -346,8 +352,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           onZoomIn={() => setZoomInNonce(n => n + 1)}
           onZoomOut={() => setZoomOutNonce(n => n + 1)}
           onLayersToggle={() => setThreeD(v => !v)}
-          onLocationClick={locate}
-          onQuestClick={() => selectPoint({ longitude: 144.9675, latitude: -37.8148, id: "the-ovenhouse" })}
+          onLocationClick={() => { setFollow(false); setPerspective("overhead"); setPilotOverviewNonce(n => n + 1); }}
+          onQuestClick={() => { window.location.assign("/quests"); }}
           currentSection="explore"
         />
         <div className={styles.perspectives} role="group" aria-label="Explorer view">

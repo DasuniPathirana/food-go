@@ -11,7 +11,7 @@ import { explorationFogGeometry, EXPLORATION_MAX_LATITUDE } from "@food-go/domai
 import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
 import type { AtlasCanvasProps } from "./atlas-canvas";
 import styles from "./world-map-fallback.module.css";
-import { isInsideMelbournePilot } from "@food-go/domain";
+import { isInsideMelbournePilot, MELBOURNE_PILOT_BOUNDS, melbournePilotBoundaryFeature, melbournePilotMaskFeature } from "@food-go/domain";
 import { attachPilotFog } from "./pilot-fog";
 
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
@@ -68,6 +68,11 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
         unproject: (x, y) => { const point = active.containerPointToLatLng([x, y]).wrap(); return { longitude: point.lng, latitude: point.lat }; },
         subscribe: refresh => { active.on("move zoom resize", refresh); return () => { active.off("move zoom resize", refresh); }; },
       });
+      // Geographic tint and boundary stay available when browser blur is unsupported.
+      const pilotPane = active.createPane("pilot-fog-fallback");
+      pilotPane.style.zIndex = "460"; pilotPane.style.pointerEvents = "none";
+      L.geoJSON(melbournePilotMaskFeature(), { pane: "pilot-fog-fallback", interactive: false, style: { stroke: false, fillColor: "#d6e1df", fillOpacity: .55 } }).addTo(active);
+      L.geoJSON(melbournePilotBoundaryFeature(), { pane: "pilot-fog-fallback", interactive: false, style: { color: "#08786e", weight: 2, fill: false } }).addTo(active);
       active.once("unload", detachFog);
       active.on("dragstart", () => latest.current.onCameraInteraction?.());
       observer = new ResizeObserver(() => active.invalidateSize({ animate: false }));
@@ -83,6 +88,12 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       map.current?.remove(); map.current = null; api.current = null; streetTiles.current = null;
     };
   }, []);
+  useEffect(() => {
+    const active = map.current;
+    if (!ready || !active || !props.pilotOverviewNonce) return;
+    const b = MELBOURNE_PILOT_BOUNDS;
+    active.fitBounds([[b.minLat,b.minLon],[b.maxLat,b.maxLon]], { paddingTopLeft: [24,110], paddingBottomRight: [55,100], maxZoom: 15, animate: false });
+  }, [ready, props.pilotOverviewNonce]);
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active || props.imagery === "street" || props.imagery === "game") return;

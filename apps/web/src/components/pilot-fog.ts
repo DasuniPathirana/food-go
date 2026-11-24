@@ -17,6 +17,16 @@ export function pilotFogClip(width: number, height: number, ring: readonly Pixel
   return `polygon(evenodd, 0px 0px, ${width}px 0px, ${width}px ${height}px, 0px ${height}px, 0px 0px, ${ring.map(point).join(", ")}, ${point(ring[0])}, 0px 0px)`;
 }
 
+/** Test a projected ring using the same even-odd rule as CSS clipping. */
+export function projectedPilotContains(ring: readonly Pixel[], x: number, y: number): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i], b = ring[j];
+    if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
 /** Non-interactive veil between map imagery and UI; updates with the live camera.
  * The geographic MapLibre mask remains a fallback for unsupported CSS. */
 export function attachPilotFog(host: HTMLElement, camera: FogCamera, canvas?: HTMLElement): () => void {
@@ -44,8 +54,16 @@ export function attachPilotFog(host: HTMLElement, camera: FogCamera, canvas?: HT
     if (!width || !height) return;
     const points = ring.map(([longitude, latitude]) => camera.project(longitude, latitude));
     const clip = pilotFogClip(width, height, points);
-    const supports = clip && CSS.supports("clip-path", clip);
-    if (supports) { veil.style.clipPath = clip; veil.style.display = "block"; }
+    // A very pitched camera can project distant vertices behind its horizon.
+    // Do not let that screen-space approximation blur a playable street. The
+    // map-native geographic mask still provides the future-area tint.
+    const matchesGeography = clip && [.06,.25,.5,.75,.94].every(fx => [.06,.25,.5,.75,.94].every(fy => {
+      const x = width * fx, y = height * fy;
+      const location = camera.unproject(x,y);
+      return projectedPilotContains(points,x,y) === isInsideMelbournePilot(location);
+    }));
+    const supports = matchesGeography && CSS.supports("clip-path", clip!);
+    if (supports) { veil.style.clipPath = clip!; veil.style.display = "block"; }
     else veil.style.display = "none";
     // Position the lock message only on an actually unavailable region, with
     // enough space around it to avoid straddling the playable boundary.
