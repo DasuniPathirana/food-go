@@ -474,6 +474,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!ready || !map || !Credit) return;
     const credit = new Credit({ compact: true, customAttribution: [
       `<a href="${ATLAS_ATTRIBUTION}" target="_blank">City of Melbourne · Copernicus</a>`,
+      '<a href="/models/world/credits.txt" target="_blank" rel="noopener noreferrer">3D model credits</a>',
       ...(imagery === "satellite" && satelliteKey && !satelliteFailed.current ? ['<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>'] : []),
     ] });
     map.addControl(credit, "bottom-right");

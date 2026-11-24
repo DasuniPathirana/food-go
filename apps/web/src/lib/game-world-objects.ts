@@ -6,6 +6,7 @@
 import { MercatorCoordinate, type CustomLayerInterface } from "maplibre-gl";
 import { addFacadeDressing } from "./game-world-facade-render";
 import type { FacadeObject } from "./game-world-facades";
+import { attachWorldModels, disposeWorldResources, type WorldModelTarget } from "./world-model-assets";
 import {
   AmbientLight, BoxGeometry, Camera, CanvasTexture, CircleGeometry, Color, ConeGeometry,
   CylinderGeometry, DirectionalLight, DodecahedronGeometry, Group, HemisphereLight,
@@ -52,7 +53,7 @@ type TreePosition = { x: number; z: number; seed: number };
  * an individual draw call for every leaf. Three species diversify the map.
  * These are artistic additions to mapped parkland, not surveyed tree positions.
  */
-function addParkForest(scene: Scene, positions: readonly TreePosition[]): void {
+function addParkForest(scene: Scene | Group, positions: readonly TreePosition[]): void {
   if (!positions.length) return;
   const trunkMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 });
   const leafMaterial = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.88 });
@@ -727,6 +728,8 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
   let localToMercator = new Matrix4();
   let enabled = valid.length > 0;
   let mapInstance: any = null;
+  const modelTargets: WorldModelTarget[] = [];
+  let assetCount = 0;
 
   if (enabled) {
     const origin = MercatorCoordinate.fromLngLat({ lng: valid[0].longitude, lat: valid[0].latitude }, 0);
@@ -743,7 +746,14 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       const dz = (position.y - origin.y) / unit;
       // Avoid huge world-coordinate offsets if a venue directory spans regions.
       if (Math.hypot(dx, dz) > 3000) continue;
-      if (point.kind === "tree") { grove.push({ x: dx, z: dz, seed: seedFromId(point.id) }); continue; }
+      if (point.kind === "tree") {
+        const tree = { x: dx, z: dz, seed: seedFromId(point.id) };
+        if (modelTargets.filter(target => target.asset === "parkTree").length < 10) {
+          const fallback = new Group(); addParkForest(fallback, [tree]); scene.add(fallback);
+          modelTargets.push({ id: point.id, fallback, x: dx, z: dz, asset: "parkTree", width: 7, height: 6, rotation: tree.seed % 47 / 47 * Math.PI * 2 });
+        } else grove.push(tree);
+        continue;
+      }
       if (point.kind === "facade") continue;
       if (point.kind === "lamp") { lamps.push({ x:dx, z:dz, seed:seedFromId(point.id) }); continue; }
       const beacon = point.kind === "roof" ? makeRoof(point)
@@ -753,6 +763,9 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       beacon.position.set(dx, 0, dz);
       beacon.name = point.id;
       scene.add(beacon);
+      if (point.kind === "restaurant" || point.kind === "cafe" || point.kind === "market") {
+        modelTargets.push({ id: point.id, fallback: beacon, x: dx, z: dz, width: 22, height: 16 });
+      }
     }
     addParkForest(scene, grove);
     addStreetLights(scene,lamps);
@@ -776,6 +789,13 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       mapInstance = map;
       renderer = new WebGLRenderer({ canvas: map.getCanvas(), context: gl, antialias: false });
       renderer.autoClear = false;
+      map.getCanvas().dataset.worldModelCount = "0";
+      void attachWorldModels(scene, modelTargets, () => enabled, count => {
+        if (!enabled) return;
+        assetCount = count;
+        map.getCanvas().dataset.worldModelCount = String(assetCount);
+        map.triggerRepaint();
+      });
     },
     render(_gl, args: any) {
       if (!enabled || !renderer) return;
@@ -790,15 +810,9 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
     },
     onRemove() {
       // Never forceContextLoss(): the WebGL context belongs to MapLibre.
-      scene.traverse(node => {
-        const mesh = node as Mesh<BufferGeometry, Material | Material[]>;
-        if (!mesh.isMesh) return;
-        mesh.geometry.dispose();
-        for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-          (material as MeshBasicMaterial).map?.dispose();
-          material.dispose();
-        }
-      });
+      enabled = false;
+      if (mapInstance) delete mapInstance.getCanvas().dataset.worldModelCount;
+      disposeWorldResources(scene);
       renderer?.dispose();
       renderer = null;
       enabled = false;
