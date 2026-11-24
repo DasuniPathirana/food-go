@@ -379,6 +379,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         const k = (place.kind || "").toLowerCase();
         return k === "restaurant" || k === "cafe" || k === "bakery" || k === "market" || k === "food stall" || k === "food court";
       })
+      .sort((a, b) => mapDistance(a, reference) - mapDistance(b, reference))
       .slice(0, 16)
       .map(place => {
         const k = (place.kind || "").toLowerCase();

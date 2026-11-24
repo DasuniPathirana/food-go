@@ -210,3 +210,14 @@
   text-align: center;
   margin: 0;
 }
+
+.encounterDialog { position: fixed; inset: 0; padding: 0; margin: auto; width: min(100%, 520px); max-width: 100%; max-height: 100dvh; height: 100dvh; border: 0; color: #fffdf6; background: #092a26; overflow: auto; z-index: 1500; }
+.encounterDialog::backdrop { background: rgba(4, 19, 17, .8); }
+.encounterView { position: relative; min-height: 42dvh; display: grid; place-items: center; isolation: isolate; overflow: hidden; background: radial-gradient(ellipse, #32665a, #081f1b); }
+.encounterVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+.encounterCollectible { width: min(64%, 240px); filter: drop-shadow(0 0 16px #f5cf6a); }
+.encounterCameraStatus { position: absolute; bottom: 0; margin: 0; padding: 12px; background: rgba(4, 19, 17, .8); width: 100%; font-size: 13px; text-align: center; }
+.encounterConfirmation { background: #fffdf6; color: #163c32; padding: 18px 18px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.encounterConfirmation h2 { color: #163c32; margin: 0 0 8px; }
+.encounterDialog .closeButton { min-height: 44px; min-width: 44px; color: white; }
+.encounterDialog .capabilityBadge { display: inline-flex; gap: 6px; align-items: center; }

@@ -20,7 +20,7 @@ export function PromotionList({ result, limit }: { result: PromotionResult; limi
         <div className={styles.dealOfferHighlight}><strong className={styles.dealDiscountText}>{deal.title}</strong><span className={styles.dealOfferDetail}>{deal.description}</span></div>
         <small><Clock size={12} aria-hidden="true"/> Until {new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "Australia/Melbourne" }).format(new Date(deal.endsAt))}</small>
       </div>
-      <div className={styles.dealActionCol}><Link className={styles.redeemButton} href={`/venues/${encodeURIComponent(deal.venueSlug)}`}>View offer <ArrowRight size={13}/></Link></div>
+      <div className={styles.dealActionCol}><Link className={styles.redeemButton} href={`/venues/${encodeURIComponent(deal.venueSlug)}#offer-${deal.id}`}>View offer <ArrowRight size={13}/></Link></div>
     </article>)}
   </div></div>;
 }
