@@ -739,6 +739,8 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       .multiply(new Matrix4().makeScale(unit, -unit, unit))
       .multiply(new Matrix4().makeRotationX(Math.PI / 2));
     const grove: TreePosition[] = [];
+    const importedGrove: TreePosition[] = [];
+    const groveFallback = new Group();
     const lamps: WorldPosition[] = [];
     for (const point of valid) {
       const position = MercatorCoordinate.fromLngLat({ lng: point.longitude, lat: point.latitude }, 0);
@@ -748,9 +750,9 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       if (Math.hypot(dx, dz) > 3000) continue;
       if (point.kind === "tree") {
         const tree = { x: dx, z: dz, seed: seedFromId(point.id) };
-        if (modelTargets.filter(target => target.asset === "parkTree").length < 10) {
-          const fallback = new Group(); addParkForest(fallback, [tree]); scene.add(fallback);
-          modelTargets.push({ id: point.id, fallback, x: dx, z: dz, asset: "parkTree", width: 7, height: 6, rotation: tree.seed % 47 / 47 * Math.PI * 2 });
+        if (importedGrove.length < 10) {
+          importedGrove.push(tree);
+          modelTargets.push({ id: point.id, fallback: groveFallback, x: dx, z: dz, asset: "parkTree", width: 7, height: 6, rotation: tree.seed % 47 / 47 * Math.PI * 2 });
         } else grove.push(tree);
         continue;
       }
@@ -768,6 +770,7 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
       }
     }
     addParkForest(scene, grove);
+    if (importedGrove.length) { addParkForest(groveFallback, importedGrove); scene.add(groveFallback); }
     addStreetLights(scene,lamps);
     // Batched architectural windows change the whole city silhouette at close
     // zoom without replacing road geography or the underlying map footprint.

@@ -371,6 +371,8 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     // Food-venue pipeline: map approved food venues to reusable 3D restaurant/cafe/bakery models
     const approvedFoodVenues: GameWorldObject[] = places
       .filter(valid)
+      // Demo landmarks have dedicated scenic objects at the same coordinates.
+      .filter(place => !isDemo || !fixture.some(point => point.id === place.id + "-model"))
       .filter(place => mapDistance(place, reference) < 1250)
       .filter(place => {
         const k = (place.kind || "").toLowerCase();
