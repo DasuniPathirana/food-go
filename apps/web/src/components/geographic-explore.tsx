@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import type { LineString } from "geojson";
 import { ArrowUpRight, Box, ChevronUp, Compass, Eye, Hand, Layers, MapPin, Pause, PersonStanding, Play, Search, Settings2, Sparkles, X, ZoomIn } from "lucide-react";
 import { atlasStops, geographicPoint, pointDirections, type AtlasDestination } from "@/lib/atlas-places";
 import { ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
@@ -61,16 +60,6 @@ const HERO_LANDMARKS: readonly AtlasDestination[] = [
   },
 ];
 
-const defaultQuestRoute: LineString = {
-  type: "LineString",
-  coordinates: [
-    [144.9671, -37.8162],
-    [144.9674, -37.8158],
-    [144.9677, -37.8154],
-    [144.9675, -37.8151],
-    [144.9673, -37.8149],
-  ],
-};
 // Search credentials remain independent of the removed satellite style choice.
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
 export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
@@ -285,7 +274,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     encounterSignals: encounterLandmarks.signals,
     location: location.mode === "live" ? location.rawPosition : null, accuracy: location.accuracy ?? undefined,
     heading: location.mode === "live" ? location.heading ?? undefined : walk.heading,
-    route: walk.route || defaultQuestRoute,
+    route: walk.route,
     zoomInTrigger: zoomInNonce,
     zoomOutTrigger: zoomOutNonce,
     playerContent: <MapPlayer avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}

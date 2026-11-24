@@ -72,7 +72,7 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
   };
   for (const layer of layers) {
     const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    if (layer.type === "background") add(layer, "background-color", "#84af65", "#000000");
+    if (layer.type === "background") add(layer, "background-color", "#d8d9cf", "#000000");
     if (layer.type === "raster" && layer.id === "natural_earth") add(layer, "raster-opacity", 0, 1);
     if (layer.type === "fill") {
       const landColour = sourceLayer === "water" || layer.id === "water" ? "#4ea9d3"
@@ -84,7 +84,7 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
                   : /ice|glacier/u.test(layer.id) ? "#f6fbff"
                     : layer.id.includes("hospital") ? "#f1e3e8"
                       : /school|track/u.test(layer.id) ? "#eee8d7"
-                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#84af65"
+                        : sourceLayer === "landuse" || sourceLayer === "aeroway" ? "#c5cbc6"
                           : null;
       if (landColour) add(layer, "fill-color", landColour, "#000000");
       if (sourceLayer === "building" || layer.id.includes("building")) {
@@ -107,12 +107,15 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
         // Pedestrian networks remain real, but should not become stark white
         // dashed decorations that overpower the park scene.
         add(layer, "line-color", rail ? "#9aada4" : walking
-          ? casing ? "#ece5db" : "#ebe6dc"
-          : casing ? "#ece5db" : "#d5cec4", "#000000");
+          ? casing ? "#e1d4bc" : "#f4e8d0"
+          : casing ? "#f5eee0" : "#8e9b9c", "#000000");
         if (rail) add(layer, "line-opacity", 0.28, 1);
         else {
           add(layer, "line-width", widerRoad(layer.paint?.["line-width"], walking ? 0.92 : casing ? 1.18 : 1.12), 1);
-          if (walking) add(layer, "line-opacity", 0.72, 1);
+          if (walking) {
+            add(layer, "line-opacity", 0.85, 1);
+            if (layer.paint?.["line-dasharray"]) add(layer, "line-dasharray", [1, 0], [1, 0]);
+          }
           if (casing) add(layer, "line-blur", 0.25, 0);
         }
       }
@@ -155,7 +158,6 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
 } {
   const corners: Coordinates = [ATLAS_CORNERS[0], ATLAS_CORNERS[1], ATLAS_CORNERS[2], ATLAS_CORNERS[3]];
   const survey = { type: "Polygon" as const, coordinates: [[...ATLAS_CORNERS, ATLAS_CORNERS[0]]] };
-  const building = base.layers.find(layer => layer.id === "building-3d");
   const streets = base.layers.filter(layer => layer.type !== "fill-extrusion").map(layer => {
     if (layer.type === "fill" && (layer["source-layer"] === "building" || layer.id.includes("building"))) {
       // Hide ordinary building fills from game style
@@ -205,7 +207,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     },
     {
       id: "food-go-pilot-mask", source: MAP_SOURCE_IDS.pilotMask, type: "fill",
-      paint: { "fill-color": "#183d32", "fill-opacity": 0.16 },
+      paint: { "fill-color": "#d6e1df", "fill-opacity": 0.55 },
     },
     {
       id: "food-go-pilot-boundary-glow", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
@@ -215,7 +217,7 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     {
       id: "food-go-pilot-boundary-line", source: MAP_SOURCE_IDS.pilotBoundary, type: "line",
       layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#2f6941", "line-width": 2.2, "line-opacity": 0.8 },
+      paint: { "line-color": "#08786e", "line-width": 2.5, "line-opacity": 0.95 },
     },
   ];
 
@@ -226,7 +228,10 @@ export function worldMapStyle(base: StyleSpecification, satelliteKey?: string): 
     url: `https://api.maptiler.com/tiles/satellite-v2/tiles.json?key=${encodeURIComponent(satelliteKey)}`,
   } : { type: "geojson", data: emptyMapFeatures() };
   const availableAdditions = satelliteKey ? additions : additions.filter(layer => layer.id !== MAP_SOURCE_IDS.globalSatellite);
-  const layers = [...streets.slice(0, before), ...availableAdditions, ...streets.slice(before)];
+  // Keep the future-region veil above provider street labels and imagery.
+  const pilotLayers = availableAdditions.filter(layer => layer.id.startsWith("food-go-pilot-"));
+  const mapLayers = availableAdditions.filter(layer => !layer.id.startsWith("food-go-pilot-"));
+  const layers = [...streets.slice(0, before), ...mapLayers, ...streets.slice(before), ...pilotLayers];
   return {
     gamePaint: gameMapPaint(layers),
     streetLayers: streets.map(layer => ({ id: layer.id, visibility: layer.layout?.visibility === "none" ? "none" : "visible", symbol: layer.type === "symbol" })),

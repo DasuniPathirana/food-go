@@ -24,6 +24,8 @@ import { buildCameraObstacles, resolveCameraClearance, type CameraObstacle } fro
 import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
 import type { EncounterSignal } from "@/lib/encounter-landmarks";
 import css from "./atlas-canvas.module.css";
+import { isInsideMelbournePilot } from "@food-go/domain";
+import { attachPilotFog } from "./pilot-fog";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
 export type AtlasPlace = AtlasSelection & {
@@ -189,6 +191,12 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       });
       const map = active;
       mapRef.current = map; pinClass.current = gl.Marker; creditClass.current = gl.AttributionControl;
+      const detachFog = attachPilotFog(map.getCanvasContainer(), {
+        project: (longitude, latitude) => map.project([longitude, latitude]),
+        unproject: (x, y) => { const point = map.unproject([x, y]).wrap(); return { longitude: point.lng, latitude: point.lat }; },
+        subscribe: refresh => { map.on("move", refresh); map.on("resize", refresh); return () => { map.off("move", refresh); map.off("resize", refresh); }; },
+      }, map.getCanvas());
+      map.once("remove", detachFog);
       if (valid(initial.player) && initial.followPlayer) {
         const camera = sceneCamera.current(map, { perspective: initialPerspective, point: initial.player,
           heading: initial.heading ?? map.getBearing(), follow: true, threeD: initial.threeD, refocus: true });
@@ -204,7 +212,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
           }
         }
         const point = event.lngLat.wrap();
-        latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
+        if (isInsideMelbournePilot({ longitude: point.lng, latitude: point.lat })) latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
       });
       map.on("zoomend", () => setZoom(map.getZoom()));
       map.on("rotate", () => { setBearing(map.getBearing()); latest.current.onBearingChange?.(map.getBearing()); });
@@ -393,8 +401,8 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       ...facadeDetails,
       ...roofDetails,
       ...streetLights,
-    ];
-    if (valid(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
+    ].filter(isInsideMelbournePilot);
+    if (valid(selected) && isInsideMelbournePilot(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
       id: "selected-waypoint", longitude: selected.longitude,
       latitude: selected.latitude, kind: "waypoint",
     });
@@ -481,7 +489,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const map = mapRef.current, Pin = pinClass.current;
     if (!ready || !map || !Pin) return;
     const pins = placeMarkers.current;
-    const validPlaces = places.filter(valid);
+    const validPlaces = places.filter(place => valid(place) && isInsideMelbournePilot(place));
     const centre = player && valid(player) ? { longitude: player.longitude, latitude: player.latitude } : map.getCenter() ? { longitude: map.getCenter().lng, latitude: map.getCenter().lat } : { longitude: ATLAS_CENTER[0], latitude: ATLAS_CENTER[1] };
     const sorted = [...validPlaces].sort((a, b) => mapDistance(centre, a) - mapDistance(centre, b));
     const closestId = sorted[0]?.id;
@@ -646,7 +654,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
         event.preventDefault(); const centre = map.getCenter().wrap();
-        latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
+        if (isInsideMelbournePilot({ longitude: centre.lng, latitude: centre.lat })) latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
       }
     }}/>
     {perspective !== "first" && playerElement && playerContent && createPortal(playerContent, playerElement)}
