@@ -38,7 +38,6 @@
   "dependencies": {
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
-    "node-fetch": "^3.3.2",
     "three": "0.187.0"
   }
 }
