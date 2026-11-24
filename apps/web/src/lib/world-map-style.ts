@@ -128,10 +128,8 @@ function gameMapPaint(layers: LayerSpecification[]): GameMapPaintOverride[] {
       }
       if (sourceLayer === "water_name" || sourceLayer === "waterway") add(layer, "text-color", "#5687ae", "#000000");
       if (sourceLayer === "poi") {
-        // Published Food Go markers stay distinct. Provider POIs reappear softly
-        // at close zoom while real street and suburb names stay available.
-        const opacity: ExpressionSpecification = ["interpolate", ["linear"], ["zoom"], 16.5, 0, 18, 0.22];
-        add(layer, "text-opacity", opacity, 1); add(layer, "icon-opacity", opacity, 1);
+        // Food Go only displays its own approved venue markers in game mode.
+        add(layer, "text-opacity", 0, 1); add(layer, "icon-opacity", 0, 1);
       }
       if (/one_way_arrow|shield/u.test(layer.id)) {
         add(layer, "text-opacity", 0, 1); add(layer, "icon-opacity", 0, 1);

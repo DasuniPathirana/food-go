@@ -957,3 +957,15 @@
     height: 54px;
   }
 }
+
+/* Long approved offer titles and actual counts must fit narrow screens. */
+.page { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+.tabTextBox, .dealInfoCol { min-width: 0; }
+.tabTitleRow { flex-wrap: wrap; }
+.dealVenueTitle, .dealDiscountText, .dealOfferDetail { overflow-wrap: anywhere; }
+.redeemButton { text-decoration: none; text-align: center; }
+@media (max-width: 480px) {
+  .premiumDealCard { grid-template-columns: 52px minmax(0, 1fr); }
+  .dealActionCol { grid-column: 2; align-items: flex-start; }
+  .dealTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
