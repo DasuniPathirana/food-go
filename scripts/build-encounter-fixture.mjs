@@ -2,6 +2,10 @@ import { build } from "esbuild";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdir, writeFile } from "node:fs/promises";
+import { createRequire } from 'module';
+
+var require = createRequire(import.meta.url);
+var module = { exports: {} };
 
 /** Test-only browser bundle of actual encounter components and styles. */
 export async function buildEncounterFixture() {
