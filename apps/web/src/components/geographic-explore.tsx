@@ -60,8 +60,8 @@ const HERO_LANDMARKS: readonly AtlasDestination[] = [
 
 // Search credentials remain independent of the removed satellite style choice.
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
-export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
-  basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean;
+export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, catalogueHasMore = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
+  basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean; catalogueHasMore?: boolean;
   signedIn?: boolean; explorationAvailable?: boolean; encountersAvailable?: boolean; accountKey?: string;
 }) {
   const frame = useRef<HTMLDivElement>(null), controls = useRef<HTMLDivElement>(null), field = useRef<HTMLInputElement>(null);
@@ -439,6 +439,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       <a href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">Melbourne imagery sources</a>
       {renderer === "fallback" && <span>Interactive 2D map</span>}
       {catalogueUnavailable && <span>Food Go venue listings are temporarily unavailable.</span>}
+      {catalogueHasMore && <span>Some additional venues are available through search.</span>}
+      {!catalogueUnavailable && !demoMode && stops.length === 0 && <span>There are no published food venues in the pilot area yet.</span>}
     </div>
       </div>
     </details>

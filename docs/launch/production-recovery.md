@@ -30,3 +30,11 @@ Use an actual published venue ID as the manifest venueModels key and an allowed 
 8. Clear docs/security/production-gate.md, obtain operator and hosting-team approval, deploy the reviewed revision, verify live HTTPS and rollback procedures.
 
 See docs/deployment/connected-release.md for the existing host and feature gates. A passing build alone is not release approval.
+
+
+## Follow-up implementation
+
+- GitHub Actions run 45453651163 passed the clean install, production build, dependency audit and isolated database tests for 423833f.
+- Camera encounters now use the existing approved campaign and staff confirmation path. The camera is optional, does not upload frames, and stops on exit or hidden page. It is a camera overlay, not spatial AR or GPS-only claim authorization. The newly added browser test covers camera refusal and rejected confirmation; real-device acceptance remains outstanding.
+- The Deals view links to the selected published offer on its venue page. Inventory redemption still uses the existing staff code flow; public advertised deals are not automatically collectible vouchers.
+- Explore loads up to 500 published, verified, geocoded pilot venues with a paginated geographic query rather than using a global 50-result catalogue. It applies the exact pilot polygon after the bounding query. This is a bounded initial load; additional results use search. Nearby 3D storefronts prioritize distance. Large-catalogue performance and device rendering still require acceptance.
