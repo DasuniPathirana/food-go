@@ -1,5 +1,12 @@
 {
   "version": 1,
-  "assets": {},
-  "venueModels": {}
+  "assets": {
+    "kyotoRestaurant": "kyoto-restaurant.glb",
+    "parkTree": "park-tree.glb",
+    "riverRock": "river-rock.glb"
+  },
+  "credits": "credits.txt",
+  "venueModels": {
+    "the-ovenhouse-model": "kyotoRestaurant"
+  }
 }

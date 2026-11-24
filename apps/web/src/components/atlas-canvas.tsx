@@ -192,6 +192,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       });
       const map = active;
       mapRef.current = map; pinClass.current = gl.Marker; creditClass.current = gl.AttributionControl;
+      if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") (window as any)._map = map;
       const detachFog = attachPilotFog(map.getCanvasContainer(), {
         project: (longitude, latitude) => map.project([longitude, latitude]),
         unproject: (x, y) => { const point = map.unproject([x, y]).wrap(); return { longitude: point.lng, latitude: point.lat }; },

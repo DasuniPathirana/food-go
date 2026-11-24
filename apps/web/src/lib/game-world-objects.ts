@@ -802,9 +802,9 @@ export function createGameWorldObjectLayer(objects: readonly GameWorldObject[]):
     },
     render(_gl, args: any) {
       if (!enabled || !renderer) return;
-      const matrix = args?.modelViewProjectionMatrix
-        ?? args?.defaultProjectionData?.mainMatrix
-        ?? (Array.isArray(args) ? args : null);
+      const matrix = args?.defaultProjectionData?.mainMatrix
+        ?? (Array.isArray(args) || ArrayBuffer.isView(args) ? args : null)
+        ?? args?.modelViewProjectionMatrix;
       if (!matrix) return;
       camera.projectionMatrix.copy(new Matrix4().fromArray(matrix).multiply(localToMercator));
       renderer.resetState();

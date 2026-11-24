@@ -28,3 +28,5 @@ artifacts/
 **/supabase/.temp/
 **/supabase/.branches/
 config.bat
+*.glb
+FOODGO_ASSET_INSTALL.txt

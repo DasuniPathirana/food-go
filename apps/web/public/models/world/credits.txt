@@ -1,18 +1,20 @@
-FoodGo optional world models
+FoodGo world assets - third party model credits
+All assets listed below are CC BY 4.0. Preserve these notices and link to them in the app. Third party rights may still apply.
 
-No third-party model binaries are included in this commit. The optional starter
-asset pack contains the following CC BY 4.0 assets:
+Kyoto Cityscene: Restaurant by Mikail Karaca (https://sketchfab.com/Xavaltir)
+Source: https://sketchfab.com/3d-models/kyoto-cityscene-restaurant-219daec3b3bc443cba6fd350eba5cbf4
+License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+File: kyoto-restaurant.glb
+Changes: 8 embedded textures resized to maximum 512 pixels; original geometry unchanged.
 
-Kyoto Cityscene: Restaurant by Mikail Karaca
-https://sketchfab.com/3d-models/kyoto-cityscene-restaurant-219daec3b3bc443cba6fd350eba5cbf4
+Tree low poly lowpoly by 00amza (https://sketchfab.com/00amza)
+Source: https://sketchfab.com/3d-models/tree-low-poly-lowpoly-73201f05280d48dcb10ed4ca362d69f8
+License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+File: park-tree.glb
+Changes: No texture or geometry changes; repacked GLB.
 
-Tree low poly lowpoly by 00amza
-https://sketchfab.com/3d-models/tree-low-poly-lowpoly-73201f05280d48dcb10ed4ca362d69f8
-
-River Rock by GetDeadEntertainment
-https://sketchfab.com/3d-models/river-rock-23947e4ac73146deba3335c1b78731a1
-
-License: https://creativecommons.org/licenses/by/4.0/
-The starter pack includes the precise texture modification notices. Preserve
-them when installing the pack. These are illustrative models; the visual
-appearance of a real restaurant and its business affiliation are not asserted.
+River Rock by GetDeadEntertainment (https://sketchfab.com/GetDeadEntertainment)
+Source: https://sketchfab.com/3d-models/river-rock-23947e4ac73146deba3335c1b78731a1
+License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+File: river-rock.glb
+Changes: 3 embedded textures resized to maximum 512 pixels; original geometry unchanged.
