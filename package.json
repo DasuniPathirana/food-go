@@ -16,11 +16,11 @@
     "react-dom": "19.3.1"
   },
   "scripts": {
-    "dev": "node init && npm run dev --workspace @food-go/web",
-    "dev:mobile": "node init && npm run start --workspace @food-go/mobile",
-    "build:web": "node init && npm run build --workspace @food-go/web",
-    "start:web": "node init && npm run start --workspace @food-go/web",
-    "start:web:local": "node init && npm run start:local --workspace @food-go/web",
+    "dev": "npm run dev --workspace @food-go/web",
+    "dev:mobile": "npm run start --workspace @food-go/mobile",
+    "build:web": "npm run build --workspace @food-go/web",
+    "start:web": "npm run start --workspace @food-go/web",
+    "start:web:local": "npm run start:local --workspace @food-go/web",
     "check": "npm run typecheck --workspaces --if-present && npm run test",
     "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts apps/mobile/src/catalogue.test.ts scripts/check-supabase.test.mjs scripts/prepare-database-tests.test.mjs",
     "test:security": "node --test scripts/security.test.mjs",

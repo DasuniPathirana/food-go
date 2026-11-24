@@ -8,6 +8,8 @@ coverage/
 playwright-report/
 test-results/
 *.tsbuildinfo
+.env
+.env.*
 !.env.example
 !**/.env.example
 *.pem

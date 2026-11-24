@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node init && node server.mjs",
+    "start": "node server.mjs",
     "check": "node --check app.js && node --check map.js && node --check partner.js && node --check server.mjs"
   }
 }
