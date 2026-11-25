@@ -192,3 +192,30 @@ test("owners save a private pool with linked offer identity, then submit its ser
   expect(commands[1].action).toBe("submit"); expect(commands[1].version).toBe(version);
   await noOverflow(page);
 });
+
+test("camera refusal retains real staff confirmation without awarding a reward", async ({ page }) => {
+  let claims = 0;
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia: async () => { throw new DOMException("Denied", "NotAllowedError"); } } });
+  });
+  await page.route("**/api/encounters**", route => {
+    const request = route.request();
+    if (new URL(request.url()).searchParams.has("venueId")) return route.fulfill({ json: { ok: true, version: 1, serverTime: at(), encounters: [campaign()] } });
+    if (request.method() === "GET") return route.fulfill({ json: snapshot({ sessions: [session()] }) });
+    claims++;
+    return route.fulfill({ json: snapshot({ sessions: [session()], result: result("claim", { error: { code: "missing", message: "Confirmation is unavailable or expired." } }) }) });
+  });
+  await fixture(page);
+  await page.getByRole("button", { name: "Open camera encounter" }).click();
+  const dialog = page.getByRole("dialog", { name: "Camera encounter" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Camera unavailable. You can still confirm with staff.")).toBeVisible();
+  expect(claims).toBe(0);
+  await dialog.getByLabel("Staff confirmation code").fill("a".repeat(32));
+  await dialog.getByRole("button", { name: "Confirm and open" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Confirmation is unavailable");
+  expect(claims).toBe(1);
+  await expect(page.locator('[data-open="true"]')).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Close camera" }).click();
+  await expect(dialog).toHaveCount(0);
+});

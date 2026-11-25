@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob:${satelliteHost}${worldMapHosts}`,
       "font-src 'self'",
-      `connect-src 'self'${satelliteHost}${worldMapHosts}${isDevelopment ? " ws://127.0.0.1:* ws://localhost:* wss://127.0.0.1:* wss://localhost:*" : ""}`,
+      `connect-src 'self' blob:${satelliteHost}${worldMapHosts}${isDevelopment ? " ws://127.0.0.1:* ws://localhost:* wss://127.0.0.1:* wss://localhost:*" : ""}`,
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

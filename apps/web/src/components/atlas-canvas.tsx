@@ -24,6 +24,8 @@ import { buildCameraObstacles, resolveCameraClearance, type CameraObstacle } fro
 import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
 import type { EncounterSignal } from "@/lib/encounter-landmarks";
 import css from "./atlas-canvas.module.css";
+import { isInsideMelbournePilot, MELBOURNE_PILOT_BOUNDS } from "@food-go/domain";
+import { attachPilotFog } from "./pilot-fog";
 
 export type AtlasSelection = { longitude: number; latitude: number; id?: string };
 export type AtlasPlace = AtlasSelection & {
@@ -53,6 +55,7 @@ export type AtlasCanvasProps = {
   onDemoTreasure?: () => void;
   zoomInTrigger?: number;
   zoomOutTrigger?: number;
+  pilotOverviewNonce?: number;
   /** Explicit map-only focus for the opt-in, non-redeemable demo tour. */
   demoFocus?: (AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null;
 };
@@ -189,6 +192,13 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       });
       const map = active;
       mapRef.current = map; pinClass.current = gl.Marker; creditClass.current = gl.AttributionControl;
+      if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") (window as any)._map = map;
+      const detachFog = attachPilotFog(map.getCanvasContainer(), {
+        project: (longitude, latitude) => map.project([longitude, latitude]),
+        unproject: (x, y) => { const point = map.unproject([x, y]).wrap(); return { longitude: point.lng, latitude: point.lat }; },
+        subscribe: refresh => { map.on("move", refresh); map.on("resize", refresh); return () => { map.off("move", refresh); map.off("resize", refresh); }; },
+      }, map.getCanvas());
+      map.once("remove", detachFog);
       if (valid(initial.player) && initial.followPlayer) {
         const camera = sceneCamera.current(map, { perspective: initialPerspective, point: initial.player,
           heading: initial.heading ?? map.getBearing(), follow: true, threeD: initial.threeD, refocus: true });
@@ -196,7 +206,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       }
       map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
       map.on("click", event => {
-        if (new URLSearchParams(window.location.search).get("world-demo") === "1") {
+        if (process.env.NODE_ENV === "development" && new URLSearchParams(window.location.search).get("world-demo") === "1") {
           const chest = map.project([144.96915, -37.81790]);
           if (Math.hypot(event.point.x - chest.x, event.point.y - chest.y) <= 42) {
             latest.current.onDemoTreasure?.();
@@ -204,7 +214,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
           }
         }
         const point = event.lngLat.wrap();
-        latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
+        if (isInsideMelbournePilot({ longitude: point.lng, latitude: point.lat })) latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
       });
       map.on("zoomend", () => setZoom(map.getZoom()));
       map.on("rotate", () => { setBearing(map.getBearing()); latest.current.onBearingChange?.(map.getBearing()); });
@@ -261,6 +271,16 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       mapRef.current = null; active?.remove();
     };
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !props.pilotOverviewNonce) return;
+    cameraInterrupted.current = true;
+    const b = MELBOURNE_PILOT_BOUNDS;
+    const height = map.getContainer().clientHeight;
+    const padding = { top: Math.min(145, Math.floor(height * .22)), bottom: Math.min(120, Math.floor(height * .2)), left: 24, right: 55 };
+    map.fitBounds([[b.minLon, b.minLat], [b.maxLon, b.maxLat]], { bearing: 0, pitch: 0, padding, duration: duration(), maxZoom: 15 });
+  }, [ready, props.pilotOverviewNonce]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -336,7 +356,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!threeD || imagery !== "game" || props.lowDetail) return;
     const centre = map.getCenter();
     const reference = { latitude: centre.lat, longitude: centre.lng };
-    const isDemo = typeof window !== "undefined" && (
+    const isDemo = process.env.NODE_ENV === "development" && typeof window !== "undefined" && (
       new URLSearchParams(window.location.search).get("world-demo") === "1" ||
       window.location.pathname.startsWith("/demo") ||
       window.location.pathname.startsWith("/explore-preview")
@@ -352,11 +372,14 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     // Food-venue pipeline: map approved food venues to reusable 3D restaurant/cafe/bakery models
     const approvedFoodVenues: GameWorldObject[] = places
       .filter(valid)
+      // Demo landmarks have dedicated scenic objects at the same coordinates.
+      .filter(place => !isDemo || !fixture.some(point => point.id === place.id + "-model"))
       .filter(place => mapDistance(place, reference) < 1250)
       .filter(place => {
         const k = (place.kind || "").toLowerCase();
         return k === "restaurant" || k === "cafe" || k === "bakery" || k === "market" || k === "food stall" || k === "food court";
       })
+      .sort((a, b) => mapDistance(a, reference) - mapDistance(b, reference))
       .slice(0, 16)
       .map(place => {
         const k = (place.kind || "").toLowerCase();
@@ -390,11 +413,9 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       ...approvedFoodVenues,
       ...localDemoPark,
       ...parkTrees,
-      ...facadeDetails,
-      ...roofDetails,
       ...streetLights,
-    ];
-    if (valid(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
+    ].filter(isInsideMelbournePilot);
+    if (valid(selected) && isInsideMelbournePilot(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
       id: "selected-waypoint", longitude: selected.longitude,
       latitude: selected.latitude, kind: "waypoint",
     });
@@ -457,6 +478,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!ready || !map || !Credit) return;
     const credit = new Credit({ compact: true, customAttribution: [
       `<a href="${ATLAS_ATTRIBUTION}" target="_blank">City of Melbourne · Copernicus</a>`,
+      '<a href="/models/world/credits.txt" target="_blank" rel="noopener noreferrer">3D model credits</a>',
       ...(imagery === "satellite" && satelliteKey && !satelliteFailed.current ? ['<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>'] : []),
     ] });
     map.addControl(credit, "bottom-right");
@@ -481,7 +503,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     const map = mapRef.current, Pin = pinClass.current;
     if (!ready || !map || !Pin) return;
     const pins = placeMarkers.current;
-    const validPlaces = places.filter(valid);
+    const validPlaces = places.filter(place => valid(place) && isInsideMelbournePilot(place));
     const centre = player && valid(player) ? { longitude: player.longitude, latitude: player.latitude } : map.getCenter() ? { longitude: map.getCenter().lng, latitude: map.getCenter().lat } : { longitude: ATLAS_CENTER[0], latitude: ATLAS_CENTER[1] };
     const sorted = [...validPlaces].sort((a, b) => mapDistance(centre, a) - mapDistance(centre, b));
     const closestId = sorted[0]?.id;
@@ -646,7 +668,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     <div ref={host} className={css.viewport} onKeyDown={event => {
       if (event.key === "Enter" && map && event.target === map.getCanvas()) {
         event.preventDefault(); const centre = map.getCenter().wrap();
-        latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
+        if (isInsideMelbournePilot({ longitude: centre.lng, latitude: centre.lat })) latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
       }
     }}/>
     {perspective !== "first" && playerElement && playerContent && createPortal(playerContent, playerElement)}

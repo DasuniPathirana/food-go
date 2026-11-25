@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import type { LineString } from "geojson";
 import { ArrowUpRight, Box, ChevronUp, Compass, Eye, Hand, Layers, MapPin, Pause, PersonStanding, Play, Search, Settings2, Sparkles, X, ZoomIn } from "lucide-react";
 import { atlasStops, geographicPoint, pointDirections, type AtlasDestination } from "@/lib/atlas-places";
 import { ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
@@ -24,9 +23,7 @@ import { useDeviceCompass } from "./use-device-compass";
 import { useGeographicDiscovery } from "./use-geographic-discovery";
 import { useEncounterLandmarks } from "./use-encounter-landmarks";
 import type { ExplorationFogResult } from "@food-go/domain/exploration";
-import { getMallByCoordinate, getMallById, type MallData, type ARCollectibleItem } from "@food-go/domain";
-import { MallModal } from "./mall-modal";
-import { ARRewardView } from "./ar-reward-view";
+import { isInsideMelbournePilot } from "@food-go/domain";
 import { useStreetWalk } from "./use-street-walk";
 import { useJourney } from "./journey-provider";
 import { useAdventure } from "./adventure/use-adventure";
@@ -61,20 +58,10 @@ const HERO_LANDMARKS: readonly AtlasDestination[] = [
   },
 ];
 
-const defaultQuestRoute: LineString = {
-  type: "LineString",
-  coordinates: [
-    [144.9671, -37.8162],
-    [144.9674, -37.8158],
-    [144.9677, -37.8154],
-    [144.9675, -37.8151],
-    [144.9673, -37.8149],
-  ],
-};
 // Search credentials remain independent of the removed satellite style choice.
 const browserMapKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
-export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
-  basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean;
+export function GeographicExplore({ venues = noVenues, catalogueUnavailable = false, catalogueHasMore = false, signedIn = false, explorationAvailable = false, encountersAvailable = false, accountKey }: {
+  basePath: string; venues?: CatalogueVenue[]; catalogueUnavailable?: boolean; catalogueHasMore?: boolean;
   signedIn?: boolean; explorationAvailable?: boolean; encountersAvailable?: boolean; accountKey?: string;
 }) {
   const frame = useRef<HTMLDivElement>(null), controls = useRef<HTMLDivElement>(null), field = useRef<HTMLInputElement>(null);
@@ -106,17 +93,18 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [follow, setFollow] = useState(true), [focus, setFocus] = useState(0);
   const [zoomInNonce, setZoomInNonce] = useState(0);
   const [zoomOutNonce, setZoomOutNonce] = useState(0);
+  const [pilotOverviewNonce, setPilotOverviewNonce] = useState(0);
+  const [demoMode, setDemoMode] = useState(false);
+  useEffect(() => { setDemoMode(process.env.NODE_ENV === "development" && (new URLSearchParams(window.location.search).get("world-demo") === "1" || /^\/(demo|explore-preview)(\/|$)/.test(window.location.pathname))); }, []);
   const [avatarOpen, setAvatarOpen] = useState(false), [action, setAction] = useState<AvatarAction>("idle");
   const [actionToken, setActionToken] = useState(0), [paused, setPaused] = useState(false);
-  const [activeMall, setActiveMall] = useState<MallData | null>(null);
-  const [activeArCollectible, setActiveArCollectible] = useState<ARCollectibleItem | null>(null);
   const compass = useDeviceCompass(perspective === "first" && renderer === "webgl");
   const preferences = useAvatarPreferences();
   const journey = useJourney();
   const adventure = useAdventure(signedIn);
   const realLevel = signedIn && journey?.data ? journey.data.progress.level : undefined;
   const realXp = signedIn && journey?.data ? journey.data.progress.xp : undefined;
-  const realCoins = signedIn && adventure?.data?.village?.resources ? adventure.data.village.resources.coins : (signedIn && realXp != null ? realXp : undefined);
+  const realCoins = signedIn && adventure?.data?.village?.resources ? adventure.data.village.resources.coins : undefined;
   const realActiveQuest = adventure?.data?.quests?.find(q => q.participation && !q.participation.completedAt);
   const activeQuestProp = realActiveQuest ? {
     title: "Active Quest",
@@ -133,9 +121,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   const [discoveryView, setDiscoveryView] = useState<Omit<ExplorationFogResult, "data"> | null>(null);
   const allVenues = useMemo(() => [...new Map([...venues, ...chosenVenues, ...venueResults].map(v => [v.id, v])).values()], [venues, chosenVenues, venueResults]);
   const encounterLandmarks = useEncounterLandmarks({ enabled: encountersAvailable, mode: location.mode, fix: location.fix, venues: allVenues });
-  const stops = useMemo(() => atlasStops(HERO_LANDMARKS, allVenues), [allVenues]);
+  const stops = useMemo(() => atlasStops(demoMode ? HERO_LANDMARKS : [], allVenues).filter(isInsideMelbournePilot), [allVenues, demoMode]);
   const active = stops.find(stop => stop.id === selected?.id);
-  const nearbyMall = selected ? (selected.id ? getMallById(selected.id) : null) || getMallByCoordinate(selected) : null;
   const encounterVenueId = active?.members.length === 1 ? active.members[0].id
     : active && chosenShop?.selectionId === active.id && active.members.some(member => member.id === chosenShop.venueId) ? chosenShop.venueId : null;
   // Contextual restaurant actions should surface when an actual venue is selected.
@@ -180,6 +167,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
   }
   const selectPoint = useCallback((point: AtlasSelection) => {
     if (!geographicPoint(point)) return;
+    if (!isInsideMelbournePilot(point)) { setSearchMessage("This area is coming soon. Explore the Melbourne pilot area first."); setSearchOpen(true); return; }
     setSelected(point); setSelectedName(""); setSearchOpen(false);
     setChosenShop(null);
     if (location.mode === "live" && location.status === "live") void walk.planTo(point);
@@ -188,6 +176,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     setFollow(true);
   }, [location.mode, location.status, walk.planTo, walk.walkTo, walk.cancel]);
   function choose(point: AtlasSelection, name: string) {
+    if (!isInsideMelbournePilot(point)) { setSearchMessage("This area is coming soon. Explore the Melbourne pilot area first."); setSearchOpen(true); return; }
     setChosenShop(null);
     field.current?.focus({ preventScroll: true });
     if (mapDistance(player, point) > 2000) {
@@ -285,9 +274,10 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
     encounterSignals: encounterLandmarks.signals,
     location: location.mode === "live" ? location.rawPosition : null, accuracy: location.accuracy ?? undefined,
     heading: location.mode === "live" ? location.heading ?? undefined : walk.heading,
-    route: walk.route || defaultQuestRoute,
+    route: walk.route,
     zoomInTrigger: zoomInNonce,
     zoomOutTrigger: zoomOutNonce,
+    pilotOverviewNonce,
     playerContent: <MapPlayer avatarId={preferences.preferences.avatarId} walking={avatarWalking} action={action} actionToken={actionToken}
       close={perspective === "close"}
       heading={avatarHeading} mapBearing={mapBearing} distanceMetres={location.mode === "live" ? location.distanceMetres : walk.sessionMetres}
@@ -331,7 +321,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
         <span role="status">3D graphics paused. Your place and route are kept in the 2D map.</span>
         <button type="button" onClick={retryGraphics}>Retry 3D</button>
       </div>}
-      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/><DemoWorldTour onSelect={previewDemo}/><DemoTreasureEncounter activationToken={demoTreasureToken}/>
+      <div ref={frame} className={styles.stage} data-selected={Boolean(selected)} data-camera={renderer === "fallback" ? "2d" : perspective}><div className={styles.scene}><MapExpandButton/>{demoMode && <><DemoWorldTour onSelect={previewDemo}/><DemoTreasureEncounter activationToken={demoTreasureToken}/></>}
         {renderer === "webgl" ? <Canvas key={graphicsAttempt} {...canvasProps}/> : <FlatCanvas {...canvasProps}/>}
         {!loaded && <span className={styles.loading} role="status">Opening world map…</span>}
         <ExplorerControl avatarId={preferences.preferences.avatarId} live={location.mode === "live" && location.status === "live"}
@@ -357,8 +347,8 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
           onZoomIn={() => setZoomInNonce(n => n + 1)}
           onZoomOut={() => setZoomOutNonce(n => n + 1)}
           onLayersToggle={() => setThreeD(v => !v)}
-          onLocationClick={locate}
-          onQuestClick={() => selectPoint({ longitude: 144.9675, latitude: -37.8148, id: "the-ovenhouse" })}
+          onLocationClick={() => { setFollow(false); setPerspective("overhead"); setPilotOverviewNonce(n => n + 1); }}
+          onQuestClick={() => { window.location.assign("/quests"); }}
           currentSection="explore"
         />
         <div className={styles.perspectives} role="group" aria-label="Explorer view">
@@ -431,27 +421,7 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       {encountersAvailable && <p>Nearby encounter hints request at most three public venue IDs at a time. Your GPS coordinates are not sent for these hints, and proximity never confirms a claim.</p>}
       <p>{Math.round(location.mode === "live" ? location.distanceMetres : walk.sessionMetres)} metres explored this session.</p><Link href="/collect">Collect a verified discovery</Link>
     </details>
-    {nearbyMall && <div style={{ margin: "10px 0" }}>
-      <button type="button" className={styles.motionButton}
-        style={{ width: "100%", background: "#edf6e6", borderColor: "#75a78a", color: "#183d32", fontWeight: 800, padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-        onClick={() => setActiveMall(nearbyMall)}><Layers size={17}/>Explore {nearbyMall.name} Directory & Floors ({nearbyMall.shops.length} shops)</button>
-    </div>}
-    {selected && <div style={{ margin: "8px 0" }}>
-      <button type="button" className={styles.motionButton}
-        style={{ width: "100%", background: "#fffdf3", borderColor: "#ffd445", color: "#183d32", fontWeight: 700, padding: "9px 14px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-        onClick={() => {
-          setActiveArCollectible({
-            id: "a0000000-0000-4000-8000-000000000099",
-            venueId: encounterVenueId ?? "b0000000-0000-4000-8000-000000000002",
-            venueName: active?.name ?? selectedName ?? "Melbourne Landmark",
-            name: `${active?.name ?? selectedName ?? "Melbourne"} Discovery Token`,
-            description: "A shimmering spatial collectible hovering at this verified location.",
-            rarity: "rare", icon: "sparkles",
-            coordinates: selected ? { latitude: selected.latitude, longitude: selected.longitude } : { latitude: player.latitude, longitude: player.longitude },
-            rewardXp: 100, cooldownHours: 24, requiresStaffVerification: false,
-          });
-        }}><Sparkles size={16}/>Scan with AR Camera</button>
-    </div>}
+    {active && active.members.length > 1 && <p>Food outlets in {active.name}. Choose a listed shop by its floor and unit below.</p>}
     {active && active.members.length > 0 && <div className={styles.members}>{active.members.length > 1 && encountersAvailable && <p>Choose a shop for its restaurant encounter. Shops in this building have separate pools and staff confirmations.</p>}{active.members.map(member => <div key={member.id}>
       {member.href ? <Link href={member.href}>{member.name}<ArrowUpRight size={14}/></Link> : <strong>{member.name}</strong>}<span>{member.area}</span>
       {encountersAvailable && active.members.length > 1 && <button type="button" className={styles.motionButton} aria-pressed={encounterVenueId === member.id}
@@ -469,11 +439,11 @@ export function GeographicExplore({ venues = noVenues, catalogueUnavailable = fa
       <a href={ATLAS_ATTRIBUTION} target="_blank" rel="noopener noreferrer">Melbourne imagery sources</a>
       {renderer === "fallback" && <span>Interactive 2D map</span>}
       {catalogueUnavailable && <span>Food Go venue listings are temporarily unavailable.</span>}
+      {catalogueHasMore && <span>Some additional venues are available through search.</span>}
+      {!catalogueUnavailable && !demoMode && stops.length === 0 && <span>There are no published food venues in the pilot area yet.</span>}
     </div>
       </div>
     </details>
     </MapFrame>
-    {activeMall && <MallModal mall={activeMall} onClose={() => setActiveMall(null)} />}
-    {activeArCollectible && <ARRewardView collectible={activeArCollectible} playerLocation={{ longitude: player.longitude, latitude: player.latitude, accuracyMetres: location.fix?.accuracy ?? 8 }} onClose={() => setActiveArCollectible(null)} />}
   </section>;
 }

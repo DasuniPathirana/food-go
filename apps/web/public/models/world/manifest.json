@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "assets": {
+    "kyotoRestaurant": "kyoto-restaurant.glb",
+    "parkTree": "park-tree.glb",
+    "riverRock": "river-rock.glb",
+    "isometricCafe": "isometric-cafe.glb",
+    "japaneseBakery": "japanese-bakery.glb",
+    "stylizedFoodTruck": "stylized-food-truck.glb",
+    "rewardCrates": "reward-crates.glb",
+    "parkBench": "park-bench.glb",
+    "streetLight": "street-light.glb"
+  },
+  "credits": "credits.txt",
+  "venueModels": {}
+}

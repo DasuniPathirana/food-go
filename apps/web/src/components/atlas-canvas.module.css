@@ -138,3 +138,9 @@
 @media (prefers-reduced-motion: reduce) {
   .scene :global(.maplibregl-cooperative-gesture-screen) { transition: none; }
 }
+
+/* Keep provider attribution accessible above the mobile navigation dock. */
+@media (max-width: 767px) {
+  .scene :global(.maplibregl-ctrl-bottom-right), .scene :global(.maplibregl-ctrl-bottom-left) { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+  .scene :global(.maplibregl-ctrl-attrib) { max-width: min(78vw, 340px); font-size: 10px; }
+}

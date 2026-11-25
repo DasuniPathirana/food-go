@@ -108,12 +108,12 @@ export function createMapPlaceMarker(place: MapPlaceMarker, distanceMetres?: num
 
     const metaSpan = document.createElement("span");
     metaSpan.className = css.meta;
-    const placeRating = rating ?? ((4.7 + (Math.abs(place.name.length * 7) % 3) * 0.1).toFixed(1));
+    const placeRating = rating ?? place.rating;
     const dist = distanceMetres ?? place.distanceMetres;
-    const distanceFormatted = dist
-      ? dist < 950 ? `${Math.round(dist / 10) * 10} m` : `${(dist / 1000).toFixed(1)} km`
-      : "180 m";
-    metaSpan.innerHTML = `<span class="${css.star}">★</span> ${placeRating} · ${distanceFormatted}`;
+    const meta: string[] = [];
+    if (typeof placeRating === "number" && Number.isFinite(placeRating) && placeRating >= 0 && placeRating <= 5) meta.push(`★ ${placeRating.toFixed(1)}`);
+    if (typeof dist === "number" && Number.isFinite(dist) && dist >= 0) meta.push(dist < 950 ? `${Math.round(dist / 10) * 10} m from explorer` : `${(dist / 1000).toFixed(1)} km from explorer`);
+    metaSpan.textContent = meta.join(" · ");
     label.append(metaSpan);
 
     button.append(label);

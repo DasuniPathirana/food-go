@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { expression, validateStyleMin, type StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
-import { GAME_BUILDING_PALETTE, MAP_SOURCE_IDS, worldMapStyle } from "./world-map-style";
+import { MAP_SOURCE_IDS, worldMapStyle } from "./world-map-style";
 
 const street: StyleSpecification = {
   version: 8, sources: { openmaptiles: { type: "vector", url: "https://tiles.openfreemap.org/planet" } },
@@ -75,7 +75,7 @@ test("Game roads widen at actual zoom while generic buildings are hidden and par
 
   const poi = override("poi_r1", "text-opacity");
   assert.equal(evaluate(poi.game, 16), 0);
-  assert.ok(evaluate(poi.game, 18) > 0);
+  assert.equal(evaluate(poi.game, 18), 0);
   assert.equal(poi.normal, 1);
 });
 
@@ -98,4 +98,17 @@ test("style includes approved Melbourne pilot boundary and visual exploration ma
   assert.ok(result.style.layers.some(layer => layer.id === "food-go-pilot-boundary-line"));
   assert.ok(result.style.layers.some(layer => layer.id === "food-go-pilot-boundary-glow"));
   assert.ok(result.style.layers.some(layer => layer.id === "food-go-pilot-mask"));
+});
+
+test("pilot fog is above street labels and keeps the exact domain polygon", () => {
+  const { style, gamePaint } = worldMapStyle(street);
+  const mask = style.layers.find(layer => layer.id === "food-go-pilot-mask");
+  assert.ok(mask && mask.type === "fill");
+  assert.ok(Number(mask.paint?.["fill-opacity"]) >= 0.5);
+  assert.ok(style.layers.indexOf(mask) > style.layers.findIndex(layer => layer.id === "street-names"));
+  assert.equal(gamePaint.find(entry => entry.id === "ground" && entry.property === "background-color")?.game, "#d8d9cf");
+  const boundary = style.sources[MAP_SOURCE_IDS.pilotBoundary];
+  assert.ok(boundary && boundary.type === "geojson");
+  const fog = style.sources[MAP_SOURCE_IDS.pilotMask];
+  assert.ok(fog && fog.type === "geojson");
 });

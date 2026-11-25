@@ -247,7 +247,8 @@ export function FoodGoHud({
           type="button"
           className={styles.locationPill}
           onClick={onLocationClick}
-          aria-label={`Region: ${locationName}. Click to change region.`}
+          aria-label={`Show full ${locationName} pilot area. Other regions coming soon.`}
+          title="Show playable pilot area"
         >
           <MapPin size={15} className={styles.locationIcon} />
           <span>{locationName}</span>
