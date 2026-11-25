@@ -6,26 +6,102 @@ import type { PromotionResult } from "@/lib/promotions";
 import { PromotionList } from "./promotion-list";
 import styles from "./deals.module.css";
 
-const categories = [{ id: "food", name: "Food Deals", description: "Meals, drinks and combos worth heading out for.", icon: Utensils },
-  { id: "restaurant", name: "Restaurant Deals", description: "Dining offers for the whole table.", icon: Store }] as const;
+const categories = [
+  { id: "food", name: "Food Deals", subtitle: "Meals & combos", icon: Utensils },
+  { id: "restaurant", name: "Restaurant Deals", subtitle: "Dine & save", icon: Store },
+] as const;
 
 export function DealCategories({ result }: { result: PromotionResult }) {
-  const [kind, setKind] = useState<"food" | "restaurant">("food"), [query, setQuery] = useState("");
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]), id = useId();
-  const current = categories.find(item => item.id === kind)!;
-  const promotions = result.promotions.filter(promo => promo.kind === kind && `${promo.title} ${promo.description} ${promo.venueName} ${promo.suburb}`.toLocaleLowerCase("en-AU").includes(query.trim().toLocaleLowerCase("en-AU")))
+  const [kind, setKind] = useState<"food" | "restaurant">("restaurant");
+  const [query, setQuery] = useState("");
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const id = useId();
+
+  const promotions = result.promotions
+    .filter(
+      (promo) =>
+        promo.kind === kind &&
+        `${promo.title} ${promo.description} ${promo.venueName} ${promo.suburb}`
+          .toLocaleLowerCase("en-AU")
+          .includes(query.trim().toLocaleLowerCase("en-AU"))
+    )
     .sort((first, second) => Date.parse(first.endsAt) - Date.parse(second.endsAt));
-  return <>
-    <div className={styles.dealTabs} role="tablist" aria-label="Deal categories">{categories.map((category, index) => <button key={category.id} ref={node => { tabs.current[index] = node; }} type="button"
-      role="tab" id={`${id}-${category.id}-tab`} aria-controls={`${id}-panel`} aria-selected={kind === category.id} tabIndex={kind === category.id ? 0 : -1}
-      onClick={() => setKind(category.id)} onKeyDown={event => {
-        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-        event.preventDefault(); const next = event.key === "Home" ? 0 : event.key === "End" ? 1 : 1 - index;
-        setKind(categories[next].id); tabs.current[next]?.focus();
-      }}><category.icon size={24}/><span><strong>{category.name}</strong><small>{category.id === "food" ? "By the plate" : "For the occasion"}</small></span><b>{result.promotions.filter(promo => promo.kind === category.id).length}</b></button>)}</div>
-    <section id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${kind}-tab`} tabIndex={0}>
-      <div className={styles.dealToolbar}><div><h2>{current.name}</h2><p>{current.description}</p></div><label className={styles.dealSearch}><Search size={18}/><span className={styles.srOnly}>Search {current.name}</span><input value={query} maxLength={100} placeholder="Find an offer or restaurant" type="search" onChange={event => setQuery(event.target.value)}/></label></div>
-      <PromotionList result={{ status: result.status, promotions }}/>
-    </section>
-  </>;
+
+  return (
+    <div className={styles.categoriesWrapper}>
+      {/* 3 Illustrated Category Pills */}
+      <div className={styles.dealTabs} role="tablist" aria-label="Deal categories">
+        {categories.map((category, index) => {
+          const isSelected = kind === category.id;
+          const liveCount = result.promotions.filter((p) => p.kind === category.id).length;
+          const displayCount = liveCount;
+          const Icon = category.icon;
+
+          return (
+            <button
+              key={category.id}
+              ref={(node) => {
+                tabs.current[index] = node;
+              }}
+              type="button"
+              role="tab"
+              id={`${id}-${category.id}-tab`}
+              aria-controls={`${id}-panel`}
+              aria-selected={isSelected}
+              tabIndex={isSelected ? 0 : -1}
+              className={`${styles.categoryTabBtn} ${isSelected ? styles.categoryTabSelected : ""}`}
+              onClick={() => setKind(category.id)}
+              onKeyDown={(event) => {
+                if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+                event.preventDefault();
+                const next =
+                  event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                    ? categories.length - 1
+                    : event.key === "ArrowLeft"
+                    ? (index - 1 + categories.length) % categories.length
+                    : (index + 1) % categories.length;
+                setKind(categories[next].id);
+                tabs.current[next]?.focus();
+              }}
+            >
+              <div className={styles.tabIconBox}>
+                <Icon size={20} className={styles.tabIcon} />
+              </div>
+              <div className={styles.tabTextBox}>
+                <div className={styles.tabTitleRow}>
+                  <strong>{category.name}</strong>
+                  <span className={styles.tabBadgeCount}>{displayCount}</span>
+                </div>
+                <small>{category.subtitle}</small>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search Input with Filter Button */}
+      <div className={styles.dealSearchSection}>
+        <div className={styles.dealSearchBox}>
+          <Search size={18} className={styles.dealSearchIcon} aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            maxLength={100}
+            placeholder="Find an offer or restaurant"
+            className={styles.dealSearchInput}
+            onChange={(event) => setQuery(event.target.value)}
+            aria-label="Find an offer or restaurant"
+          />
+
+        </div>
+      </div>
+
+      {/* Promotions List */}
+      <section id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${kind}-tab`} tabIndex={0}>
+        <PromotionList result={{ status: result.status, promotions }} />
+      </section>
+    </div>
+  );
 }

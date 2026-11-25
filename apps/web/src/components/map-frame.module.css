@@ -26,9 +26,10 @@
 }
 .surface::backdrop { background: var(--canvas); }
 .expand {
-  position: absolute; z-index: 12; top: 10px; left: 10px; display: grid; place-items: center;
-  width: 44px; height: 44px; border: 1px solid #564e48; border-radius: 10px;
+  position: absolute; z-index: 12; top: 12px; right: max(12px, env(safe-area-inset-right)); display: grid; place-items: center;
+  width: 44px; height: 44px; border: 1px solid #9db7a9; border-radius: 5px;
   background: #fffaf0; color: #174440; box-shadow: 0 2px 7px #21182838; cursor: pointer;
 }
 .expand:hover { background: #ffdf75; }
+.expand svg { width: 16px; height: 16px; }
 .expand:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

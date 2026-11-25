@@ -44,14 +44,14 @@ const catalogueConfig = readMobileCatalogueConfig({
   origin: process.env.EXPO_PUBLIC_API_ORIGIN,
 }, __DEV__);
 
-type Tab = "Map" | "FoodDex" | "VenueDex" | "Quests" | "Profile";
+type Tab = "Feed" | "Quests" | "Explore" | "Deals" | "Outback";
 type Filter = "All places" | "Cafes" | "Restaurants";
 const tabs: { name: Tab; label: string; Icon: LucideIcon }[] = [
-  { name: "FoodDex", label: "FoodDex", Icon: BookOpen },
-  { name: "VenueDex", label: "VenueDex", Icon: Store },
-  { name: "Map", label: "Explore", Icon: Map },
+  { name: "Feed", label: "Feed", Icon: BookOpen },
   { name: "Quests", label: "Quests", Icon: Flag },
-  { name: "Profile", label: "Passport", Icon: UserRound },
+  { name: "Explore", label: "Explore", Icon: Map },
+  { name: "Deals", label: "Deals", Icon: Store },
+  { name: "Outback", label: "Outback", Icon: UserRound },
 ];
 const filters: Filter[] = ["All places", "Cafes", "Restaurants"];
 const photos: Record<string, ImageSourcePropType> = {
@@ -81,7 +81,7 @@ export default function App() {
 }
 
 function FoodGo() {
-  const [tab, setTab] = useState<Tab>("Map");
+  const [tab, setTab] = useState<Tab>("Explore");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("All places");
   const [selectedId, setSelectedId] = useState(venues[0]?.id ?? "");
@@ -138,7 +138,7 @@ function FoodGo() {
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <Pressable
-          onPress={() => navigate("Map")}
+          onPress={() => navigate("Explore")}
           accessibilityRole="button"
           accessibilityLabel="Food Go home"
           style={styles.brand}
@@ -149,7 +149,7 @@ function FoodGo() {
         </Pressable>
         <Text style={styles.previewLabel}>Preview</Text>
         <Pressable
-          onPress={() => navigate("Profile")}
+          onPress={() => navigate("Outback")}
           accessibilityRole="button"
           accessibilityLabel="Open guest passport"
           style={styles.profileShortcut}
@@ -164,7 +164,7 @@ function FoodGo() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator
       >
-        {tab === "Map" && (
+        {tab === "Explore" && (
           <>
             <View style={styles.location}>
               <MapPin size={16} color={colour.rust} />
@@ -279,102 +279,60 @@ function FoodGo() {
           </>
         )}
 
-        {tab === "FoodDex" && (
+        {tab === "Feed" && (
           <>
             <PageHeading
-              label="FoodDex"
-              title="Dishes to try"
-              description="Keep a list for your next meal. Saved ideas and verified food experiences stay separate."
+              label="Community Feed"
+              title="Australian Food Stories"
+              description="Thoughts, food finds and honest community experiences from foodies aged 16+."
             />
-            <View style={styles.stats}>
-              <Stat value={savedDishIds.length} label="Saved ideas" />
-              <Stat value={0} label="Verified dishes" />
-              <Stat value={0} label="Cuisines tried" />
+            <View style={styles.dishCard}>
+              <View style={styles.dishBody}>
+                <Text style={styles.dishCuisine}>Melbourne CBD · Community Review</Text>
+                <Text style={styles.dishTitle}>The Best Flat White in Degraves</Text>
+                <Text style={styles.bodyMuted}>
+                  "The morning rush here has an energy like nowhere else. Steamed milk texture was silky smooth, zero bitterness. 10/10 start to the day."
+                </Text>
+              </View>
             </View>
-            <SectionHeading title="Start here" detail="Example dishes" />
-            {venues.map((venue) => {
-              const saved = savedDishIds.includes(venue.id);
-              return (
-                <View key={venue.id} style={styles.dishCard}>
-                  <Image
-                    source={photos[venue.id]}
-                    style={styles.dishPhoto}
-                    accessibilityLabel={`Illustrative photo for ${venue.dish}`}
-                  />
-                  <View style={styles.dishBody}>
-                    <Text style={styles.dishCuisine}>{venue.cuisine}</Text>
-                    <Text style={styles.dishTitle}>{venue.dish}</Text>
-                    <Text style={styles.bodyMuted}>
-                      {venue.name}, {venue.neighbourhood}
-                    </Text>
-                    <Pressable
-                      onPress={() => toggle(venue.id, setSavedDishIds)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${saved ? "Unsave" : "Save"} ${venue.dish}`}
-                      accessibilityState={{ selected: saved }}
-                      style={[
-                        styles.outlineButton,
-                        saved && styles.buttonSaved,
-                      ]}
-                    >
-                      {saved ? (
-                        <Check size={18} color={colour.ink} />
-                      ) : (
-                        <Bookmark size={18} color={colour.ink} />
-                      )}
-                      <Text style={styles.outlineButtonText}>
-                        {saved ? "Saved to try" : "Save dish"}
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
-              );
-            })}
-            <Text style={styles.note}>
-              Saving a dish does not mark it as eaten. Verification will be
-              added with the connected check-in system.
-            </Text>
+            <View style={styles.dishCard}>
+              <View style={styles.dishBody}>
+                <Text style={styles.dishCuisine}>Carlton · Local Discovery</Text>
+                <Text style={styles.dishTitle}>Wood-Fired Perfection</Text>
+                <Text style={styles.bodyMuted}>
+                  "Found a small pizzeria tucked off Lygon Street with naturally fermented dough. Crisp leopard-spotted crust with fresh basil."
+                </Text>
+              </View>
+            </View>
             <PreviewNote />
           </>
         )}
 
-        {tab === "VenueDex" && (
+        {tab === "Deals" && (
           <>
             <PageHeading
-              label="VenueDex"
-              title="Saved places"
-              description="The places you bookmarked for a future visit."
+              label="Exclusive Deals"
+              title="Verified Venue Offers"
+              description="Official operator-reviewed dining promotions and time-limited deals."
             />
-            <View style={styles.stats}>
-              <Stat value={savedVenueIds.length} label="Saved places" />
-              <Stat value={0} label="Verified visits" />
-              <Stat value={0} label="Regions visited" />
+            <View style={styles.dishCard}>
+              <View style={styles.dishBody}>
+                <Text style={styles.dishCuisine}>Melbourne CBD · Lunch Deal</Text>
+                <Text style={styles.dishTitle}>Complimentary Iced Tea with Mains</Text>
+                <Text style={styles.bodyMuted}>
+                  Enjoy complimentary house-brewed iced tea with any main noodle dish between 11:30 AM and 2:30 PM, Monday to Thursday.
+                </Text>
+              </View>
             </View>
-            <SectionHeading
-              title="Your list"
-              detail={`${savedVenues.length} saved`}
-            />
-            {savedVenues.length === 0 ? (
-              <EmptyState
-                title="Nothing saved yet"
-                description="Bookmark a place on the map to keep it here for this session."
-                action="Explore the map"
-                onPress={() => navigate("Map")}
-              />
-            ) : (
-              savedVenues.map((venue, index) => (
-                <VenueRow
-                  key={venue.id}
-                  venue={venue}
-                  number={index + 1}
-                  saved
-                  onSave={() => toggle(venue.id, setSavedVenueIds)}
-                />
-              ))
-            )}
-            <Text style={styles.note}>
-              A saved place is a plan, not a verified visit.
-            </Text>
+            <View style={styles.dishCard}>
+              <View style={styles.dishBody}>
+                <Text style={styles.dishCuisine}>Fitzroy · Coffee Roasters</Text>
+                <Text style={styles.dishTitle}>Double Discovery Bonus (+50 XP)</Text>
+                <Text style={styles.bodyMuted}>
+                  Receive a commemorative explorer stamp and +50 bonus XP when trying the single-origin filter flight.
+                </Text>
+              </View>
+            </View>
             <PreviewNote />
           </>
         )}
@@ -449,26 +407,26 @@ function FoodGo() {
           </>
         )}
 
-        {tab === "Profile" && (
+        {tab === "Outback" && (
           <>
             <PageHeading
-              label="Passport"
-              title="Your food passport"
-              description="A place for your saved stops, dishes and future verified visits."
+              label="Outback Village"
+              title="Australian Farm Homestead"
+              description="Your permanent 16-plot farm. Clearing, upgrades and harvests use server time."
             />
-            <View style={styles.guestProfile}>
-              <View style={styles.guestAvatar}>
-                <UserRound size={28} color={colour.ink} />
-              </View>
-              <View style={styles.flex}>
-                <Text style={styles.guestName}>Guest explorer</Text>
-                <Text style={styles.bodyMuted}>No account connected</Text>
+            <View style={styles.dishCard}>
+              <View style={styles.dishBody}>
+                <Text style={styles.dishCuisine}>Homestead Status</Text>
+                <Text style={styles.dishTitle}>Level 1 Farmhouse & Orchard</Text>
+                <Text style={styles.bodyMuted}>
+                  4 active plots, 12 bushland. Daily supplies refresh on the Sydney calendar.
+                </Text>
               </View>
             </View>
             <View style={styles.stats}>
-              <Stat value={savedVenueIds.length} label="Saved places" />
-              <Stat value={savedDishIds.length} label="Dish ideas" />
-              <Stat value={plannedQuestIds.length} label="Trail plans" />
+              <Stat value={4} label="Active plots" />
+              <Stat value={100} label="Lumber" />
+              <Stat value={250} label="Water" />
             </View>
             <SectionHeading title="Privacy and saved data" />
             <View style={styles.setting}>
@@ -541,10 +499,10 @@ function FoodGo() {
             >
               <Icon
                 size={22}
-                color={active || name === "Map" ? colour.rust : colour.muted}
+                color={active || name === "Explore" ? colour.rust : colour.muted}
                 strokeWidth={active ? 2.3 : 1.7}
               />
-              <Text style={[styles.tabLabel, (active || name === "Map") && styles.tabLabelActive]}>
+              <Text style={[styles.tabLabel, (active || name === "Explore") && styles.tabLabelActive]}>
                 {label}
               </Text>
               <View

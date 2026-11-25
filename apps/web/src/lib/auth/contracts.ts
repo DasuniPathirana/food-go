@@ -71,6 +71,8 @@ export function hasVerifiedIdentity(user: {
 
 const callbackDestinations = new Set([
   "/profile",
+  "/inventory",
+  "/encounters",
   "/partner",
   "/partner/onboarding",
   "/auth/reset-password",

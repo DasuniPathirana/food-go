@@ -4,11 +4,11 @@ import type { AvatarId } from "@/lib/avatar-preferences";
 import { ExplorerAvatar, type AvatarAction } from "./explorer-avatar";
 import styles from "./map-player.module.css";
 
-export function MapPlayer({ avatarId, walking = false, action = "idle", actionToken = 0, animate = true, heading, mapBearing, distanceMetres, distanceTransitionMs, onActivate }: {
+export function MapPlayer({ avatarId, walking = false, action = "idle", actionToken = 0, animate = true, heading, mapBearing, distanceMetres, distanceTransitionMs, onActivate, close = false }: {
   avatarId?: AvatarId; walking?: boolean; action?: AvatarAction; actionToken?: number; animate?: boolean;
-  heading?: number; mapBearing?: number; distanceMetres?: number; distanceTransitionMs?: number; onActivate?: () => void;
+  heading?: number; mapBearing?: number; distanceMetres?: number; distanceTransitionMs?: number; onActivate?: () => void; close?: boolean;
 }) {
-  return <div className={styles.player} data-walking={walking} data-animate={animate} data-heading={heading == null ? undefined : Math.round(heading)}>
+  return <div className={styles.player} data-close={close} data-walking={walking} data-animate={animate} data-heading={heading == null ? undefined : Math.round(heading)}>
     <span className={styles.radar} aria-hidden="true" />
     <span className={styles.shadow} aria-hidden="true" />
     <div className={styles.avatar}><ExplorerAvatar avatarId={avatarId} walking={walking} action={action}

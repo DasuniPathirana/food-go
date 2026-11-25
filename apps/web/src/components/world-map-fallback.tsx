@@ -7,9 +7,12 @@ import "leaflet/dist/leaflet.css";
 import { ATLAS_AERIAL, ATLAS_CENTER, ATLAS_CORNERS, ATLAS_SATELLITE, ATLAS_ATTRIBUTION } from "@/lib/melbourne-atlas";
 import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
 import type { MapPoint } from "@/lib/map-game";
-import { createMapPlaceMarker } from "./map-place-marker";
+import { explorationFogGeometry, EXPLORATION_MAX_LATITUDE } from "@food-go/domain/exploration";
+import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
 import type { AtlasCanvasProps } from "./atlas-canvas";
 import styles from "./world-map-fallback.module.css";
+import { isInsideMelbournePilot, MELBOURNE_PILOT_BOUNDS, melbournePilotBoundaryFeature, melbournePilotMaskFeature } from "@food-go/domain";
+import { attachPilotFog } from "./pilot-fog";
 
 const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
 const position = (point: { latitude: number; longitude: number }): Leaflet.LatLngTuple => [point.latitude, point.longitude];
@@ -59,7 +62,18 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       }).on("tileload", () => { if (!disposed) { clearTimeout(tileDeadline.current); setTilesReady(true); setError(""); } })
         .on("tileerror", () => { if (!disposed) { clearTimeout(tileDeadline.current); setError("Some street tiles could not load. Places and directions remain available."); } }).addTo(active);
       tileDeadline.current = setTimeout(() => { if (!disposed) setError("Street tiles are taking longer to arrive. Check your connection or try again."); }, 15000);
-      active.on("click", event => latest.current.onSelect({ longitude: event.latlng.wrap().lng, latitude: event.latlng.lat }));
+      active.on("click", event => { const point = { longitude: event.latlng.wrap().lng, latitude: event.latlng.lat }; if (isInsideMelbournePilot(point)) latest.current.onSelect(point); });
+      const detachFog = attachPilotFog(host.current, {
+        project: (longitude, latitude) => active.latLngToContainerPoint([latitude, longitude]),
+        unproject: (x, y) => { const point = active.containerPointToLatLng([x, y]).wrap(); return { longitude: point.lng, latitude: point.lat }; },
+        subscribe: refresh => { active.on("move zoom resize", refresh); return () => { active.off("move zoom resize", refresh); }; },
+      });
+      // Geographic tint and boundary stay available when browser blur is unsupported.
+      const pilotPane = active.createPane("pilot-fog-fallback");
+      pilotPane.style.zIndex = "460"; pilotPane.style.pointerEvents = "none";
+      L.geoJSON(melbournePilotMaskFeature(), { pane: "pilot-fog-fallback", interactive: false, style: { stroke: false, fillColor: "#d6e1df", fillOpacity: .55 } }).addTo(active);
+      L.geoJSON(melbournePilotBoundaryFeature(), { pane: "pilot-fog-fallback", interactive: false, style: { color: "#08786e", weight: 2, fill: false } }).addTo(active);
+      active.once("unload", detachFog);
       active.on("dragstart", () => latest.current.onCameraInteraction?.());
       observer = new ResizeObserver(() => active.invalidateSize({ animate: false }));
       observer.observe(host.current);
@@ -74,6 +88,12 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       map.current?.remove(); map.current = null; api.current = null; streetTiles.current = null;
     };
   }, []);
+  useEffect(() => {
+    const active = map.current;
+    if (!ready || !active || !props.pilotOverviewNonce) return;
+    const b = MELBOURNE_PILOT_BOUNDS;
+    active.fitBounds([[b.minLat,b.minLon],[b.maxLat,b.maxLon]], { paddingTopLeft: [24,110], paddingBottomRight: [55,100], maxZoom: 15, animate: false });
+  }, [ready, props.pilotOverviewNonce]);
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active || props.imagery === "street" || props.imagery === "game") return;
@@ -108,7 +128,27 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active) return;
-    const markers = props.places.map(place => {
+    const pane = active.getPane("discovery-fog") ?? active.createPane("discovery-fog");
+    pane.style.zIndex = "450"; pane.style.pointerEvents = "none";
+    const fog = L.geoJSON(undefined, { pane: "discovery-fog", interactive: false,
+      style: { stroke: false, fillColor: "#d1e2d4", fillOpacity: .3 } }).addTo(active);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      const bounds = active.getBounds();
+      const result = explorationFogGeometry({ viewport: { west: bounds.getWest(), east: bounds.getEast(),
+        south: Math.max(-EXPLORATION_MAX_LATITUDE, bounds.getSouth()), north: Math.min(EXPLORATION_MAX_LATITUDE, bounds.getNorth()) },
+        exploredCellIds: props.discoveredCells ?? [], maxCells: props.lowDetail ? 1024 : 4096 });
+      fog.clearLayers(); if (props.discoveryEnabled) fog.addData(result.data);
+      const { data: _data, ...view } = result; props.onDiscoveryView?.(view);
+    };
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(refresh, 120); };
+    refresh(); active.on("moveend", schedule); active.on("resize", schedule);
+    return () => { clearTimeout(timer); active.off("moveend", schedule); active.off("resize", schedule); active.removeLayer(fog); };
+  }, [ready, props.discoveryEnabled, props.discoveredCells, props.lowDetail, props.onDiscoveryView]);
+  useEffect(() => {
+    const L = api.current, active = map.current;
+    if (!ready || !L || !active) return;
+    const markers = props.places.filter(isInsideMelbournePilot).map(place => {
       const button = createMapPlaceMarker(place);
       button.style.transform = "translate(-50%, -100%)";
       L.DomEvent.disableClickPropagation(button);
@@ -123,6 +163,12 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
     for (const [id, marker] of placeMarkers.current)
       marker.getElement()?.querySelector("button")?.setAttribute("aria-pressed", String(id === props.selected?.id));
   }, [ready, props.places, props.selected?.id]);
+  useEffect(() => {
+    for (const place of props.places) {
+      const button = placeMarkers.current.get(place.id)?.getElement()?.querySelector("button");
+      if (button) updateMapPlaceEncounter(button, place, props.encounterSignals ?? {});
+    }
+  }, [ready, props.places, props.encounterSignals]);
   useEffect(() => {
     const L = api.current, active = map.current;
     if (!ready || !L || !active || !props.player) return;
@@ -162,7 +208,7 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
   }, [ready, props.player?.longitude, props.player?.latitude, props.followPlayer, props.focusPlayerNonce, props.playerTransitionMs]);
   useEffect(() => {
     const L = api.current, active = map.current, selected = props.selected;
-    if (!ready || !L || !active || !selected) return;
+    if (!ready || !L || !active || !selected || !isInsideMelbournePilot(selected)) return;
     active.setView(position(selected), Math.max(15, active.getZoom()), { animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches });
     const pin = L.circleMarker(position(selected), { radius: 8, color: "#183d39", fillColor: "#ffd445", fillOpacity: 1, weight: 3 }).addTo(active);
     return () => { pin.remove(); };
@@ -187,7 +233,7 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       onKeyDown={event => {
         if (event.key === "Enter" && map.current && event.target === host.current) {
           event.preventDefault(); const point = map.current.getCenter().wrap();
-          latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
+          if (isInsideMelbournePilot({ longitude: point.lng, latitude: point.lat })) latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
         }
       }}/>
     {playerElement && props.playerContent && createPortal(props.playerContent, playerElement)}

@@ -1,0 +1,71 @@
+name: Food Go demo screenshots (review only)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.number == 13
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      CI: "true"
+      FOOD_GO_AUTH_ENABLED: "false"
+      FOOD_GO_EXPLORATION_ENABLED: "false"
+      FOOD_GO_ENCOUNTERS_ENABLED: "false"
+      FOOD_GO_PARTNER_ENABLED: "false"
+      FOOD_GO_COMMUNITY_ENABLED: "false"
+      FOOD_GO_CATALOGUE_MODE: supabase
+      SUPABASE_URL: ""
+      SUPABASE_PUBLISHABLE_KEY: ""
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install source and Chromium
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Build game web
+        run: npm run build:web
+      - name: Capture real browser views
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start --workspace @food-go/web -- --hostname 127.0.0.1 --port 3100 >"$RUNNER_TEMP/game-demo.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=false
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:3100/api/health >/dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            tail -n 80 "$RUNNER_TEMP/game-demo.log"
+            exit 1
+          fi
+          node scripts/capture-world-demo.mjs
+      - name: Upload screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: food-go-real-browser-world-demo
+          path: artifacts/demo-world/
+          if-no-files-found: warn
+          retention-days: 7

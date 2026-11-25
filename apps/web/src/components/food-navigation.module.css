@@ -5,15 +5,13 @@
   gap: 5px;
   margin-inline: auto;
 }
-.directory a, .dock a {
+.directory a {
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
   white-space: nowrap;
   color: var(--ink);
-}
-.directory a {
   min-height: 44px;
   padding: 6px clamp(9px, .9vw, 16px);
   gap: 7px;
@@ -27,55 +25,116 @@
 .directory a[aria-current] svg { color: var(--sunny); }
 .directory a:focus-visible, .dock a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) { .directory a, .dock a { transition: background-color 160ms ease-out, color 160ms ease-out; } }
+
 .dock { display: none; }
+
 @media (min-width: 761px) and (max-width: 940px) {
   .directory { gap: 1px; }
   .directory a { padding-inline: 7px; font-size: 14px; gap: 5px; }
   .directory a svg { width: 16px; }
 }
+
 @media (max-width: 760px) {
   .directory { display: none; }
   .dock {
     position: fixed;
-    z-index: 45;
-    inset: auto 0 0;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
-    background: #fffef9;
-    border-top: 1px solid #dde5da;
-    box-shadow: 0 -5px 26px #193c3512;
+    z-index: 1000;
+    bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(420px, calc(100vw - 24px));
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 6px;
+    background: rgba(6, 27, 23, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(45, 212, 191, 0.28);
+    border-top: 1.5px solid rgba(45, 212, 191, 0.55);
+    border-radius: 34px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 16px rgba(0, 240, 255, 0.12);
+    pointer-events: auto;
   }
-  .dock a {
-    min-height: 55px;
-    flex-direction: column;
-    gap: 2px;
-    font: 800 12px/1.1 var(--font-body);
+
+  .navItem {
     position: relative;
-    border-radius: 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: #a4bdb5;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 10px;
+    transition: color 140ms ease;
+    min-width: 54px;
   }
-  .dock a > svg { width: 32px; height: 28px; padding: 3px; }
-  .dock a[aria-current] { color: var(--petrol); font-weight: 800; }
-  .dock a[aria-current]::before {
-    content: "";
+
+  .navItem:hover {
+    color: #ffffff;
+  }
+
+  .activeItem {
+    color: #00f0ff;
+  }
+
+  .iconWrapper {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+  }
+
+  .badgeDot {
     position: absolute;
-    inset: -5px 24% auto;
-    height: 2px;
-    background: var(--petrol);
+    top: -2px;
+    right: -3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff6b35;
+    box-shadow: 0 0 4px #ff6b35;
   }
-  .dock a.explore { gap: 0; }
-  .dock a.explore > svg {
-    border-radius: 18px;
-    background: #ffdc53;
-    color: #163f35;
-    height: 43px;
-    width: 48px;
-    padding: 8px;
-    margin-top: -13px;
-    border: 3px solid #fffef9;
-    box-shadow: 0 4px 0 #ddb942;
-    transform: rotate(-7deg);
+
+  .activeHexagon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 17px;
+    transform: rotate(45deg);
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(9, 44, 38, 0.95) 100%);
+    border: 2px solid #00f0ff;
+    box-shadow: 0 0 24px rgba(0, 240, 255, 0.6), inset 0 0 12px rgba(0, 240, 255, 0.3);
+    margin-top: -20px;
+    transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 160ms ease;
   }
-  .dock a.explore[aria-current] > svg { color: #ffdc53; background: #164d3e; box-shadow: 0 4px 0 #092f26; }
-  .dock a.explore[aria-current]::before { display: none; }
+
+  .activeHexagon svg {
+    transform: rotate(-45deg);
+    color: #00f0ff;
+    filter: drop-shadow(0 0 6px #00f0ff);
+  }
+
+  .activeItem:hover .activeHexagon {
+    transform: rotate(45deg) scale(1.06);
+    box-shadow: 0 0 32px rgba(0, 240, 255, 0.8), inset 0 0 16px rgba(0, 240, 255, 0.4);
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+  }
+
+  .activeItem .label {
+    color: #00f0ff;
+    font-weight: 800;
+  }
 }

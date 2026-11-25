@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-17",
+  "project": { "name": "Food go", "id": "azccigsctzhbaxoajqst", "authorisedUse": "development/test", "cliBranchLabel": "production" },
+  "cliVersion": "3.2.0",
+  "suite": "geographic_discovery",
+  "assertions": 90,
+  "status": "passed",
+  "rolledBack": true,
+  "resetPerformed": false,
+  "migrations": [
+    "20261117124333_food_go_geographic_discovery",
+    "20261117124540_food_go_discovery_consent_freshness",
+    "20261117125705_food_go_discovery_recording_generation"
+  ],
+  "postRollbackCounts": { "geographic_accounts": 0, "geographic_cells": 0, "geographic_requests": 0, "fixture_users": 0 },
+  "scope": "Private coarse cosmetic observations. No visit, XP, quest, offer or reward mutations.",
+  "testFile": "supabase/tests/geographic_discovery.test.sql",
+  "preparedWith": "node scripts/prepare-database-tests.mjs --test supabase/tests/geographic_discovery.test.sql --output artifacts/geographic-discovery-rollback.sql",
+  "executedWith": "npx --yes supabase@3.2.0 db query --remote=azccigsctzhbaxoajqst --file artifacts/geographic-discovery-rollback.sql --yes",
+  "limitations": ["Fixture identities and sessions only", "Not a signed-in live-browser or physical GPS test", "Existing unrelated database advisories remain documented"]
+}

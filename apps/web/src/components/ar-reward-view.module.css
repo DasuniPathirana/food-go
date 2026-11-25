@@ -1,0 +1,223 @@
+.arOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: #000000;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.cameraViewport {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.videoFeed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.simulatedEnvironment {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 60%, #204135 0%, #0d1e17 70%, #050b08 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.gridLines {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(189, 229, 56, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(189, 229, 56, 0.08) 1px, transparent 1px);
+  background-size: 30px 30px;
+  perspective: 400px;
+  transform: rotateX(45deg);
+  transform-origin: bottom center;
+}
+
+.hudHeader {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+}
+
+.capabilityBadge {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(24, 61, 50, 0.85);
+  color: #bde538;
+  border: 1px solid rgba(189, 229, 56, 0.4);
+  padding: 4px 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.closeButton {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.reticle {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border: 2px dashed rgba(189, 229, 56, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: pulseReticle 2s infinite ease-in-out;
+}
+
+@keyframes pulseReticle {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.08); opacity: 0.9; }
+}
+
+.virtualItem {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  animation: floatItem 3s ease-in-out infinite;
+  background: transparent;
+  border: none;
+  padding: 20px;
+}
+
+@keyframes floatItem {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-16px) scale(1.04); }
+}
+
+.itemIconWrapper {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffd445 0%, #ed7357 100%);
+  box-shadow: 0 0 35px rgba(255, 212, 69, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #183d32;
+  border: 3px solid #ffffff;
+}
+
+.itemLabel {
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.bottomPanel {
+  padding: 16px 20px;
+  background: #183d32;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.itemTitle {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0;
+  color: #ffffff;
+}
+
+.itemDesc {
+  font-size: 13px;
+  color: #c2d0b7;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.claimButton {
+  background: #bde538;
+  color: #183d32;
+  border: 0;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.claimButton:hover {
+  background: #cbf046;
+  transform: translateY(-1px);
+}
+
+.claimButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.successMessage {
+  padding: 14px;
+  background: rgba(47, 105, 65, 0.9);
+  border: 1px solid #bde538;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.fallbackNotice {
+  font-size: 12px;
+  color: #a4c797;
+  text-align: center;
+  margin: 0;
+}
+
+.encounterDialog { position: fixed; inset: 0; padding: 0; margin: auto; width: min(100%, 520px); max-width: 100%; max-height: 100dvh; height: 100dvh; border: 0; color: #fffdf6; background: #092a26; overflow: auto; z-index: 1500; }
+.encounterDialog::backdrop { background: rgba(4, 19, 17, .8); }
+.encounterView { position: relative; min-height: 42dvh; display: grid; place-items: center; isolation: isolate; overflow: hidden; background: radial-gradient(ellipse, #32665a, #081f1b); }
+.encounterVideo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+.encounterCollectible { width: min(64%, 240px); filter: drop-shadow(0 0 16px #f5cf6a); }
+.encounterCameraStatus { position: absolute; bottom: 0; margin: 0; padding: 12px; background: rgba(4, 19, 17, .8); width: 100%; font-size: 13px; text-align: center; }
+.encounterConfirmation { background: #fffdf6; color: #163c32; padding: 18px 18px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.encounterConfirmation h2 { color: #163c32; margin: 0 0 8px; }
+.encounterDialog .closeButton { min-height: 44px; min-width: 44px; color: white; }
+.encounterDialog .capabilityBadge { display: inline-flex; gap: 6px; align-items: center; }

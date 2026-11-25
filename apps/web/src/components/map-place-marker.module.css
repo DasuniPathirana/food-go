@@ -51,63 +51,77 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  width: 50px;
+  height: 50px;
   overflow: hidden;
-  border: 3px solid var(--pin-paper);
+  border: 2.5px solid #ffffff;
   border-radius: 50%;
-  background: #ffe2ce;
-  box-shadow: 0 3px 2px #00544f80, 0 7px 12px #241b2933;
+  background: radial-gradient(circle at 35% 35%, #ffe877 0%, #f59e0b 65%, #b45309 100%);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.65), 0 4px 10px rgba(0, 0, 0, 0.25);
   transition: translate 170ms cubic-bezier(.16, 1, .3, 1), box-shadow 170ms ease-out;
 }
 
 .shop {
   position: relative;
   display: grid;
-  place-items: end center;
-  width: 32px;
-  height: 30px;
-  padding-bottom: 2px;
-  border: 1px solid #006d6870;
-  border-radius: 2px 2px 4px 4px;
-  background: #fffdf6;
-  color: var(--pin-colour);
-  box-shadow: 3px 3px 4px #241b2926;
-  transform: rotate(-4deg);
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: #ffffff;
 }
 
-.shop::before {
-  position: absolute;
-  top: -5px;
-  left: -3px;
-  width: 36px;
-  height: 9px;
-  border-radius: 3px 3px 4px 4px;
-  background: repeating-linear-gradient(90deg, var(--pin-colour) 0 6px, #fffdf6 6px 12px);
-  box-shadow: 0 2px 3px #241b2924;
-  content: "";
+.shop svg {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
-.shop svg { width: 22px; height: 22px; }
 .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .marker[data-kind="market"] { --pin-colour: #9a3f20; }
-.marker[data-kind="cafe"] .face { background: #fff6cf; }
-.marker[data-kind="building"] .face { background: #ffd445; }
-.marker[data-kind="building"] .shop { width: 29px; height: 34px; transform: rotate(-4deg) skewY(3deg); }
-.marker[data-kind="building"] .shop::before { left: -3px; width: 33px; background: var(--pin-colour); }
+.marker[data-kind="cafe"] .face { background: radial-gradient(circle at 35% 35%, #ffe285 0%, #eab308 70%, #a16207 100%); }
+.marker[data-kind="building"] .face { background: radial-gradient(circle at 35% 35%, #ffe877 0%, #f59e0b 65%, #b45309 100%); }
 
 .label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 96px;
+  max-width: 140px;
+  padding: 5px 10px;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 12px;
+  background: rgba(8, 34, 29, 0.94);
+  backdrop-filter: blur(10px);
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.name {
   display: block;
-  max-width: 124px;
-  overflow: hidden;
-  padding: 4px 7px;
-  border: 1px solid #dfd7ca;
-  border-radius: 5px;
-  background: var(--pin-paper);
-  color: #241b29;
-  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
   white-space: nowrap;
-  box-shadow: 0 3px 6px #241b2921;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 124px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #c9dbd5;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.star {
+  color: #f6c944;
+  filter: drop-shadow(0 0 3px #f6c944);
 }
 
 .count {
@@ -131,6 +145,9 @@
 .marker[aria-pressed="true"] .label { border-color: #006d68; background: #006d68; color: #fffdf6; }
 .marker:focus-visible { z-index: 9; outline: 3px solid #304bc2; outline-offset: 3px; }
 .marker:active .face { translate: 0 1px; }
+.marker[data-encounter=available] .face { border-color: #d2a138; }
+.marker[data-encounter=nearby] .face { border-color: #006d68; box-shadow: 0 0 0 5px #ffd445b8, 0 5px 10px #006d6840; }
+.marker[data-encounter=nearby] .label { background: #fff2bd; color: #23473e; }
 
 @media (max-width: 700px) {
   .marker { gap: 4px; max-width: 104px; font-size: 11px; }

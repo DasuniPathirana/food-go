@@ -6,11 +6,11 @@ import { mapDistance, parseStreetRoute, prepareWalk, validMapPoint, walkPosition
 
 export type WalkPhase = "idle" | "routing" | "walking" | "paused" | "arrived" | "unavailable";
 
-export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: boolean }) {
+export function useStreetWalk({ start, enabled, motionPaused = false, initialHeading = 0 }: { start: MapPoint; enabled: boolean; motionPaused?: boolean; initialHeading?: number }) {
   const [position, setPosition] = useState<MapPoint>(start);
   const [route, setRoute] = useState<LineString | null>(null);
   const [phase, setPhase] = useState<WalkPhase>("idle");
-  const [heading, setHeading] = useState(0);
+  const [heading, setHeading] = useState(initialHeading);
   const [travelled, setTravelled] = useState(0);
   const [totalDistance, setTotalDistance] = useState(0);
   const [sessionMetres, setSessionMetres] = useState(0);
@@ -25,7 +25,9 @@ export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: bo
   const sessionDistance = useRef(0);
   const request = useRef<AbortController | null>(null);
   const revision = useRef(0);
+  const pausePreference = useRef(motionPaused);
   allowed.current = enabled;
+  pausePreference.current = motionPaused;
 
   const move = useCallback((point: MapPoint) => { current.current = point; setPosition(point); }, []);
   const cancel = useCallback(() => {
@@ -84,7 +86,7 @@ export function useStreetWalk({ start, enabled }: { start: MapPoint; enabled: bo
       if (simulate) move(first);
       setRoute(parsed.geometry); setTotalDistance(walk.distance); setTravelled(0); setHeading(firstStep.heading); setAttribution(parsed.attribution);
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const paused = !simulate || document.visibilityState === "hidden" || reduced;
+      const paused = !simulate || pausePreference.current || document.visibilityState === "hidden" || reduced;
       setPhase(paused ? "paused" : "walking");
       setMessage(!simulate ? "Walking route ready. Your explorer follows your live position."
         : paused ? "Street route ready. Start walking when ready." : "Following the walking route.");

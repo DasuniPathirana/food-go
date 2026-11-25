@@ -63,6 +63,6 @@ export function PartnerDashboard() {
         {venues.map(venue => <article key={venue.id} className="partner-list-row"><div><h2><Link href={"/partner/venues/" + venue.id}>{venue.name}</Link></h2><p>{venue.suburb}, {venue.state}</p><p className="field-hint">Saved {new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "Australia/Sydney" }).format(new Date(venue.updatedAt))}</p></div><div><strong>{statusCopy[venue.status]}</strong><p>{venue.ownershipVerified ? "Ownership verified" : "Ownership review required"}</p><Link className="secondary-button" href={"/partner/venues/" + venue.id}>Manage restaurant</Link></div></article>)}
       </div> : <div className="empty-state"><h2>Your first venue starts here</h2><p>Save your business details privately. A draft is visible only to your organisation until ownership and publication are approved.</p><Link href="/partner/onboarding" className="primary-button">Create a private draft<ArrowRight size={17} /></Link></div>}
     </section>
-    <div className="inline-notice"><p>Open a restaurant to edit its details, manage the menu, submit offers and show customer verification codes. Ownership and publication are reviewed by Food Go.</p></div>
+    <div className="inline-notice"><p>Open a restaurant to edit its details, manage the menu, submit offers and show customer verification codes. Ownership and publication are reviewed by Food Go. <Link href="/encounters">Manage restaurant encounters and staff confirmations</Link>.</p></div>
   </>;
 }

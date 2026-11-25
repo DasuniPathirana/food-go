@@ -1,0 +1,18 @@
+.dock{position:absolute;z-index:28;top:calc(245px + env(safe-area-inset-top));left:12px;pointer-events:none;max-width:calc(100vw - 24px)}
+.dock button,.menu{pointer-events:auto}
+.trigger{display:flex;align-items:center;gap:7px;min-height:44px;border:1px solid #ba9b63;border-radius:99px;background:#113b3be9;color:#fff2d3;box-shadow:0 7px 22px #153e4e4d;backdrop-filter:blur(14px);font:800 12px/1.15 var(--font-body);padding:8px 13px;cursor:pointer}
+.trigger svg{color:#ffc95e}
+.menu{position:absolute;top:calc(100% + 8px);left:0;width:min(310px,calc(100vw - 24px));padding:9px;border:1px solid #d3d9ba;border-radius:17px;background:#fffdf3f8;box-shadow:0 14px 40px #15373861;color:#163f3c;backdrop-filter:blur(18px)}
+.heading{display:flex;align-items:center;justify-content:space-between;padding:4px 7px 8px 10px}
+.heading strong,.heading small{display:block}
+.heading strong{font:800 15px/1.4 var(--font-body)}
+.heading small{font:600 10px/1.2 var(--font-body);color:#69766d}
+.heading button{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;cursor:pointer}
+.menu>button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;min-height:55px;padding:9px;border:0;border-radius:11px;background:transparent;color:#1f4a46;cursor:pointer}
+.menu>button:hover,.menu>button:focus-visible{background:#e6f3e6}
+.menu>button>svg{flex:none;color:#b17a24}
+.menu>button span strong,.menu>button span small{display:block}
+.menu>button span strong{font:800 13px/1.25 var(--font-body)}
+.menu>button span small{font:500 11px/1.4 var(--font-body);color:#64736a}
+.dock button:focus-visible{outline:3px solid #eab54b;outline-offset:2px}
+@media(max-width:760px){.dock{top:calc(242px + env(safe-area-inset-top));left:10px}.trigger{padding-inline:11px}}

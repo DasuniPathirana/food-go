@@ -1,18 +1,26 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Store, Clock } from "lucide-react";
 import type { PromotionResult } from "@/lib/promotions";
 import styles from "./deals.module.css";
 
-const expiry = new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeStyle: "short", timeZone: "Australia/Melbourne" });
-
 export function PromotionList({ result, limit }: { result: PromotionResult; limit?: number }) {
-  if (result.status === "unavailable") return <div role="status" className={styles.offerEmpty} data-compact={limit !== undefined}><div><h3>Offers are taking a moment.</h3><p>Please try again shortly. You can keep exploring the map.</p>{limit === undefined && <Link href="/">Browse the map <ArrowRight size={15}/></Link>}</div></div>;
-  if (!result.promotions.length) return <div className={styles.offerEmpty} data-compact={limit !== undefined}><div><h3>A little room for a good deal.</h3><p>No active offers match this view. Approved restaurant offers will appear here.</p>{limit === undefined && <Link href="/">Find your next place <ArrowRight size={15}/></Link>}</div></div>;
-  return <div className={styles.promotionGrid}>{result.promotions.slice(0, limit).map(promo =>
-    <article className={styles.promotion} key={promo.id} data-kind={promo.kind}>
-      <div className={styles.promotionBody}><span className={styles.offerKind}>{promo.kind === "food" ? "Food Deal" : "Restaurant Deal"}</span><h3>{promo.title}</h3><p>{promo.description}</p>
-        <Link href={`/venues/${encodeURIComponent(promo.venueSlug)}`}>{promo.venueName}<ArrowRight size={14} /></Link>
-        <small className={styles.offerExpiry}><Clock size={13}/><span>{promo.suburb} · Ends <time dateTime={promo.endsAt}>{expiry.format(new Date(promo.endsAt))}</time> Melbourne time</span></small>
+  if (result.status === "unavailable") return <p role="status" className={styles.note}>Offers are temporarily unavailable. Please try again later.</p>;
+  const deals = result.promotions.slice(0, limit);
+  if (!deals.length) return <section className={styles.offerEmpty}><h2>No matching offers yet</h2><p>Approved restaurant offers will appear here. Try another category or explore nearby venues.</p><Link href="/">Explore Melbourne <ArrowRight size={16}/></Link></section>;
+  return <div className={styles.dealsContainer}><div className={styles.dealCardsList}>
+    {deals.map(deal => <article className={styles.premiumDealCard} key={deal.id}>
+      <div className={styles.dealVenueMini} aria-hidden="true"><div className={styles.miniPinBadge}><Store size={14}/></div>
+        <div className={styles.miniBuildingGraphic}><div className={styles.miniBuildingRoof}/><div className={styles.miniBuildingFacade}><div className={styles.miniAwning}/><div className={styles.miniDoor}/></div></div>
       </div>
-    </article>)}</div>;
+      <div className={styles.dealInfoCol}>
+        <h3 className={styles.dealVenueTitle}>{deal.venueName}</h3>
+        <p className={styles.dealRatingRow}>{deal.suburb}</p>
+        <div className={styles.dealOfferHighlight}><strong className={styles.dealDiscountText}>{deal.title}</strong><span className={styles.dealOfferDetail}>{deal.description}</span></div>
+        <small><Clock size={12} aria-hidden="true"/> Until {new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "Australia/Melbourne" }).format(new Date(deal.endsAt))}</small>
+      </div>
+      <div className={styles.dealActionCol}><Link className={styles.redeemButton} href={`/venues/${encodeURIComponent(deal.venueSlug)}#offer-${deal.id}`}>View offer <ArrowRight size={13}/></Link></div>
+    </article>)}
+  </div></div>;
 }

@@ -1,11 +1,23 @@
 import css from "./map-place-marker.module.css";
+import type { EncounterSignal } from "@/lib/encounter-landmarks";
 
 export type MapPlaceMarker = {
+  id?: string; members?: readonly { id: string }[];
   name: string;
   image?: string;
   kind?: "cafe" | "restaurant" | "market" | "building";
   shopCount?: number;
+  distanceMetres?: number;
+  rating?: number;
 };
+
+export function updateMapPlaceEncounter(button: HTMLButtonElement, place: MapPlaceMarker, signals: Readonly<Record<string, EncounterSignal>>) {
+  const states = (place.members?.map(member => member.id) ?? (place.id ? [place.id] : [])).map(id => signals[id]);
+  const state = states.includes("nearby") ? "nearby" : states.includes("available") ? "available" : "none";
+  button.dataset.encounter = state;
+  const count = place.shopCount && place.shopCount > 1 ? `, ${place.shopCount} shops` : "";
+  button.setAttribute("aria-label", `Explore ${place.name}${count}${state === "nearby" ? ", restaurant encounter nearby" : state === "available" ? ", restaurant encounter available" : ""}`);
+}
 
 const iconPaths = {
   cafe: ["M5 8h11v7a5 5 0 0 1-10 0V8Z", "M16 9h2a3 3 0 0 1 0 6h-2", "M8 3v2m4-2v2M4 21h15"],
@@ -19,7 +31,7 @@ function icon(kind: MapPlaceMarker["kind"]) {
   svg.setAttribute("viewBox", "0 0 24 24");
   svg.setAttribute("fill", "none");
   svg.setAttribute("stroke", "currentColor");
-  svg.setAttribute("stroke-width", "1.8");
+  svg.setAttribute("stroke-width", "2.0");
   svg.setAttribute("stroke-linecap", "round");
   svg.setAttribute("stroke-linejoin", "round");
   svg.setAttribute("aria-hidden", "true");
@@ -41,7 +53,7 @@ function photoSource(image: string | undefined) {
 }
 
 /** The map engine owns positioning and click handlers; aria-pressed controls selection. */
-export function createMapPlaceMarker(place: MapPlaceMarker): HTMLButtonElement {
+export function createMapPlaceMarker(place: MapPlaceMarker, distanceMetres?: number, rating?: number, showLabel = true): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.className = css.marker;
@@ -82,10 +94,30 @@ export function createMapPlaceMarker(place: MapPlaceMarker): HTMLButtonElement {
     shops.textContent = `${count} shops`;
     button.append(shops);
   }
-  const label = document.createElement("span");
-  label.className = css.label;
-  label.setAttribute("aria-hidden", "true");
-  label.textContent = place.name;
-  button.append(label);
+
+  // Attached Venue Card: only rendered when label display is requested (e.g. selected or top venue)
+  if (showLabel) {
+    const label = document.createElement("span");
+    label.className = css.label;
+    label.setAttribute("aria-hidden", "true");
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = css.name;
+    nameSpan.textContent = place.name;
+    label.append(nameSpan);
+
+    const metaSpan = document.createElement("span");
+    metaSpan.className = css.meta;
+    const placeRating = rating ?? place.rating;
+    const dist = distanceMetres ?? place.distanceMetres;
+    const meta: string[] = [];
+    if (typeof placeRating === "number" && Number.isFinite(placeRating) && placeRating >= 0 && placeRating <= 5) meta.push(`★ ${placeRating.toFixed(1)}`);
+    if (typeof dist === "number" && Number.isFinite(dist) && dist >= 0) meta.push(dist < 950 ? `${Math.round(dist / 10) * 10} m from explorer` : `${(dist / 1000).toFixed(1)} km from explorer`);
+    metaSpan.textContent = meta.join(" · ");
+    label.append(metaSpan);
+
+    button.append(label);
+  }
+
   return button;
 }

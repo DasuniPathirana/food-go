@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { loadCatalogue, parseCatalogueSearch, readCatalogueConfig, type CatalogueConfig } from "./catalogue";
+import { loadCatalogue, loadPilotCatalogue, parseCatalogueSearch, readCatalogueConfig, type CatalogueConfig } from "./catalogue";
 import { venueHref } from "./catalogue-contracts";
 
 const config: CatalogueConfig = {
@@ -126,4 +126,33 @@ test("saved lookups remain anonymous public reads and dish IDs filter the parent
   const invalid = await loadCatalogue(config, undefined, { saved: { kind: "venue", ids: ["bad-id"] }, fetch: async () => { called = true; return Response.json([]); } });
   assert.equal(invalid.status, "unavailable");
   assert.equal(called, false);
+});
+
+test("pilot catalogue pages beyond the first 50 and excludes venues outside the exact polygon", async () => {
+  let calls = 0;
+  const inside = { ...row, latitude: -37.8153, longitude: 144.967 };
+  const records = Array.from({ length: 100 }, (_, i) => ({ ...inside, id: `11111111-1111-4111-8111-${String(i + 1).padStart(12, "0")}` }));
+  const result = await loadPilotCatalogue(config, async input => {
+    const params = new URL(String(input)).searchParams;
+    assert.equal(params.get("status"), "eq.published");
+    assert.equal(params.get("ownership_verified_at"), "not.is.null");
+    assert.equal(params.get("state"), "eq.VIC");
+    assert.equal(params.get("order"), "id.asc");
+    assert.equal(params.getAll("latitude").length, 2);
+    assert.equal(params.getAll("longitude").length, 2);
+    assert.doesNotMatch(params.get("select") || "", /venue_dishes|email|contact|organization/u);
+    calls++;
+    if (calls === 1) return Response.json(records);
+    assert.equal(params.get("offset"), "100");
+    return Response.json([{ ...inside, id: "22222222-2222-4222-8222-222222222222" }, { ...inside, id: "33333333-3333-4333-8333-333333333333", latitude: -37.835, longitude: 144.93 }]);
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.status, "ready");
+  assert.equal(result.venues.length, 101);
+  assert.equal(result.hasMore, false);
+  assert.ok(result.venues.every(venue => venue.dishes.length === 0));
+});
+test("pilot catalogue fails closed without fictional venues", async () => {
+  assert.equal((await loadPilotCatalogue(config, async () => Response.json({ error: "provider" }, { status: 503 }))).status, "unavailable");
+  assert.deepEqual(await loadPilotCatalogue({ mode: "demo" }), { mode: "supabase", status: "unavailable", venues: [], hasMore: false });
 });

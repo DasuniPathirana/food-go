@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { AU_STATES, VENUE_TYPES, venueSearchSchema, type VenueSearch } from "@food-go/domain";
+import { AU_STATES, VENUE_TYPES, venueSearchSchema, type VenueSearch, MELBOURNE_PILOT_BOUNDS, isInsideMelbournePilot } from "@food-go/domain";
 import { venues as examples, type Venue } from "./fixtures";
 import type { CatalogueState, CatalogueVenue } from "./catalogue-contracts";
 
@@ -163,4 +163,41 @@ export async function loadCatalogue(
     if (!parsed.success) return unavailable;
     return { mode: "supabase", status: "ready", venues: parsed.data.slice(0, search.limit).map(dto), hasMore: parsed.data.length > search.limit };
   } catch { return unavailable; }
+}
+
+
+/** Bounded public map catalogue for the complete pilot, independent of the
+ * alphabetical storefront page. Do not transfer entire menus to the map. */
+export async function loadPilotCatalogue(config: CatalogueConfig, fetcher?: typeof fetch): Promise<CatalogueState> {
+  const unavailable: CatalogueState = { mode: "supabase", status: "unavailable", venues: [], hasMore: false };
+  if (config.mode !== "supabase" || !config.configured) return unavailable;
+  const { minLon, maxLon, minLat, maxLat } = MELBOURNE_PILOT_BOUNDS;
+  const pageSize = 100, maximum = 500;
+  const venues: CatalogueVenue[] = [];
+  const seen = new Set<string>();
+  const schema = rowSchema.omit({ venue_dishes: true });
+  const deadline = AbortSignal.timeout(8000);
+  try {
+    const client = publicCatalogueClient(config, fetcher);
+    for (let offset = 0; offset <= maximum; offset += pageSize) {
+      const size = offset === maximum ? 1 : pageSize;
+      const { data, error } = await client.from("venues")
+        .select("id,slug,name,description,venue_type,cuisine,address,suburb,state,postcode,latitude,longitude")
+        .eq("status", "published").not("ownership_verified_at", "is", null).eq("state", "VIC")
+        .gte("latitude", minLat).lte("latitude", maxLat).gte("longitude", minLon).lte("longitude", maxLon)
+        .order("id").range(offset, offset + size - 1).abortSignal(deadline);
+      if (error) return unavailable;
+      const parsed = z.array(schema).max(size).safeParse(data);
+      if (!parsed.success) return unavailable;
+      if (offset === maximum) return { mode: "supabase", status: "ready", venues, hasMore: parsed.data.length > 0 };
+      for (const row of parsed.data) {
+        const venue = dto({ ...row, venue_dishes: [] });
+        if (venue.coordinates && isInsideMelbournePilot(venue.coordinates) && !seen.has(venue.id)) {
+          seen.add(venue.id); venues.push(venue);
+        }
+      }
+      if (parsed.data.length < size) return { mode: "supabase", status: "ready", venues, hasMore: false };
+    }
+  } catch { return unavailable; }
+  return unavailable;
 }

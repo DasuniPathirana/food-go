@@ -29,6 +29,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   }
   return <section className={styles.page}>
     <header className={styles.heading}><ShieldCheck size={30}/><h1>Operations</h1></header>
+    <p className={styles.help}><Link href="/encounters">Review restaurant encounter pools</Link></p>
     <nav className={styles.tabs} aria-label="Operator sections">{sections.map(item=><Link aria-current={item===section ? "page" : undefined}
       key={item} href={`/admin?section=${item}`}>{titles[item]}</Link>)}</nav>
     <h2>{titles[section]}</h2>

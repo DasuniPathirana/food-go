@@ -1,0 +1,63 @@
+{
+  "capturedAt": "2026-11-17T11:39:12.660Z",
+  "runtime": "159.0.8154.6",
+  "runtimeErrors": [],
+  "viewports": [
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "bounds": {
+        "x": 0,
+        "y": 136,
+        "width": 1280,
+        "height": 764
+      },
+      "horizontalOverflow": false,
+      "cameras": [
+        {
+          "mode": "third",
+          "sameGeographicCanvas": true
+        },
+        {
+          "mode": "close",
+          "sameGeographicCanvas": true
+        },
+        {
+          "mode": "first",
+          "sameGeographicCanvas": true
+        }
+      ],
+      "fallbackRecovered": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "bounds": {
+        "x": 0,
+        "y": 122,
+        "width": 390,
+        "height": 653
+      },
+      "horizontalOverflow": false,
+      "cameras": [
+        {
+          "mode": "third",
+          "sameGeographicCanvas": true
+        },
+        {
+          "mode": "close",
+          "sameGeographicCanvas": true
+        },
+        {
+          "mode": "first",
+          "sameGeographicCanvas": true
+        }
+      ],
+      "fallbackRecovered": true
+    }
+  ]
+}

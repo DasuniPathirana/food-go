@@ -4,6 +4,9 @@ This documentation explains what exists, what has been checked, and what will be
 
 ## Start here
 
+- [Restaurant encounters and inventory](progress/25-restaurant-encounters.md) records approved pools, server-owned rarity/stock, staff confirmation, private inventory and separate staff redemption, with feature gates and acceptance limits. [Encounter contract](development/encounter-contract.md) describes API and state boundaries.
+- [Camera controls and geographic discovery](progress/24-camera-and-discovery.md) records fixed-eye look, optional compass, loaded-building camera clearance, guarded GLB loading, private opt-in coarse-cell persistence, fog, verification and remaining production scope.
+- [Game map foundation](progress/23-game-map-foundation.md) records the current geographic viewport, compact explorer control, stabilised GPS, four camera profiles, visual evidence and outstanding game scope. [Architecture audit](../ARCHITECTURE_AUDIT.md), [gap analysis](../GAMEPLAY_GAP_ANALYSIS.md), [implementation plan](../IMPLEMENTATION_PLAN.md) and [asset requirements](../ASSET_REQUIREMENTS.md) cover the full transformation brief.
 - [Connected release and end-to-end journeys](deployment/connected-release.md) covers signup, the customer and restaurant interfaces, saved collections, verified XP, migration order and deployment acceptance.
 - [Worldwide explorer](progress/15-world-explorer.md) records the interactive world map, live-location consent, pedestrian route walking, avatar controls and browser verification.
 - [World map operations](deployment/world-map.md) covers provider keys, public-service rate limits, the shared database migration, location privacy and actual-device checks.
@@ -70,4 +73,4 @@ Screenshots are evidence of a particular state. They do not establish that authe
 
 ## Evidence status
 
-Milestone 15 is the current worldwide browser-map delivery. The connected release handoff records current signup, owner, operator and verified XP flows. Milestone 14 records the earlier Melbourne geography; 12 records Passport and deployment preparation. Earlier milestones preserve their historical checks and demo behaviour. A prepared deployment configuration does not establish successful public deployment or real provider/device acceptance. Future capabilities described in the roadmap are not claims that those capabilities are available today.
+Milestone 23 is the current browser game-map foundation. The connected release handoff records signup, owner, operator and verified XP flows. Milestones 15 and 14 record earlier geography; 12 records Passport and deployment preparation. Earlier milestones preserve their historical checks and demo behaviour. A prepared deployment configuration does not establish successful public deployment or real provider/device acceptance. Future capabilities described in the roadmap are not claims that those capabilities are available today.

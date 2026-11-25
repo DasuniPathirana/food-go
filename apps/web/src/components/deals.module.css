@@ -358,3 +358,614 @@
     border-top: 1px dashed var(--ticket-seam);
   }
 }
+
+/* ---------------- APPROVED FOODGO DEALS DESIGN SYSTEM ---------------- */
+.headingContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.dealEyebrow {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7d5225;
+  margin-bottom: 4px;
+}
+
+.dealPageTitle {
+  font-size: clamp(38px, 6vw, 56px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #0b2e26;
+  margin: 0 0 8px;
+}
+
+.dealSubtitle {
+  font-size: 15px;
+  line-height: 1.45;
+  color: #486156;
+  max-width: 48ch;
+  margin: 0;
+}
+
+/* Hero Ticket Illustration */
+.heroTicketIllustration {
+  position: relative;
+  width: 110px;
+  height: 100px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.heroPedestal {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.heroTicketAura {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 212, 69, 0.45) 0%, rgba(255, 212, 69, 0) 70%);
+  filter: blur(8px);
+}
+
+.heroTicketBadge {
+  position: relative;
+  z-index: 2;
+  width: 68px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffd753 0%, #f6a623 100%);
+  border: 2px solid #ffffff;
+  box-shadow: 0 6px 18px rgba(246, 166, 35, 0.4), 0 0 12px rgba(255, 215, 83, 0.6);
+  display: grid;
+  place-items: center;
+  transform: rotate(-12deg);
+}
+
+.heroTicketBadge::before, .heroTicketBadge::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fdf8eb;
+  transform: translateY(-50%);
+}
+.heroTicketBadge::before { left: -4px; }
+.heroTicketBadge::after { right: -4px; }
+
+.heroPercentSign {
+  font-size: 24px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(120, 60, 0, 0.4);
+}
+
+.heroPedestalBase {
+  width: 78px;
+  height: 14px;
+  border-radius: 50%;
+  background: #d4dfd4;
+  margin-top: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Category Filter Tabs */
+.categoriesWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.dealTabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.categoryTabBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid #d9e3d7;
+  background: #fbf8f0;
+  color: #173f36;
+  cursor: pointer;
+  text-align: left;
+  transition: all 140ms ease;
+}
+
+.categoryTabBtn:hover {
+  background: #ffffff;
+  border-color: #00d2aa;
+}
+
+.categoryTabSelected {
+  background: linear-gradient(135deg, #0e3b32 0%, #082620 100%) !important;
+  border: 1.5px solid #00f0ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 240, 255, 0.25);
+}
+
+.tabIconBox {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
+  flex: none;
+}
+
+.categoryTabSelected .tabIconBox {
+  background: rgba(0, 240, 255, 0.15);
+  color: #00f0ff;
+}
+
+.tabTextBox {
+  flex: 1;
+  min-width: 0;
+}
+
+.tabTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tabTitleRow strong {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.tabBadgeCount {
+  font-size: 13px;
+  font-weight: 800;
+  color: #00d2aa;
+}
+
+.categoryTabSelected .tabBadgeCount {
+  color: #00f0ff;
+}
+
+.tabTextBox small {
+  display: block;
+  font-size: 11px;
+  color: #647b71;
+  margin-top: 2px;
+}
+
+.categoryTabSelected .tabTextBox small {
+  color: #a4c4ba;
+}
+
+/* Search Bar */
+.dealSearchSection {
+  width: 100%;
+}
+
+.dealSearchBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #d5dfd3;
+  border-radius: 9999px;
+  padding: 0 14px 0 16px;
+  height: 48px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dealSearchIcon {
+  color: #63786e;
+  flex: none;
+}
+
+.dealSearchInput {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #0c2d25;
+}
+
+.dealSearchInput::placeholder {
+  color: #82948b;
+}
+
+.dealFilterBtn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: #0b2e26;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+/* Premium Deal Cards */
+.dealsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.dealCardsList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.premiumDealCard {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #09342b 0%, #051d18 100%);
+  border: 1px solid rgba(45, 212, 191, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.premiumDealCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.4), transparent);
+}
+
+/* Mini Venue Graphic */
+.dealVenueMini {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.miniPinBadge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #092c25;
+  border: 1.5px solid #f6c944;
+  box-shadow: 0 0 10px rgba(246, 201, 68, 0.5);
+  display: grid;
+  place-items: center;
+  margin-bottom: -6px;
+  z-index: 2;
+}
+
+.miniPinIcon {
+  color: #f6c944;
+}
+
+.miniBuildingGraphic {
+  width: 60px;
+  height: 48px;
+  border-radius: 8px;
+  background: #e8dcc6;
+  border: 1.5px solid #d2bfa0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.miniBuildingRoof {
+  height: 12px;
+  background: #c54a32;
+  border-bottom: 2px solid #a33822;
+}
+
+.miniBuildingFacade {
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.miniAwning {
+  width: 90%;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, #00d2aa, #00d2aa 4px, #ffffff 4px, #ffffff 8px);
+  border-radius: 1px;
+}
+
+.miniDoor {
+  width: 14px;
+  height: 18px;
+  background: #392b23;
+  border-radius: 2px 2px 0 0;
+  margin-top: 4px;
+}
+
+/* Venue Info */
+.dealInfoCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dealVenueTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dealRatingRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #a5c7be;
+}
+
+.dealStarIcon {
+  color: #f6c944;
+}
+
+.dealDotSep {
+  opacity: 0.6;
+}
+
+.dealOfferHighlight {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+}
+
+.dealDiscountText {
+  font-size: 15px;
+  font-weight: 900;
+  color: #fbd34f;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 8px rgba(251, 211, 79, 0.3);
+}
+
+.dealOfferDetail {
+  font-size: 11px;
+  font-weight: 500;
+  color: #d1e5df;
+}
+
+/* Dish Column */
+.dealActionCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dishGlowContainer {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+}
+
+.dishSunburst {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 211, 79, 0.4) 0%, rgba(251, 211, 79, 0) 70%);
+}
+
+.dishPhotoWrapper {
+  position: relative;
+  z-index: 2;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.dishPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.redeemButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #00d2aa 0%, #00997b 100%);
+  border: 1px solid #00f0ff;
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 12px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 153, 123, 0.4);
+  transition: transform 120ms ease;
+  white-space: nowrap;
+}
+
+.redeemButton:hover {
+  transform: scale(1.04);
+}
+
+.redeemButton:active {
+  transform: scale(0.96);
+}
+
+/* Rewards Banner */
+.rewardsCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #09342b 0%, #051d18 100%);
+  border: 1px solid rgba(246, 201, 68, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  margin-top: 4px;
+}
+
+.rewardsIconWrapper {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(246, 201, 68, 0.15);
+  border: 1px solid rgba(246, 201, 68, 0.4);
+  color: #f6c944;
+  flex: none;
+}
+
+.rewardsGiftIcon {
+  filter: drop-shadow(0 0 6px rgba(246, 201, 68, 0.6));
+}
+
+.rewardsTextCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.rewardsTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f6c944;
+  margin: 0;
+}
+
+.rewardsSubtitle {
+  font-size: 12px;
+  color: #d1e5df;
+  margin: 2px 0 6px;
+}
+
+.rewardsProgressRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rewardsProgressBar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.rewardsProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d2aa, #00f0ff);
+  border-radius: 3px;
+}
+
+.rewardsCounter {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.rewardsChevron {
+  color: rgba(255, 255, 255, 0.6);
+  flex: none;
+}
+
+@media (max-width: 600px) {
+  .dealTabs {
+    gap: 8px;
+  }
+  .categoryTabBtn {
+    padding: 8px 10px;
+    border-radius: 12px;
+    gap: 6px;
+  }
+  .tabIconBox {
+    width: 30px;
+    height: 30px;
+  }
+  .tabTitleRow strong {
+    font-size: 12px;
+  }
+  .tabBadgeCount {
+    font-size: 11px;
+  }
+  .tabTextBox small {
+    display: none;
+  }
+  .premiumDealCard {
+    grid-template-columns: 56px 1fr 82px;
+    padding: 10px 12px;
+    gap: 8px;
+    border-radius: 16px;
+  }
+  .miniBuildingGraphic {
+    width: 48px;
+    height: 38px;
+  }
+  .dealVenueTitle {
+    font-size: 14px;
+  }
+  .dealDiscountText {
+    font-size: 13px;
+  }
+  .dishGlowContainer {
+    width: 62px;
+    height: 62px;
+  }
+  .dishPhotoWrapper {
+    width: 54px;
+    height: 54px;
+  }
+}
+
+/* Long approved offer titles and actual counts must fit narrow screens. */
+.page { padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+.tabTextBox, .dealInfoCol { min-width: 0; }
+.tabTitleRow { flex-wrap: wrap; }
+.dealVenueTitle, .dealDiscountText, .dealOfferDetail { overflow-wrap: anywhere; }
+.redeemButton { text-decoration: none; text-align: center; }
+@media (max-width: 480px) {
+  .premiumDealCard { grid-template-columns: 52px minmax(0, 1fr); }
+  .dealActionCol { grid-column: 2; align-items: flex-start; }
+  .dealTabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

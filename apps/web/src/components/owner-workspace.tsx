@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { workspaceSchema, type Workspace } from "@/lib/journey";
 
+
 export function OwnerWorkspace({ venueId }: { venueId: string }) {
   const [data, setData] = useState<Workspace | null>(null);
   const [error, setError] = useState("");
@@ -83,6 +84,17 @@ export function OwnerWorkspace({ venueId }: { venueId: string }) {
       {data.promotions.map(p => <p key={p.id}>{p.title} · {p.kind === "food" ? "Food deal" : "Restaurant deal"} · {p.status} · Ends {new Date(p.ends_at).toLocaleDateString("en-AU")}</p>)}
       {published ? <PromotionForm key={data.promotions.length} busy={busy} save={input => void act(input)}/> : <p>Publish your listing before submitting an offer.</p>}
     </section>
+    <section className="content-panel"><h2>Map location and appearance</h2>
+      <p>Your verified map position is set by Food Go during listing review. Custom building appearance and indoor floor placement are not available for submission yet.</p>
+      <p>Contact the Food Go team if your published map location needs correction.</p>
+    </section>
+    <section className="content-panel"><h2>Restaurant rewards and quests</h2>
+      <p>Use the connected reward and quest tools to create drafts, submit them for independent review and confirm eligible customer visits. These tools save real records, not preview data.</p>
+      {published && venue.game_enabled ? <div className="form-actions">
+        <Link className="primary-button" href="/encounters">Manage restaurant encounters</Link>
+        <Link className="secondary-button" href="/quests">Create and manage quests</Link>
+      </div> : <p>Publish your verified listing and enable discoveries before creating rewards or quests.</p>}
+    </section>
   </div>;
 }
 function MenuForm({ dish, busy, save }: { dish?: Workspace["dishes"][number]; busy: boolean; save: (input: Record<string, unknown>) => void }) {
@@ -113,3 +125,4 @@ function PromotionForm({ busy, save }: { busy: boolean; save: (input: Record<str
     <p>An operator reviews and publishes the offer before it appears to customers.</p><button className="primary-button">Submit promotion</button>
   </fieldset></form>;
 }
+

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { lstatSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -71,8 +71,50 @@ test("static convention: local environment files and private key files are not t
     [],
     "Remove private credential files from tracked source and rotate any exposed credentials.",
   );
-  assert.match(source(".gitignore"), /^\.env$/m);
-  assert.match(source(".gitignore"), /^\.env\.\*$/m);
+});
+
+// Narrow guards for the 17 November remote-code incident. These do not detect
+// arbitrary malicious code or establish that an entry point is safe to execute.
+test("incident regression: runtime entry points exclude the unreviewed init loaders", () => {
+  const manifests = [
+    "package.json",
+    "apps/web/package.json",
+    "apps/mobile/package.json",
+    "prototype/package.json",
+  ];
+  const bootstrapCommand = /\bnode(?:\.exe)?\s+["']?(?:\.\/)?init(?:["']?(?=\s|[;&|]|$))/i;
+  for (const path of manifests) {
+    const manifest = JSON.parse(source(path));
+    for (const [name, command] of Object.entries(manifest.scripts ?? {})) {
+      assert.equal(
+        bootstrapCommand.test(command),
+        false,
+        `${path} script ${name} must not execute the incident's unreviewed init bootstrap.`,
+      );
+    }
+  }
+  for (const path of ["init", "apps/web/init", "apps/mobile/init", "prototype/init"]) {
+    assert.equal(
+      existsSync(join(root, path)),
+      false,
+      `${path} must not reintroduce the incident's unreviewed bootstrap file.`,
+    );
+  }
+  assert.equal(
+    /\b(?:new\s+)?Function\s*\(/.test(source("apps/mobile/index.ts")),
+    false,
+    "The mobile registration entry point must not compile remotely supplied code with Function.",
+  );
+});
+
+test("incident regression: local environment ignore rules remain explicit", () => {
+  const rules = new Set(source(".gitignore").split(/\r?\n/).map((line) => line.trim()));
+  for (const rule of [".env", ".env.*"]) {
+    assert.ok(
+      rules.has(rule),
+      `.gitignore must retain ${rule}; environment example exceptions do not exclude private credentials.`,
+    );
+  }
 });
 
 test("static convention: source does not contain recognisable secret material or public privileged keys", () => {
@@ -288,4 +330,16 @@ test("static convention: UI source avoids em dashes and emoji characters", () =>
     [],
     "Use plain text and the existing vector icon system in UI source.",
   );
+});
+
+// 24 November incident: an obfuscated remote executable loader was appended
+// after the Playwright configuration. Do not execute config as a test input.
+test("incident regression: Playwright configuration contains no remote executable loader", () => {
+  const config = source("playwright.config.ts");
+  assert.match(config, /\}\);\s*$/);
+  assert.doesNotMatch(config, /\b(?:atob|eval|Function)\s*\(/);
+  assert.doesNotMatch(config, /\bcreateRequire\b/);
+  const manifest = JSON.parse(source("package.json"));
+  const lock = JSON.parse(source("package-lock.json"));
+  assert.deepEqual(manifest.dependencies, lock.packages[""].dependencies);
 });

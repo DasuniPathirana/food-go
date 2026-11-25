@@ -5,6 +5,8 @@ node_modules/
 dist/
 web-build/
 coverage/
+playwright-report/
+test-results/
 *.tsbuildinfo
 .env
 .env.*
@@ -25,3 +27,16 @@ artifacts/
 .vercel/
 **/supabase/.temp/
 **/supabase/.branches/
+*.glb
+FOODGO_ASSET_INSTALL.txt
+
+# Only reviewed and attributed deployment world assets may be committed.
+!apps/web/public/models/world/kyoto-restaurant.glb
+!apps/web/public/models/world/park-tree.glb
+!apps/web/public/models/world/river-rock.glb
+!apps/web/public/models/world/isometric-cafe.glb
+!apps/web/public/models/world/japanese-bakery.glb
+!apps/web/public/models/world/stylized-food-truck.glb
+!apps/web/public/models/world/reward-crates.glb
+!apps/web/public/models/world/park-bench.glb
+!apps/web/public/models/world/street-light.glb

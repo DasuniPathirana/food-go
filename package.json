@@ -24,12 +24,20 @@
     "check": "npm run typecheck --workspaces --if-present && npm run test",
     "test": "tsx --test packages/domain/src/*.test.ts apps/web/src/lib/*.test.ts apps/mobile/src/catalogue.test.ts scripts/check-supabase.test.mjs scripts/prepare-database-tests.test.mjs",
     "test:security": "node --test scripts/security.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "check:web": "node scripts/verify-web.mjs",
     "check:supabase": "tsx scripts/check-supabase.mjs"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
     "tsx": "4.23.15",
     "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "three": "0.187.0"
   }
 }
