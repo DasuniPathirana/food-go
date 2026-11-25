@@ -34,6 +34,7 @@ export function EncounterCamera({ title, onClose, children, collectible }: {
         if (active) setStatus("ready");
       } catch {
         stream?.getTracks().forEach(track => track.stop());
+        if (video.current) video.current.srcObject = null;
         if (active) setStatus("unavailable");
       }
     };
