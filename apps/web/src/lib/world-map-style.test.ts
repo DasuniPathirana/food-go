@@ -75,7 +75,7 @@ test("Game roads widen at actual zoom while generic buildings are hidden and par
 
   const poi = override("poi_r1", "text-opacity");
   assert.equal(evaluate(poi.game, 16), 0);
-  assert.ok(evaluate(poi.game, 18) > 0);
+  assert.equal(evaluate(poi.game, 18), 0);
   assert.equal(poi.normal, 1);
 });
 

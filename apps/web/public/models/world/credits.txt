@@ -18,3 +18,35 @@ Source: https://sketchfab.com/3d-models/river-rock-23947e4ac73146deba3335c1b7873
 License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 File: river-rock.glb
 Changes: 3 embedded textures resized to maximum 512 pixels; original geometry unchanged.
+
+Additional models (textures reduced to a maximum of 1024 px where smaller; mesh geometry unchanged).
+
+(FREE) Isometric Cafe by LowPolyBoy (https://sketchfab.com/lowPolyBoy)
+Source: https://sketchfab.com/3d-models/free-isometric-cafe-a945f20219c44e94a77cf76929368470
+License: https://creativecommons.org/licenses/by/4.0/
+Illustrative model; no business endorsement or exact likeness implied.
+
+Japanese Bakery shop by xiverra (https://sketchfab.com/xiverra)
+Source: https://sketchfab.com/3d-models/japanese-bakery-shop-87cb93f1b80c481d8f36c1c611a11488
+License: https://creativecommons.org/licenses/by/4.0/
+Illustrative model; no business endorsement or exact likeness implied.
+
+Stylized Food Truck #SketchfabWeeklyChallenge by ottobite (https://sketchfab.com/ottobite)
+Source: https://sketchfab.com/3d-models/stylized-food-truck-sketchfabweeklychallenge-72ad29245a2c4981a819f77dc1dbb631
+License: https://creativecommons.org/licenses/by/4.0/
+Illustrative model; no business endorsement or exact likeness implied.
+
+Crates for game rewards by minaivalentin (https://sketchfab.com/minaivalentin)
+Source: https://sketchfab.com/3d-models/crates-for-game-rewards-bcf9f249a3ee48e79d33bde9ef4a53c5
+License: https://creativecommons.org/licenses/by/4.0/
+Illustrative model; no business endorsement or exact likeness implied.
+
+Wooden Park Bench by TheMadraver (https://sketchfab.com/TheMadraver)
+Source: https://sketchfab.com/3d-models/wooden-park-bench-e53ad46c604c44e59a98bad27041cb19
+License: https://creativecommons.org/licenses/by/4.0/
+Illustrative model; no business endorsement or exact likeness implied.
+
+Street light by adventurer (https://sketchfab.com/ahmagh2e)
+Source: https://sketchfab.com/3d-models/street-light-a7021b383f9a438a9e96a3d4b9b1c27a
+License: https://creativecommons.org/licenses/by/4.0/
+Illustrative model; no business endorsement or exact likeness implied.

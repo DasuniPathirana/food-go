@@ -7,6 +7,7 @@ import { encounterProximity, rarityLabel, type EncounterCampaign, type Encounter
 import { encounterTimeRemaining, requestVenueEncounters, useEncounterAccount, useEncounterClock } from "@/lib/encounter-client";
 import type { ExplorerLocationFix } from "@/lib/explorer-location-motion";
 import styles from "./encounter.module.css";
+import { EncounterCamera } from "./encounter-camera";
 
 export function EncounterChest({ open = false, theme = "restaurant", rarity }: { open?: boolean; theme?: EncounterCampaign["theme"]; rarity?: EncounterRarity }) {
   const Icon = theme === "cafe" ? Coffee : theme === "market" ? Store : Utensils;
@@ -46,12 +47,13 @@ export function EncounterPanel({ venueId, signedIn, enabled, accountKey, proximi
   const headingId = useId();
   const [publicData, setPublicData] = useState<EncounterPublic | null>(null), [loading, setLoading] = useState(false), [loadError, setLoadError] = useState("");
   const [version, setVersion] = useState(0), [code, setCode] = useState(""), [activeSession, setActiveSession] = useState<string | null>(null), [copyMessage, setCopyMessage] = useState("");
+  const [cameraSession, setCameraSession] = useState<string | null>(null);
   const publicRequest = useRef<AbortController | null>(null);
   const account = useEncounterAccount({ signedIn, enabled, accountKey, scope: venueId });
   const now = useEncounterClock(account.data?.serverTime ?? publicData?.serverTime);
   useEffect(() => {
     let alive = true, epoch = 0;
-    setPublicData(null); setCode(""); setActiveSession(null); setCopyMessage("");
+    setPublicData(null); setCode(""); setActiveSession(null); setCopyMessage(""); setCameraSession(null);
     const load = async () => {
       publicRequest.current?.abort(); const controller = new AbortController(); publicRequest.current = controller; const attempt = ++epoch;
       if (!enabled || document.visibilityState === "hidden") { setLoading(false); return; }
@@ -81,13 +83,17 @@ export function EncounterPanel({ venueId, signedIn, enabled, accountKey, proximi
   async function claim(event: FormEvent) {
     event.preventDefault(); if (!session) return;
     const result = await account.act({ action: "claim", sessionId: session.id, code });
-    if (result) setCode("");
+    if (result) { setCode(""); setCameraSession(null); }
   }
   async function copyReference() {
     if (!session) return;
     try { await navigator.clipboard.writeText(session.id); setCopyMessage("Encounter reference copied."); }
     catch { setCopyMessage("Select the reference to copy it manually."); }
   }
+  const confirmationForm = session ? (<form onSubmit={claim} className={styles.claimForm}><label>Staff confirmation code<input value={code} onChange={event => setCode(event.target.value)} autoComplete="off" autoCapitalize="none" spellCheck={false}
+              required minLength={32} maxLength={32} pattern="[a-fA-F0-9]{32}" aria-describedby={`${headingId}-code-help`}/></label>
+              <p id={`${headingId}-code-help`} className={styles.hint}>Codes are single use, expire after two minutes and belong to this encounter.</p>
+              <button className={styles.primary} type="submit" disabled={!!account.busy || !!account.unconfirmed || !sessionCampaign || Date.parse(session.expiresAt) <= now || !["started", "awaiting_confirmation"].includes(session.state)}><ShieldCheck size={17}/>{account.busy === "claim" ? "Confirming…" : "Confirm and open"}</button></form>) : null;
   if (!enabled) return <section className={styles.panel} aria-labelledby={headingId}><div className={styles.sectionHeading}><Gift size={20}/><h2 id={headingId}>Restaurant encounters</h2></div>
     <p>Encounters are not enabled yet. Manual walking does not grant items or offers.</p><Link href="/inventory">Open inventory<ArrowUpRight size={14}/></Link></section>;
   return <section className={styles.panel} aria-labelledby={headingId} aria-busy={loading}>
@@ -125,10 +131,14 @@ export function EncounterPanel({ venueId, signedIn, enabled, accountKey, proximi
             {copyMessage && <p role="status" className={styles.hint}>{copyMessage}</p>}
             <p className={styles.hint}><Clock3 size={14}/>{Date.parse(session.expiresAt) <= now ? "This encounter has expired. Start again when ready." : `Encounter expires in ${encounterTimeRemaining(session.expiresAt, now)}.`}</p>
             {!sessionCampaign && <p className={styles.hint}>This encounter is no longer available. Refresh encounters or cancel it.</p>}
-            <form onSubmit={claim} className={styles.claimForm}><label>Staff confirmation code<input value={code} onChange={event => setCode(event.target.value)} autoComplete="off" autoCapitalize="none" spellCheck={false}
-              required minLength={32} maxLength={32} pattern="[a-fA-F0-9]{32}" aria-describedby={`${headingId}-code-help`}/></label>
-              <p id={`${headingId}-code-help`} className={styles.hint}>Codes are single use, expire after two minutes and belong to this encounter.</p>
-              <button className={styles.primary} type="submit" disabled={!!account.busy || !!account.unconfirmed || !sessionCampaign || Date.parse(session.expiresAt) <= now || !["started", "awaiting_confirmation"].includes(session.state)}><ShieldCheck size={17}/>{account.busy === "claim" ? "Confirming…" : "Confirm and open"}</button></form>
+            {cameraSession === session.id && sessionCampaign && !item && Date.parse(session.expiresAt) > now && ["started", "awaiting_confirmation"].includes(session.state)
+              ? <EncounterCamera title={session.title} onClose={() => setCameraSession(null)} collectible={<EncounterChest theme={sessionCampaign.theme}/>}>
+                  {confirmationForm}
+                  {account.error && <p role="alert" className={styles.error}>{account.error}</p>}
+                  {account.unconfirmed && <button type="button" className={styles.secondary} onClick={() => setCameraSession(null)}>Return to inventory verification</button>}
+                </EncounterCamera>
+              : <>{confirmationForm}{sessionCampaign && Date.parse(session.expiresAt) > now && ["started", "awaiting_confirmation"].includes(session.state) && <button type="button" className={styles.secondary} onClick={() => setCameraSession(session.id)}>Open camera encounter</button>}</>}
+
             <button className={styles.secondary} type="button" disabled={!!account.busy || account.unconfirmed} onClick={() => { setCode(""); void account.act({ action: "cancel", sessionId: session.id }); }}><X size={15}/>Cancel encounter</button>
           </>}
       </div>

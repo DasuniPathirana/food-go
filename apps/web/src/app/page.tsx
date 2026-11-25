@@ -3,11 +3,12 @@ import { Suspense } from "react";
 import { PublishedStorefront } from "@/components/published-storefront";
 import { GeographicExplore } from "@/components/geographic-explore";
 import { ExploreScreen } from "@/components/explore/explore-screen";
-import { getCatalogue } from "@/lib/catalogue-server";
+import { getCatalogue, getPilotCatalogue } from "@/lib/catalogue-server";
 import { getAuthState } from "@/lib/auth/server";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ map?: string; view?: string }> }) {
-  const [catalogue, query, auth] = await Promise.all([getCatalogue(), searchParams, getAuthState()]);
+  const query = await searchParams;
+  const [catalogue, auth] = await Promise.all([query.view === "catalogue" ? getCatalogue() : getPilotCatalogue(), getAuthState()]);
   if (query.view === "catalogue") {
     return (
       <>
@@ -52,6 +53,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ m
         explorationAvailable={explorationAvailable}
         encountersAvailable={encountersAvailable}
         basePath="/"
+        catalogueHasMore={catalogue.hasMore}
         venues={catalogue.venues}
         catalogueUnavailable={catalogue.status === "unavailable"}
       />

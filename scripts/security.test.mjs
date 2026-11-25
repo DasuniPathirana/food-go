@@ -331,3 +331,15 @@ test("static convention: UI source avoids em dashes and emoji characters", () =>
     "Use plain text and the existing vector icon system in UI source.",
   );
 });
+
+// 24 November incident: an obfuscated remote executable loader was appended
+// after the Playwright configuration. Do not execute config as a test input.
+test("incident regression: Playwright configuration contains no remote executable loader", () => {
+  const config = source("playwright.config.ts");
+  assert.match(config, /\}\);\s*$/);
+  assert.doesNotMatch(config, /\b(?:atob|eval|Function)\s*\(/);
+  assert.doesNotMatch(config, /\bcreateRequire\b/);
+  const manifest = JSON.parse(source("package.json"));
+  const lock = JSON.parse(source("package-lock.json"));
+  assert.deepEqual(manifest.dependencies, lock.packages[""].dependencies);
+});

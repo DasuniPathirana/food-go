@@ -30,8 +30,8 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const account = await getAuthState();
   return (
-    <html lang="en-AU" data-scroll-behavior="smooth">
-      <body>
+    <html lang="en-AU" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <FeedAccessProvider signedIn={Boolean(account.user)} age={account.user?.ageStatus ?? null}><CommunityConsentProvider key={account.user?.id || "guest"} signedIn={Boolean(account.user)}><JourneyProvider signedIn={Boolean(account.user)}><SiteShell
           signedIn={Boolean(account.user)}
           displayName={account.user?.displayName}

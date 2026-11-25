@@ -206,7 +206,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
       }
       map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
       map.on("click", event => {
-        if (new URLSearchParams(window.location.search).get("world-demo") === "1") {
+        if (process.env.NODE_ENV === "development" && new URLSearchParams(window.location.search).get("world-demo") === "1") {
           const chest = map.project([144.96915, -37.81790]);
           if (Math.hypot(event.point.x - chest.x, event.point.y - chest.y) <= 42) {
             latest.current.onDemoTreasure?.();
@@ -356,7 +356,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
     if (!threeD || imagery !== "game" || props.lowDetail) return;
     const centre = map.getCenter();
     const reference = { latitude: centre.lat, longitude: centre.lng };
-    const isDemo = typeof window !== "undefined" && (
+    const isDemo = process.env.NODE_ENV === "development" && typeof window !== "undefined" && (
       new URLSearchParams(window.location.search).get("world-demo") === "1" ||
       window.location.pathname.startsWith("/demo") ||
       window.location.pathname.startsWith("/explore-preview")
@@ -379,6 +379,7 @@ export function AtlasCanvas(props: AtlasCanvasProps) {
         const k = (place.kind || "").toLowerCase();
         return k === "restaurant" || k === "cafe" || k === "bakery" || k === "market" || k === "food stall" || k === "food court";
       })
+      .sort((a, b) => mapDistance(a, reference) - mapDistance(b, reference))
       .slice(0, 16)
       .map(place => {
         const k = (place.kind || "").toLowerCase();

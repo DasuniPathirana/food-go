@@ -1,19 +1,18 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { Coffee, Search, SlidersHorizontal, Store, Utensils } from "lucide-react";
+import { Search, Store, Utensils } from "lucide-react";
 import type { PromotionResult } from "@/lib/promotions";
 import { PromotionList } from "./promotion-list";
 import styles from "./deals.module.css";
 
 const categories = [
-  { id: "food", name: "Food Deals", count: 12, subtitle: "Meals & combos", icon: Utensils },
-  { id: "restaurant", name: "Restaurant Deals", count: 8, subtitle: "Dine & save", icon: Store },
-  { id: "cafe", name: "Café Offers", count: 6, subtitle: "Drinks & treats", icon: Coffee },
+  { id: "food", name: "Food Deals", subtitle: "Meals & combos", icon: Utensils },
+  { id: "restaurant", name: "Restaurant Deals", subtitle: "Dine & save", icon: Store },
 ] as const;
 
 export function DealCategories({ result }: { result: PromotionResult }) {
-  const [kind, setKind] = useState<"food" | "restaurant" | "cafe">("restaurant");
+  const [kind, setKind] = useState<"food" | "restaurant">("restaurant");
   const [query, setQuery] = useState("");
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const id = useId();
@@ -21,7 +20,7 @@ export function DealCategories({ result }: { result: PromotionResult }) {
   const promotions = result.promotions
     .filter(
       (promo) =>
-        (promo.kind === kind || (kind === "cafe" && promo.kind === "food")) &&
+        promo.kind === kind &&
         `${promo.title} ${promo.description} ${promo.venueName} ${promo.suburb}`
           .toLocaleLowerCase("en-AU")
           .includes(query.trim().toLocaleLowerCase("en-AU"))
@@ -35,7 +34,7 @@ export function DealCategories({ result }: { result: PromotionResult }) {
         {categories.map((category, index) => {
           const isSelected = kind === category.id;
           const liveCount = result.promotions.filter((p) => p.kind === category.id).length;
-          const displayCount = liveCount > 0 ? liveCount : category.count;
+          const displayCount = liveCount;
           const Icon = category.icon;
 
           return (
@@ -95,14 +94,7 @@ export function DealCategories({ result }: { result: PromotionResult }) {
             onChange={(event) => setQuery(event.target.value)}
             aria-label="Find an offer or restaurant"
           />
-          <button
-            type="button"
-            className={styles.dealFilterBtn}
-            aria-label="Filter deals"
-            onClick={() => {}}
-          >
-            <SlidersHorizontal size={17} />
-          </button>
+
         </div>
       </div>
 

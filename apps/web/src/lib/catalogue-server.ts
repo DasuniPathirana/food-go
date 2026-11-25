@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { loadCatalogue, readCatalogueConfig } from "./catalogue";
+import { loadCatalogue, loadPilotCatalogue, readCatalogueConfig } from "./catalogue";
 import { loadPromotions } from "./promotions";
 import type { VenueSearch } from "@food-go/domain";
 
@@ -23,3 +23,5 @@ export const getCatalogueVenue = cache(async (key: string) => {
     return { mode: readCatalogueConfig(process.env).mode, status: "ready", venues: [], hasMore: false } as const;
   return loadCatalogue(readCatalogueConfig(process.env), { query: "", limit: 1 }, { venueKey: key });
 });
+
+export const getPilotCatalogue = cache(async () => loadPilotCatalogue(readCatalogueConfig(process.env)));
