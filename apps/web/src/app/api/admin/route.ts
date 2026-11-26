@@ -1,1 +1,1 @@
-export { changeOperatorRecord as POST } from "@/lib/operator-server";
+export { changeOperatorRecord as POST, readOperatorQueue as GET } from "@/lib/operator-server";

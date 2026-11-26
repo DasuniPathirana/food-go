@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const body = (maximum: number) => z.string().trim().min(1).max(maximum)
   .refine(value => !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(value), "Use ordinary text.");
+const mediaUrl = z.string().trim().max(500).regex(/^(\/api\/media\/[0-9a-f-]{36}|https?:\/\/[^\s]+)$/iu, "Use an uploaded Food Go image or HTTPS link.");
 export const communityAuthorSchema = z.object({ id: z.uuid(), name: z.string().min(1).max(80) });
 export const communityCommentSchema = z.object({
   id: z.uuid(), author: communityAuthorSchema, body: body(1000), createdAt: z.iso.datetime({ offset: true }),
@@ -9,6 +10,10 @@ export const communityCommentSchema = z.object({
 });
 export const communityPostSchema = z.object({
   id: z.uuid(), author: communityAuthorSchema, body: body(2000), createdAt: z.iso.datetime({ offset: true }),
+  updatedAt: z.iso.datetime({ offset: true }).nullish(),
+  imageUrl: mediaUrl.nullish(),
+  venueId: z.uuid().nullish(),
+  venueName: z.string().max(120).nullish(),
   visibility: z.enum(["public", "private"]), status: z.enum(["published", "pending", "private"]),
   likeCount: z.number().int().min(0), commentCount: z.number().int().min(0), shareCount: z.number().int().min(0),
   reachCount: z.number().int().min(0).optional(),
@@ -25,7 +30,8 @@ export type CommunityComment = z.infer<typeof communityCommentSchema>;
 export type CommunityPost = z.infer<typeof communityPostSchema>;
 export type CommunityFeed = z.infer<typeof communityFeedSchema>;
 export const communityWriteSchema = z.discriminatedUnion("action", [
-  z.strictObject({ action: z.literal("create"), body: body(2000), visibility: z.enum(["public", "private"]), requestId: z.uuid() }),
+  z.strictObject({ action: z.literal("create"), body: body(2000), visibility: z.enum(["public", "private"]), requestId: z.uuid(), imageUrl: mediaUrl.nullish(), venueId: z.uuid().nullish() }),
+  z.strictObject({ action: z.literal("edit"), postId: z.uuid(), body: body(2000), imageUrl: mediaUrl.nullish(), venueId: z.uuid().nullish() }),
   z.strictObject({ action: z.literal("comment"), postId: z.uuid(), body: body(1000), requestId: z.uuid() }),
   z.strictObject({ action: z.literal("like"), postId: z.uuid(), liked: z.boolean() }),
   z.strictObject({ action: z.literal("view"), postId: z.uuid() }),

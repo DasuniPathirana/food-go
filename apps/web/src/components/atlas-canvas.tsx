@@ -1,686 +1,613 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { Compass, Minus, Plus, RefreshCw } from "lucide-react";
-import type { AttributionControl, CameraOptions, FilterSpecification, GeoJSONSource, Map as GeographicMap, Marker, StyleSpecification } from "maplibre-gl";
-import type { LineString, Polygon } from "geojson";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { LineString } from "geojson";
+import { Map as MapLibreMap, Marker, setWorkerUrl, type GeoJSONSource, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ATLAS_ATTRIBUTION, ATLAS_CENTER } from "@/lib/melbourne-atlas";
-import { emptyMapFeatures, MAP_SOURCE_IDS, WORLD_STREET_STYLE, worldMapStyle } from "@/lib/world-map-style";
-import { createGameWorldObjectLayer, GAME_WORLD_OBJECT_LAYER, type GameWorldObject } from "@/lib/game-world-objects";
-import { parkTreesFromMap } from "@/lib/game-world-greenery";
-import { rooftopsFromMap } from "@/lib/game-world-architecture";
-import { facadesFromMap, type FacadeObject } from "@/lib/game-world-facades";
-import { streetLampsFromMap } from "@/lib/game-world-streetscape";
-import { demoParkScenery } from "@/lib/demo-park-scenery";
-import { interpolateMarker, markerTransitionDuration } from "@/lib/map-marker-motion";
-import { blendExplorerCamera, EXPLORER_CAMERA_TRANSITION_MS, explorerCameraLimits, explorerCameraOptions, explorerCameraPosition, explorerCameraPose, interpolateCameraBearing, type ExplorerCameraPose, type ExplorerPerspective } from "@/lib/explorer-camera";
-import { mapDistance } from "@/lib/map-game";
-import { explorationFogGeometry, EXPLORATION_MAX_LATITUDE, type ExplorationFogResult } from "@food-go/domain/exploration";
-import { createFirstPersonLook } from "@/lib/first-person-look";
+import type { CatalogueVenue } from "@/lib/catalogue-contracts";
+import type { AvatarId } from "@/lib/avatar-preferences";
+import { explorerCameraLimits, explorerCameraOptions, type ExplorerPerspective } from "@/lib/explorer-camera";
+import { createFirstPersonLook, type FirstPersonLook } from "@/lib/first-person-look";
 import { attachFirstPersonInput } from "./first-person-input";
-import { buildCameraObstacles, resolveCameraClearance, type CameraObstacle } from "@/lib/camera-clearance";
-import { createMapPlaceMarker, updateMapPlaceEncounter } from "./map-place-marker";
-import type { EncounterSignal } from "@/lib/encounter-landmarks";
-import css from "./atlas-canvas.module.css";
-import { isInsideMelbournePilot, MELBOURNE_PILOT_BOUNDS } from "@food-go/domain";
+import { createGameWorldObjectLayer, type GameWorldObject } from "@/lib/game-world-objects";
+import { MAP_SOURCE_IDS, worldMapStyle } from "@/lib/world-map-style";
+import { mapDistance, type MapPoint } from "@/lib/map-game";
 import { attachPilotFog } from "./pilot-fog";
+import { createMapPlaceMarker } from "./map-place-marker";
+import type { LiveMall, VenueAppearance, WorldLoot } from "@/lib/world-data";
+import styles from "./atlas-canvas.module.css";
 
-export type AtlasSelection = { longitude: number; latitude: number; id?: string };
-export type AtlasPlace = AtlasSelection & {
-  id: string;
-  name: string;
-  image?: string;
-  kind?: "cafe" | "restaurant" | "market" | "building";
-  shopCount?: number;
-  members?: readonly { id: string }[];
-  rating?: number;
-  distanceMetres?: number;
+export type AtlasImagery = "streets" | "satellite" | "aerial" | "street" | "game";
+
+export type AtlasPlace = CatalogueVenue & {
+  longitude: number;
+  latitude: number;
+  coordinates: { longitude: number; latitude: number };
 };
-export type AtlasImagery = "game" | "street" | "aerial" | "satellite";
+
+export type AtlasSelection = {
+  kind?: "venue" | "building";
+  id?: string;
+  name?: string;
+  longitude: number;
+  latitude: number;
+  buildingName?: string;
+  buildingVenues?: AtlasPlace[];
+};
+
 export type AtlasCanvasProps = {
-  places: readonly AtlasPlace[]; selected: AtlasSelection | null; threeD: boolean; imagery: AtlasImagery;
-  player?: AtlasSelection | null; playerContent?: ReactNode; followPlayer?: boolean; focusPlayerNonce?: number;
-  playerTransitionMs?: number; onBearingChange?: (bearing: number) => void;
-  perspective?: ExplorerPerspective;
-  lowDetail?: boolean;
-  deviceHeading?: number | null; onEyeLook?: () => void;
-  discoveryEnabled?: boolean; discoveredCells?: readonly string[];
-  encounterSignals?: Readonly<Record<string, EncounterSignal>>;
-  onDiscoveryView?: (view: Omit<ExplorationFogResult, "data">) => void;
-  location?: AtlasSelection | null; accuracy?: number; heading?: number; route?: LineString | null;
-  onSelect: (point: AtlasSelection) => void; onReady: () => void; onUnavailable: (reason: string) => void;
-  onSatelliteUnavailable?: () => void; onCameraInteraction?: () => void;
-  onDemoTreasure?: () => void;
-  zoomInTrigger?: number;
-  zoomOutTrigger?: number;
+  places: readonly AtlasPlace[];
+  selected: AtlasSelection | null;
+  player?: {
+    longitude: number;
+    latitude: number;
+    accuracy: number | null;
+    heading: number | null;
+    walking: boolean;
+    gaitMetres: number;
+    live: boolean;
+    avatar: AvatarId;
+  };
+  imagery: AtlasImagery;
+  threeD: boolean;
+  perspective: ExplorerPerspective;
+  follow: boolean;
+  refocus: number;
+  zoomDelta: number;
+  route: LineString | null;
+  routeStopId?: string | null;
+  revealedCells?: readonly string[];
+  loots?: readonly WorldLoot[];
+  malls?: readonly LiveMall[];
+  appearances?: Readonly<Record<string, VenueAppearance>>;
+  trailCoords?: readonly [number, number][];
+  celebrating?: boolean;
+  selectedLootId?: string | null;
+  onSelect: (selection: AtlasSelection) => void;
+  onSelectMall?: (mall: LiveMall) => void;
+  onSelectLoot?: (loot: WorldLoot) => void;
+  onPickRouteDestination: (point: MapPoint) => void;
+  onFollowChange: (following: boolean) => void;
+  onImageryFailed?: (message: string) => void;
+  onSatelliteUnavailable?: () => void;
+  onStatus?: (message: string) => void;
+  onOpenAvatar?: () => void;
+  onPerspectiveChange?: (next: ExplorerPerspective) => void;
+  onWebglFallback?: () => void;
+  // Compatibility fields kept optional for fallback renderers
+  onCameraInteraction?: () => void;
+  onBearingChange?: (bearing: number) => void;
+  onReady?: () => void;
   pilotOverviewNonce?: number;
-  /** Explicit map-only focus for the opt-in, non-redeemable demo tour. */
-  demoFocus?: (AtlasSelection & { zoom: number; pitch: number; nonce: number }) | null;
+  followPlayer?: boolean;
+  focusPlayerNonce?: number;
+  playerTransitionMs?: number;
+  discoveryEnabled?: boolean;
+  discoveredCells?: readonly string[];
+  lowDetail?: boolean;
+  onDiscoveryView?: (view: unknown) => void;
+  encounterSignals?: Record<string, never>;
+  location?: { longitude: number; latitude: number } | null;
+  accuracy?: number | null;
+  playerContent?: ReactNode;
 };
 
-const satelliteKey = process.env.NEXT_PUBLIC_MAPTILER_KEY?.trim();
-const homeZoom = 16.8;
-function duration() { return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 380; }
-function valid(point: AtlasSelection | null | undefined): point is AtlasSelection {
-  return !!point && Number.isFinite(point.longitude) && Number.isFinite(point.latitude)
-    && Math.abs(point.longitude) <= 180 && Math.abs(point.latitude) <= 90;
+const STREET_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
+if (typeof window !== "undefined") {
+  setWorkerUrl("/atlas/maplibre-gl-worker.mjs");
 }
-function accuracyCircle(point: AtlasSelection, metres: number): Polygon {
-  const coordinates = Array.from({ length: 49 }, (_, index) => {
-    const angle = index / 48 * 2 * Math.PI;
-    return [
-      point.longitude + Math.sin(angle) * metres / (111320 * Math.max(0.01, Math.cos(point.latitude * Math.PI / 180))),
-      point.latitude + Math.cos(angle) * metres / 111320,
-    ];
+const PILOT_DEFAULT_CENTER: [number, number] = [144.9665, -37.8152];
+const PILOT_MAX_BOUNDS: [[number, number], [number, number]] = [
+  [144.938, -37.834],
+  [144.989, -37.796],
+];
+
+function createLootDomMarker(loot: WorldLoot, distanceMetres: number, selected: boolean, onClick: () => void) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  const isAr = loot.grabMode === "ar_grab";
+  btn.setAttribute("aria-label", `${loot.title} (${isAr ? "AR Grab" : "Map Grab"})`);
+  btn.style.cssText = `
+    position: absolute; top: 0; left: 0;
+    display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px;
+    border-radius: 9999px; cursor: pointer; font-family: inherit;
+    font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em;
+    color: #ffffff;
+    background: ${isAr ? "rgba(194, 65, 12, 0.9)" : "rgba(6, 55, 48, 0.88)"};
+    backdrop-filter: blur(6px);
+    border: 1.5px solid ${selected ? "#ffd445" : isAr ? "#fb923c" : "#2dd4bf"};
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    transform: translateY(24px);
+    white-space: nowrap;
+  `;
+  const tag = isAr ? "AR" : loot.source === "game_admin" ? "BONUS" : "LOOT";
+  btn.innerHTML = `<span style="color:${isAr ? "#ffd445" : "#5eead4"}">${tag}</span><span>${Math.round(distanceMetres)}m</span>`;
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    onClick();
   });
-  return { type: "Polygon", coordinates: [coordinates] };
+  return btn;
 }
 
 export function AtlasCanvas(props: AtlasCanvasProps) {
-  const { places, selected, threeD, imagery, player, playerContent, followPlayer, focusPlayerNonce, location, accuracy, route, perspective = "overhead" } = props;
-  const latest = useRef(props);
-  useEffect(() => { latest.current = props; }, [props]);
-  const host = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<GeographicMap | null>(null);
-  const pinClass = useRef<typeof Marker | null>(null);
-  const creditClass = useRef<typeof AttributionControl | null>(null);
-  const streetLayers = useRef<ReturnType<typeof worldMapStyle>["streetLayers"]>([]);
-  const gamePaint = useRef<ReturnType<typeof worldMapStyle>["gamePaint"]>([]);
-  const placeMarkers = useRef(new Map<string, Marker>());
-  const playerMarker = useRef<Marker | null>(null);
-  const satelliteFailed = useRef(false);
-  const focusRevision = useRef<number | undefined>(undefined);
-  const displayedPlayer = useRef<AtlasSelection | null>(null);
-  const displayedHeading = useRef(0);
-  const cameraInterrupted = useRef(false);
-  const cameraPerspective = useRef<ExplorerPerspective | null>(null);
-  const wasFollowing = useRef(false);
-  const cameraBlend = useRef<{ from: ExplorerCameraPose; started: number; duration: number } | null>(null);
-  const firstPersonLook = useRef(createFirstPersonLook());
-  const ignoreDeviceHeading = useRef(false);
-  const eyeInput = useRef<ReturnType<typeof attachFirstPersonInput> | null>(null);
-  const [playerElement, setPlayerElement] = useState<HTMLElement | null>(null);
-  const [ready, setReady] = useState(false);
-  const [parkTrees, setParkTrees] = useState<GameWorldObject[]>([]);
-  const [roofDetails, setRoofDetails] = useState<GameWorldObject[]>([]);
-  const [facadeDetails, setFacadeDetails] = useState<FacadeObject[]>([]);
-  const facadeSignature = useRef("");
-  const [streetLights,setStreetLights] = useState<GameWorldObject[]>([]);
-  const streetLightSignature=useRef("");
-  const roofSignature = useRef("");
-  const parkSignature = useRef("");
-  const [worldEpoch, setWorldEpoch] = useState(0);
-  const worldRegion = useRef<AtlasSelection | null>(null);
-  const [zoom, setZoom] = useState(homeZoom);
-  const [bearing, setBearing] = useState(-18);
-  const [tileIssue, setTileIssue] = useState(false);
-  const [remoteUnavailable, setRemoteUnavailable] = useState(false);
-  const [geometryEpoch, setGeometryEpoch] = useState(0);
-  const [clearance, setClearance] = useState<"clear" | "closer" | "raised">("clear");
-  const clearanceRef = useRef(clearance);
-  const obstacleCache = useRef<{ point: AtlasSelection; at: number; epoch: number; game: boolean; obstacles: CameraObstacle[]; truncated: boolean } | null>(null);
-  const sceneCamera = useRef<(map: GeographicMap, input: Parameters<typeof explorerCameraOptions>[1]) => CameraOptions | null>(() => null);
-  sceneCamera.current = (map, input) => {
-    let status: typeof clearance = "clear", override: typeof input.cameraPosition;
-    if (input.follow && input.threeD && (input.perspective === "third" || input.perspective === "close")) {
-      const now = performance.now(), game = latest.current.imagery === "game", ground = input.groundElevation ?? 0;
-      let cached = obstacleCache.current;
-      if (!cached || now - cached.at > 500 || cached.epoch !== geometryEpoch || cached.game !== game || mapDistance(cached.point, input.point) > 15) {
-        const features: unknown[] = [];
-        try {
-          // Filter geographically before the feature cap. A large survey can
-          // otherwise fill the result with distant roofs and omit this wall.
-          const nearby = ["<=", ["distance", { type: "Point", coordinates: [input.point.longitude, input.point.latitude] }], 75] as FilterSpecification;
-          if (map.getSource(MAP_SOURCE_IDS.buildings)) {
-            const found = map.querySourceFeatures(MAP_SOURCE_IDS.buildings, { filter: nearby });
-            features.push(...found.slice(0, 2501));
-          }
-        } catch { /* Missing source data remains a documented limit, not a wall. */ }
-        const admitted = buildCameraObstacles(features, { centre: input.point, groundElevation: ground, gameHeights: game });
-        cached = { ...admitted, point: input.point, at: now, epoch: geometryEpoch, game }; obstacleCache.current = cached;
-      }
-      const result = resolveCameraClearance({ target: { ...input.point, altitude: ground + 1.5 },
-        desired: explorerCameraPosition(input.point, input.heading, input.perspective, ground), obstacles: cached.obstacles });
-      if (result.obstructed) {
-        status = result.targetBlocked || result.fraction < .15 ? "raised" : "closer";
-        if (status === "closer") override = result.camera;
-      }
-    }
-    if (status !== clearanceRef.current) { clearanceRef.current = status; setClearance(status); }
-    const look = input.perspective === "first" && !ignoreDeviceHeading.current && Number.isFinite(latest.current.deviceHeading) && latest.current.deviceHeading != null
-      ? { ...(input.look ?? firstPersonLook.current), yawOffset: latest.current.deviceHeading - input.heading } : input.look;
-    return explorerCameraOptions(map, status === "raised" ? { ...input, perspective: "overhead", refocus: true } : { ...input, look, cameraPosition: override });
-  };
+  const {
+    places,
+    selected,
+    player = {
+      longitude: PILOT_DEFAULT_CENTER[0],
+      latitude: PILOT_DEFAULT_CENTER[1],
+      accuracy: null,
+      heading: 0,
+      walking: false,
+      gaitMetres: 0,
+      live: false,
+      avatar: "foodie" as AvatarId,
+    },
+    imagery,
+    threeD,
+    perspective,
+    follow,
+    refocus,
+    zoomDelta,
+    route,
+    loots = [],
+    malls = [],
+    appearances = {},
+    trailCoords = [],
+    celebrating = false,
+    selectedLootId = null,
+    onSelect,
+    onSelectMall,
+    onSelectLoot,
+    onPickRouteDestination,
+    onFollowChange,
+    onImageryFailed,
+    onPerspectiveChange,
+    onWebglFallback,
+  } = props;
 
-  useEffect(() => {
-    const container = host.current;
-    if (!container) return;
-    const controller = new AbortController();
-    let active: GeographicMap | undefined;
-    let observer: ResizeObserver | undefined;
-    let disposed = false, failed = false;
-    const unavailable = (reason: string) => {
-      if (disposed || failed) return;
-      failed = true;
-      latest.current.onUnavailable(reason);
-    };
-    const timeout = window.setTimeout(() => unavailable("The world map took too long to load."), 20000);
-    async function initialise() {
-      const [gl, response] = await Promise.all([
-        import("maplibre-gl"),
-        fetch(WORLD_STREET_STYLE, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) }),
-      ]);
-      if (!response.ok) throw new Error("World map unavailable");
-      const base = await response.json() as StyleSpecification;
-      if (base.version !== 8 || !base.sources || !Array.isArray(base.layers)) throw new Error("Invalid world map style");
-      if (disposed || failed || !container) return;
-      const composed = worldMapStyle(base, satelliteKey);
-      streetLayers.current = composed.streetLayers;
-      gamePaint.current = composed.gamePaint;
-      gl.setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).toString());
-      const initial = latest.current;
-      const initialPerspective = initial.perspective ?? "overhead";
-      const initialLimits = explorerCameraLimits(initialPerspective, initial.threeD);
-      active = new gl.Map({
-        container, style: composed.style, center: valid(initial.player) ? [initial.player.longitude, initial.player.latitude] : ATLAS_CENTER,
-        zoom: homeZoom, minZoom: 1, ...initialLimits,
-        pitch: initial.threeD ? 58 : 0, bearing: initial.threeD ? -42 : 0,
-        cooperativeGestures: false, scrollZoom: true, renderWorldCopies: true, attributionControl: false,
-        pixelRatio: initial.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2),
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const worldLayerRef = useRef<(ReturnType<typeof createGameWorldObjectLayer> & { updateScene?: (d: unknown) => void }) | null>(null);
+  const markersRef = useRef<Marker[]>([]);
+  const lookRef = useRef<FirstPersonLook>(createFirstPersonLook(56));
+  const [ready, setReady] = useState(false);
+
+  const worldObjects: GameWorldObject[] = useMemo(() => {
+    const out: GameWorldObject[] = places
+      .filter(p => p.source !== "demo" && !appearances[p.id]?.mallId)
+      .map(place => ({
+        id: place.id,
+        name: place.name,
+        longitude: place.coordinates.longitude,
+        latitude: place.coordinates.latitude,
+        kind: (place.type as GameWorldObject["kind"]) ?? "restaurant",
+        preset: appearances[place.id]?.buildingPreset,
+        accentColour: appearances[place.id]?.buildingAccentColour,
+      }));
+    for (const mall of malls) {
+      out.push({
+        id: mall.id,
+        name: mall.name,
+        longitude: mall.coordinates.longitude,
+        latitude: mall.coordinates.latitude,
+        kind: "mall",
+        shopCount: mall.shopCount,
       });
-      const map = active;
-      mapRef.current = map; pinClass.current = gl.Marker; creditClass.current = gl.AttributionControl;
-      if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") (window as any)._map = map;
-      const detachFog = attachPilotFog(map.getCanvasContainer(), {
-        project: (longitude, latitude) => map.project([longitude, latitude]),
-        unproject: (x, y) => { const point = map.unproject([x, y]).wrap(); return { longitude: point.lng, latitude: point.lat }; },
-        subscribe: refresh => { map.on("move", refresh); map.on("resize", refresh); return () => { map.off("move", refresh); map.off("resize", refresh); }; },
-      }, map.getCanvas());
-      map.once("remove", detachFog);
-      if (valid(initial.player) && initial.followPlayer) {
-        const camera = sceneCamera.current(map, { perspective: initialPerspective, point: initial.player,
-          heading: initial.heading ?? map.getBearing(), follow: true, threeD: initial.threeD, refocus: true });
-        if (camera) map.jumpTo({ ...camera, pitch: initial.threeD ? 58 : camera.pitch, bearing: initial.threeD ? -42 : 0, zoom: homeZoom });
+    }
+    return out;
+  }, [places, malls, appearances]);
+
+  // Initialise MapLibre WebGL 3D canvas
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    let detachFog: (() => void) | undefined;
+    const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+    const controller = new AbortController();
+
+    async function initMap() {
+      let baseStyle: StyleSpecification;
+      try {
+        const res = await fetch(STREET_STYLE_URL, { signal: controller.signal });
+        if (!res.ok) throw new Error("Style fetch failed");
+        baseStyle = (await res.json()) as StyleSpecification;
+      } catch {
+        if (!cancelled) onWebglFallback?.();
+        return;
       }
-      map.getCanvas().setAttribute("aria-label", "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
-      map.on("click", event => {
-        if (process.env.NODE_ENV === "development" && new URLSearchParams(window.location.search).get("world-demo") === "1") {
-          const chest = map.project([144.96915, -37.81790]);
-          if (Math.hypot(event.point.x - chest.x, event.point.y - chest.y) <= 42) {
-            latest.current.onDemoTreasure?.();
-            return;
+      if (cancelled || !container) return;
+
+      const { style, gamePaint } = worldMapStyle(baseStyle, maptilerKey);
+      const isCompactScreen = typeof window !== "undefined" && window.innerWidth <= 640;
+      const defaultThirdZoom = isCompactScreen ? 18.65 : 19.05;
+      const defaultThirdPitch = isCompactScreen ? 61 : 63;
+      const defaultThirdBearing = isCompactScreen ? -10 : -16;
+
+      let map: MapLibreMap;
+      try {
+        map = new MapLibreMap({
+          container,
+          style,
+          center: [player.longitude || PILOT_DEFAULT_CENTER[0], player.latitude || PILOT_DEFAULT_CENTER[1]],
+          zoom: defaultThirdZoom,
+          pitch: defaultThirdPitch,
+          bearing: player.heading ?? defaultThirdBearing,
+          maxPitch: 85,
+          minZoom: 14.8,
+          maxZoom: 23,
+          maxBounds: PILOT_MAX_BOUNDS,
+          attributionControl: { compact: true },
+        });
+      } catch {
+        onWebglFallback?.();
+        return;
+      }
+
+      map.setPadding({ top: 40, bottom: 110, left: 0, right: 0 });
+      mapRef.current = map;
+
+      let worldMounted = false;
+      function mountWorldOnce() {
+        if (cancelled || worldMounted) return;
+        worldMounted = true;
+
+        // Apply bright stylized game ground, parks, river, and street paints
+        for (const item of gamePaint) {
+          try {
+            if (map.getLayer(item.id)) {
+              map.setPaintProperty(item.id, item.property, item.game);
+            }
+          } catch {}
+        }
+        // Sharpen road networks and brighten terrain to match Food Go's illustrated 3D style
+        for (const layer of map.getStyle()?.layers ?? []) {
+          try {
+            const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+            if (layer.type === "background") {
+              map.setPaintProperty(layer.id, "background-color", "#a2cf81");
+            } else if (layer.type === "fill") {
+              if (sourceLayer === "water" || layer.id.includes("water")) {
+                map.setPaintProperty(layer.id, "fill-color", "#48afd9");
+                map.setPaintProperty(layer.id, "fill-opacity", 0.96);
+              } else if (sourceLayer === "park" || /park|grass|wood|pitch|garden|green/u.test(layer.id)) {
+                map.setPaintProperty(layer.id, "fill-color", "#7ebb61");
+                map.setPaintProperty(layer.id, "fill-opacity", 0.96);
+              } else if (sourceLayer === "landuse" || sourceLayer === "landcover") {
+                map.setPaintProperty(layer.id, "fill-color", "#9ac979");
+                map.setPaintProperty(layer.id, "fill-opacity", 0.92);
+              }
+            } else if (layer.type === "line" && sourceLayer === "transportation") {
+              const rail = layer.id.includes("rail");
+              const casing = layer.id.endsWith("casing");
+              const walking = /path|footway|pedestrian|steps|cycleway/u.test(layer.id);
+              if (!rail) {
+                map.setPaintProperty(
+                  layer.id,
+                  "line-color",
+                  walking ? (casing ? "#e4dac5" : "#efe6d3") : casing ? "#f4efe2" : "#89989f"
+                );
+                map.setPaintProperty(layer.id, "line-opacity", walking ? 0.92 : 1);
+              }
+            } else if (layer.type === "symbol" && sourceLayer === "transportation_name") {
+              map.setPaintProperty(layer.id, "text-color", "#1f3730");
+              map.setPaintProperty(layer.id, "text-halo-color", "#fffef8");
+              map.setPaintProperty(layer.id, "text-halo-width", 2.2);
+            }
+          } catch {}
+        }
+
+        for (const layer of map.getStyle()?.layers ?? []) {
+          if (("source-layer" in layer && layer["source-layer"] === "building") || layer.id.includes("building")) {
+            try {
+              map.setLayoutProperty(layer.id, "visibility", "none");
+            } catch {}
           }
         }
-        const point = event.lngLat.wrap();
-        if (isInsideMelbournePilot({ longitude: point.lng, latitude: point.lat })) latest.current.onSelect({ longitude: point.lng, latitude: point.lat });
+        const layer = createGameWorldObjectLayer(worldObjects, {
+          player: {
+            longitude: player.longitude,
+            latitude: player.latitude,
+            heading: player.heading ?? 0,
+            walking: player.walking,
+            celebrating,
+            avatarId: player.avatar,
+            hiddenInFirstPerson: perspective === "first",
+          },
+          loots,
+          malls,
+          appearances,
+          trailCoords,
+          reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        });
+        worldLayerRef.current = layer as typeof worldLayerRef.current;
+        const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
+        map.addLayer(layer, firstSymbol);
+        const fogCamera = {
+          project: (lng: number, lat: number) => map.project([lng, lat]),
+          unproject: (x: number, y: number) => {
+            const p = map.unproject([x, y]);
+            return { longitude: p.lng, latitude: p.lat };
+          },
+          subscribe: (cb: () => void) => {
+            map.on("move", cb);
+            map.on("resize", cb);
+            return () => {
+              map.off("move", cb);
+              map.off("resize", cb);
+            };
+          },
+        };
+        detachFog = attachPilotFog(container!, fogCamera, map.getCanvas());
+        setReady(true);
+      }
+
+      let worldFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+      function tryMountWorld() {
+        if (!cancelled && !worldMounted && map.getStyle()?.layers?.length) {
+          mountWorldOnce();
+        }
+      }
+
+      map.once("style.load", mountWorldOnce);
+      map.once("load", mountWorldOnce);
+      map.on("styledata", tryMountWorld);
+      if (map.isStyleLoaded()) mountWorldOnce();
+      else worldFallbackTimer = setTimeout(tryMountWorld, 1200);
+
+      map.on("dragstart", () => onFollowChange?.(false));
+      map.on("click", e => {
+        if (perspective !== "first" && onPickRouteDestination) {
+          onPickRouteDestination({ longitude: e.lngLat.lng, latitude: e.lngLat.lat });
+        }
       });
-      map.on("zoomend", () => setZoom(map.getZoom()));
-      map.on("rotate", () => { setBearing(map.getBearing()); latest.current.onBearingChange?.(map.getBearing()); });
-      for (const event of ["movestart", "dragstart", "rotatestart", "zoomstart", "pitchstart"] as const) map.on(event, movement => {
-        if (movement.originalEvent) { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
+      map.on("error", () => {
+        onImageryFailed?.("Map imagery temporarily limited.");
       });
-      map.on("resize", () => {
-        const current = latest.current;
-        if (!current.followPlayer || cameraInterrupted.current) return;
-        const point = displayedPlayer.current ?? current.player;
-        if (!valid(point)) return;
-        const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
-        if (Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
-        const camera = sceneCamera.current(map, { perspective: current.perspective ?? "overhead", point,
-          heading: displayedPlayer.current ? displayedHeading.current : current.heading ?? map.getBearing(),
-          follow: true, threeD: current.threeD, groundElevation: ground, look: firstPersonLook.current });
-        if (camera) map.jumpTo(camera);
-      });
-      map.on("webglcontextlost", () => unavailable("The browser lost its 3D graphics connection."));
-      map.on("error", event => {
-        const source = "sourceId" in event ? event.sourceId : undefined;
-        if (source === MAP_SOURCE_IDS.globalSatellite) {
-          if (!satelliteFailed.current) {
-            satelliteFailed.current = true;
-            setRemoteUnavailable(true);
-            if (map.getLayer(MAP_SOURCE_IDS.globalSatellite)) map.setLayoutProperty(MAP_SOURCE_IDS.globalSatellite, "visibility", "none");
-            latest.current.onSatelliteUnavailable?.();
-          }
-        } else setTileIssue(true);
-      });
-      const buildingSources = new Set(composed.style.layers.filter(layer => layer.id === MAP_SOURCE_IDS.buildings || layer.id === "food-go-world-buildings")
-        .map(layer => "source" in layer ? layer.source : undefined));
-      let geometryChanged = false;
-      map.on("sourcedata", event => { if (event.sourceDataType === "content" && buildingSources.has(event.sourceId)) geometryChanged = true; });
-      map.on("idle", () => {
-        setTileIssue(false);
-        if (geometryChanged) { geometryChanged = false; setGeometryEpoch(n => n + 1); }
-      });
-      map.on("load", () => {
-        if (disposed || failed) return;
-        clearTimeout(timeout);
-        const element = document.createElement("div");
-        element.className = css.player;
-        element.addEventListener("click", event => event.stopPropagation());
-        element.addEventListener("pointerdown", event => event.stopPropagation());
-        setPlayerElement(element); setReady(true); latest.current.onReady(); latest.current.onBearingChange?.(map.getBearing());
-      });
-      observer = new ResizeObserver(() => map.resize());
-      observer.observe(container);
+
+      const prevCancelCleanup = () => {
+        if (worldFallbackTimer) clearTimeout(worldFallbackTimer);
+      };
+      controller.signal.addEventListener("abort", prevCancelCleanup, { once: true });
     }
-    initialise().catch(() => { if (!controller.signal.aborted) unavailable("The world map could not start. Check your connection or browser graphics."); });
+
+    void initMap();
+
     return () => {
-      disposed = true; controller.abort(); clearTimeout(timeout); observer?.disconnect();
-      mapRef.current = null; active?.remove();
+      cancelled = true;
+      controller.abort();
+      detachFog?.();
+      markersRef.current.forEach(m => m.remove());
+      markersRef.current = [];
+      mapRef.current?.remove();
+      mapRef.current = null;
+      worldLayerRef.current = null;
+      setReady(false);
     };
   }, []);
 
+  // Sync static 3D venues and malls only when venue/mall definitions change
   useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map || !props.pilotOverviewNonce) return;
-    cameraInterrupted.current = true;
-    const b = MELBOURNE_PILOT_BOUNDS;
-    const height = map.getContainer().clientHeight;
-    const padding = { top: Math.min(145, Math.floor(height * .22)), bottom: Math.min(120, Math.floor(height * .2)), left: 24, right: 55 };
-    map.fitBounds([[b.minLon, b.minLat], [b.maxLon, b.maxLat]], { bearing: 0, pitch: 0, padding, duration: duration(), maxZoom: 15 });
-  }, [ready, props.pilotOverviewNonce]);
+    const layer = worldLayerRef.current;
+    if (!ready || !layer?.updateScene) return;
+    layer.updateScene({ objects: worldObjects, malls, appearances });
+  }, [ready, worldObjects, malls, appearances]);
 
+  // Sync collectible loots independently of player movement
   useEffect(() => {
-    const map = mapRef.current;
-    const target = props.demoFocus;
-    if (!ready || !map || !target || !valid(target)) return;
-    // Public map movement only; changes neither the device GPS nor rewards.
-    map.easeTo({
-      center: [target.longitude, target.latitude],
-      zoom: target.zoom, pitch: target.pitch,
-      duration: duration(),
+    const layer = worldLayerRef.current;
+    if (!ready || !layer?.updateScene) return;
+    layer.updateScene({ loots });
+  }, [ready, loots]);
+
+  // Sync breadcrumb / route trail independently of buildings
+  useEffect(() => {
+    const layer = worldLayerRef.current;
+    if (!ready || !layer?.updateScene) return;
+    layer.updateScene({
+      trailCoords: route?.coordinates?.length ? (route.coordinates as [number, number][]) : trailCoords,
     });
-  }, [ready, props.demoFocus?.nonce]);
+  }, [ready, route, trailCoords]);
 
+  // Sync player position, facing, animation & perspective without touching 3D buildings
   useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map) return;
-    map.setPixelRatio(props.lowDetail ? 1 : Math.min(window.devicePixelRatio || 1, 2));
-  }, [ready, props.lowDetail]);
-
-  // Park meshes are placed only inside visible mapped green polygons.
-  // They are aesthetic vegetation, not individual surveyed tree positions.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map) return;
-    const update = () => {
-      const decorate = threeD && imagery === "game" && !props.lowDetail;
-      const trees = decorate ? parkTreesFromMap(map) : [];
-      const signature = trees.map(tree => tree.id).join("|");
-      if (signature !== parkSignature.current) {
-        parkSignature.current = signature;
-        setParkTrees(trees);
-      }
-      // Client preference: Keep generic buildings simple and flat; 3D models are reserved for food venues.
-      const roofs: ReturnType<typeof rooftopsFromMap> = [];
-      if (roofSignature.current !== "simplified") {
-        roofSignature.current = "simplified";
-        setRoofDetails(roofs);
-      }
-      const facades: ReturnType<typeof facadesFromMap> = [];
-      if (facadeSignature.current !== "simplified") {
-        facadeSignature.current = "simplified";
-        setFacadeDetails(facades);
-      }
-      const lights=decorate ? streetLampsFromMap(map,window.innerWidth<640?34:62):[];
-      const lightsKey=lights.map(l=>l.id).join("|");
-      if(lightsKey!==streetLightSignature.current){
-        streetLightSignature.current=lightsKey;
-        setStreetLights(lights);
-      }
-    };
-    const moved = () => {
-      const centre = map.getCenter();
-      const here = { longitude: centre.lng, latitude: centre.lat };
-      if (!worldRegion.current || mapDistance(worldRegion.current, here) > 160) {
-        worldRegion.current = here;
-        setWorldEpoch(value => value + 1);
-      }
-      update();
-    };
-    update();
-    map.on("idle", update);
-    map.on("moveend", moved);
-    return () => { map.off("idle", update); map.off("moveend", moved); };
-  }, [ready, threeD, imagery, props.lowDetail]);
-
-  // Real geographic 3D objects share MapLibre's camera and depth buffer.
-  // ONLY explicitly approved food venues receive 3D models. Generic buildings are never rendered.
-  // The optional ?world-demo=1 fixture is visual-only and kept exclusively in explicit demo mode.
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map) return;
-    if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER);
-    if (!threeD || imagery !== "game" || props.lowDetail) return;
-    const centre = map.getCenter();
-    const reference = { latitude: centre.lat, longitude: centre.lng };
-    const isDemo = process.env.NODE_ENV === "development" && typeof window !== "undefined" && (
-      new URLSearchParams(window.location.search).get("world-demo") === "1" ||
-      window.location.pathname.startsWith("/demo") ||
-      window.location.pathname.startsWith("/explore-preview")
-    );
-
-    const fixture: GameWorldObject[] = isDemo ? [
-      { id: "the-ovenhouse-model", name: "The Ovenhouse", longitude: 144.9673, latitude: -37.8149, kind: "restaurant" as const, variant: 0 },
-      { id: "riverside-bakery-model", name: "Riverside Bakery", longitude: 144.9664, latitude: -37.8156, kind: "restaurant" as const, variant: 1 },
-      { id: "melbourne-treasure-crystal", longitude: 144.9676, latitude: -37.8163, kind: "treasure" as const },
-      { id: "melbourne-mystery-zone", longitude: 144.9677, latitude: -37.8154, kind: "mystery" as const },
-    ].filter(point => mapDistance(point, reference) < 1250) : [];
-
-    // Food-venue pipeline: map approved food venues to reusable 3D restaurant/cafe/bakery models
-    const approvedFoodVenues: GameWorldObject[] = places
-      .filter(valid)
-      // Demo landmarks have dedicated scenic objects at the same coordinates.
-      .filter(place => !isDemo || !fixture.some(point => point.id === place.id + "-model"))
-      .filter(place => mapDistance(place, reference) < 1250)
-      .filter(place => {
-        const k = (place.kind || "").toLowerCase();
-        return k === "restaurant" || k === "cafe" || k === "bakery" || k === "market" || k === "food stall" || k === "food court";
-      })
-      .sort((a, b) => mapDistance(a, reference) - mapDistance(b, reference))
-      .slice(0, 16)
-      .map(place => {
-        const k = (place.kind || "").toLowerCase();
-        const n = (place.name || "").toLowerCase();
-        let variant = 3; // Modern Bistro default
-        let objectKind: GameWorldObject["kind"] = "restaurant";
-        if (k === "bakery" || n.includes("bakery") || n.includes("bread") || n.includes("pastry")) {
-          variant = 1;
-          objectKind = "restaurant";
-        } else if (k === "cafe" || n.includes("cafe") || n.includes("coffee") || n.includes("espresso")) {
-          variant = 2;
-          objectKind = "cafe";
-        } else if (n.includes("oven") || n.includes("house") || n.includes("pizza") || n.includes("grill")) {
-          variant = 0;
-          objectKind = "restaurant";
-        }
-        return {
-          id: place.id,
-          longitude: place.longitude,
-          latitude: place.latitude,
-          kind: objectKind,
-          variant,
-          name: place.name,
-        };
-      });
-
-    const localDemoPark = isDemo && mapDistance(reference,
-      { longitude: 144.9794, latitude: -37.8134 }) < 850 ? demoParkScenery() : [];
-    const nearby: GameWorldObject[] = [
-      ...fixture,
-      ...approvedFoodVenues,
-      ...localDemoPark,
-      ...parkTrees,
-      ...streetLights,
-    ].filter(isInsideMelbournePilot);
-    if (valid(selected) && isInsideMelbournePilot(selected) && mapDistance(selected, reference) < 1250) nearby.unshift({
-      id: "selected-waypoint", longitude: selected.longitude,
-      latitude: selected.latitude, kind: "waypoint",
+    const layer = worldLayerRef.current;
+    if (!ready || !layer?.updateScene) return;
+    layer.updateScene({
+      player: {
+        longitude: player.longitude,
+        latitude: player.latitude,
+        heading: player.heading ?? 0,
+        walking: player.walking,
+        speedMode: player.walking ? "walk" : undefined,
+        celebrating,
+        avatarId: player.avatar,
+        hiddenInFirstPerson: perspective === "first",
+      },
     });
-    if (nearby.length === 0) return;
-    const layer = createGameWorldObjectLayer(nearby);
-    const label = map.getStyle().layers.find(item => item.type === "symbol")?.id;
-    map.addLayer(layer, label);
-    return () => { if (map.getLayer(GAME_WORLD_OBJECT_LAYER)) map.removeLayer(GAME_WORLD_OBJECT_LAYER); };
-  }, [ready, threeD, imagery, places, selected?.longitude, selected?.latitude, props.lowDetail, parkTrees, roofDetails, facadeDetails, streetLights, worldEpoch]);
+  }, [ready, player, celebrating, perspective]);
 
+  // Toggle satellite raster visibility
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    const sourceId = "food-go-discovery-fog", layerId = "food-go-discovery-fog-fill";
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    if (!map.getSource(sourceId)) {
-      map.addSource(sourceId, { type: "geojson", data: emptyMapFeatures(), maxzoom: 18 });
-      // Labels, restaurant markers, attribution and route guidance stay legible.
-      const before = map.getStyle().layers.find(layer => layer.type === "symbol")?.id;
-      map.addLayer({ id: layerId, type: "fill", source: sourceId,
-        paint: { "fill-color": "#698f84", "fill-opacity": .46, "fill-antialias": true } }, before);
-      // Diffused borders make the geographic reveal legible without faking
-      // discovered cells or applying a costly screen-space blur to the world.
-      map.addLayer({ id: "food-go-discovery-fog-glow", type: "line", source: sourceId,
-        paint: { "line-color": "#c2e5cc", "line-width": 5, "line-blur": 2.4, "line-opacity": .45 } }, before);
-      map.addLayer({ id: "food-go-discovery-fog-rim", type: "line", source: sourceId,
-        paint: { "line-color": "#dfefcb", "line-width": 1.2, "line-opacity": .48 } }, before);
-    }
-    const refresh = () => {
-      const bounds = map.getBounds();
-      const result = explorationFogGeometry({ viewport: { west: bounds.getWest(), east: bounds.getEast(),
-        south: Math.max(-EXPLORATION_MAX_LATITUDE, bounds.getSouth()), north: Math.min(EXPLORATION_MAX_LATITUDE, bounds.getNorth()) },
-        exploredCellIds: props.discoveredCells ?? [], maxCells: props.lowDetail ? 1024 : 4096 });
-      (map.getSource(sourceId) as GeoJSONSource).setData(props.discoveryEnabled ? result.data : emptyMapFeatures());
-      const { data: _data, ...view } = result;
-      props.onDiscoveryView?.(view);
-    };
-    const schedule = () => { clearTimeout(timer); timer = setTimeout(refresh, 120); };
-    refresh(); map.on("moveend", schedule); map.on("resize", schedule);
-    return () => { clearTimeout(timer); map.off("moveend", schedule); map.off("resize", schedule); };
-  }, [ready, props.discoveryEnabled, props.discoveredCells, props.lowDetail, props.onDiscoveryView]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map) return;
-    const globalSatellite = imagery === "satellite" && !!satelliteKey && !satelliteFailed.current;
-    // Without a global imagery account, the labelled Melbourne snapshot remains
-    // an overlay on the worldwide street map. The camera is never constrained.
-    for (const layer of streetLayers.current) map.setLayoutProperty(layer.id, "visibility",
-      imagery === "street" || imagery === "game" || !globalSatellite || layer.symbol ? layer.visibility : "none");
-    for (const paint of gamePaint.current) if (map.getLayer(paint.id))
-      map.setPaintProperty(paint.id, paint.property, imagery === "game" ? paint.game : paint.normal);
-    map.setLayoutProperty(MAP_SOURCE_IDS.aerial, "visibility", imagery === "aerial" ? "visible" : "none");
-    map.setLayoutProperty(MAP_SOURCE_IDS.satellite, "visibility", imagery === "satellite" && !globalSatellite ? "visible" : "none");
-    if (map.getLayer(MAP_SOURCE_IDS.globalSatellite)) map.setLayoutProperty(MAP_SOURCE_IDS.globalSatellite, "visibility", globalSatellite ? "visible" : "none");
-  }, [ready, imagery, remoteUnavailable]);
-
-  useEffect(() => {
-    const map = mapRef.current, Credit = creditClass.current;
-    if (!ready || !map || !Credit) return;
-    const credit = new Credit({ compact: true, customAttribution: [
-      `<a href="${ATLAS_ATTRIBUTION}" target="_blank">City of Melbourne · Copernicus</a>`,
-      '<a href="/models/world/credits.txt" target="_blank" rel="noopener noreferrer">3D model credits</a>',
-      ...(imagery === "satellite" && satelliteKey && !satelliteFailed.current ? ['<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a>'] : []),
-    ] });
-    map.addControl(credit, "bottom-right");
-    return () => { if (map.hasControl(credit)) map.removeControl(credit); };
-  }, [ready, imagery, remoteUnavailable]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!ready || !map) return;
-    // Client requirement: Ensure generic city buildings are strictly hidden in 3D and game mode
-    for (const layer of map.getStyle()?.layers ?? []) {
-      if (("source-layer" in layer && layer["source-layer"] === "building") || layer.id.includes("building")) {
-        map.setLayoutProperty(layer.id, "visibility", "none");
-      }
+    const satLayer = map.getLayer("food-go-global-satellite");
+    if (satLayer) {
+      map.setLayoutProperty("food-go-global-satellite", "visibility", imagery === "satellite" ? "visible" : "none");
     }
     const limits = explorerCameraLimits(perspective, threeD);
     map.setMaxPitch(limits.maxPitch);
     map.setMaxZoom(limits.maxZoom);
-  }, [ready, threeD, perspective]);
+  }, [ready, imagery, perspective, threeD]);
 
+  // Sync camera pose for 1st-person, 3rd-person follow & overhead modes
   useEffect(() => {
-    const map = mapRef.current, Pin = pinClass.current;
-    if (!ready || !map || !Pin) return;
-    const pins = placeMarkers.current;
-    const validPlaces = places.filter(place => valid(place) && isInsideMelbournePilot(place));
-    const centre = player && valid(player) ? { longitude: player.longitude, latitude: player.latitude } : map.getCenter() ? { longitude: map.getCenter().lng, latitude: map.getCenter().lat } : { longitude: ATLAS_CENTER[0], latitude: ATLAS_CENTER[1] };
-    const sorted = [...validPlaces].sort((a, b) => mapDistance(centre, a) - mapDistance(centre, b));
-    const closestId = sorted[0]?.id;
+    const map = mapRef.current;
+    if (!ready || !map || !follow) return;
 
-    for (const place of validPlaces) {
-      const distance = player && valid(player) ? mapDistance(player, place) : undefined;
-      // Clutter control: Only show full label card for selected venue, or if none selected, the single closest venue
-      const isSelected = selected && place.id === selected.id;
-      const showLabel = Boolean(isSelected || (!selected && place.id === closestId));
-      const button = createMapPlaceMarker(place, place.distanceMetres ?? distance, place.rating, showLabel);
-      button.style.position = "absolute";
-      button.onclick = event => { event.stopPropagation(); latest.current.onSelect({ longitude: place.longitude, latitude: place.latitude, id: place.id }); };
-      pins.set(place.id, new Pin({ element: button, anchor: "bottom", subpixelPositioning: true })
-        .setLngLat([place.longitude, place.latitude]).addTo(map));
+    if (perspective === "first") {
+      const opts = explorerCameraOptions(map, {
+        perspective: "first",
+        point: { longitude: player.longitude, latitude: player.latitude },
+        heading: player.heading ?? 0,
+        follow: true,
+        threeD,
+        look: lookRef.current,
+        refocus: refocus > 0,
+      });
+      if (opts) {
+        map.easeTo({ ...opts, duration: refocus > 0 ? 450 : 200 });
+      }
+      return;
     }
-    return () => { for (const marker of pins.values()) marker.remove(); pins.clear(); };
-  }, [ready, places, player, selected?.id]);
 
-  useEffect(() => {
-    if (!props.zoomInTrigger || !ready || !mapRef.current) return;
-    mapRef.current.zoomIn({ duration: duration() });
-  }, [props.zoomInTrigger]);
-
-  useEffect(() => {
-    if (!props.zoomOutTrigger || !ready || !mapRef.current) return;
-    mapRef.current.zoomOut({ duration: duration() });
-  }, [props.zoomOutTrigger]);
-
-  useEffect(() => {
-    for (const place of places) {
-      const button = placeMarkers.current.get(place.id)?.getElement() as HTMLButtonElement | undefined;
-      if (button) updateMapPlaceEncounter(button, place, props.encounterSignals ?? {});
+    if (perspective === "overhead") {
+      map.easeTo({
+        center: [player.longitude, player.latitude],
+        zoom: 15.8,
+        pitch: threeD ? 36 : 0,
+        bearing: 0,
+        roll: 0,
+        duration: 420,
+      });
+      return;
     }
-  }, [ready, places, props.encounterSignals]);
 
-  const longitude = selected?.longitude, latitude = selected?.latitude, selectedId = selected?.id;
-  useEffect(() => {
-    for (const [id, marker] of placeMarkers.current) marker.getElement().setAttribute("aria-pressed", String(id === selectedId));
-  }, [ready, places, selectedId]);
-  useEffect(() => {
-    const map = mapRef.current, Pin = pinClass.current;
-    if (!ready || !map || !Pin || !valid(selected)) return;
-    if (perspective === "overhead" || !latest.current.followPlayer)
-      map.easeTo({ center: [selected.longitude, selected.latitude], duration: duration(), zoom: Math.max(map.getZoom(), 15.5) });
-    if (selected.id && placeMarkers.current.has(selected.id)) return;
-    const dot = document.createElement("div"); dot.className = css.droppedPin; dot.setAttribute("aria-hidden", "true");
-    const marker = new Pin({ element: dot, anchor: "center" }).setLngLat([selected.longitude, selected.latitude]).addTo(map);
-    return () => { marker.remove(); };
-  }, [ready, longitude, latitude, selectedId, perspective]);
+    const compactViewport = typeof window !== "undefined" && window.innerWidth <= 640;
+    map.easeTo({
+      center: [player.longitude, player.latitude],
+      zoom: compactViewport ? 18.65 : 19.05,
+      pitch: threeD ? (compactViewport ? 61 : 63) : 0,
+      bearing: player.heading ?? (compactViewport ? -10 : -16),
+      padding: threeD ? { top: 40, bottom: 110, left: 0, right: 0 } : { top: 0, bottom: 0, left: 0, right: 0 },
+      roll: 0,
+      duration: refocus > 0 ? 450 : 220,
+    });
+  }, [ready, perspective, player.longitude, player.latitude, player.heading, follow, threeD, refocus]);
 
-  const playerLongitude = player?.longitude, playerLatitude = player?.latitude;
+  // Attach 1st-person look-around drag & pinch FOV when in 1st person view
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || perspective !== "first") return;
+    const handle = attachFirstPersonInput(map, {
+      initial: lookRef.current,
+      onChange(next) {
+        lookRef.current = next;
+        const opts = explorerCameraOptions(map, {
+          perspective: "first",
+          point: { longitude: player.longitude, latitude: player.latitude },
+          heading: player.heading ?? 0,
+          follow: true,
+          threeD: true,
+          look: next,
+        });
+        if (opts) map.jumpTo(opts);
+      },
+      onTap(pt) {
+        onPickRouteDestination?.(pt);
+      },
+    });
+    return () => handle.dispose(true);
+  }, [ready, perspective, player.longitude, player.latitude, player.heading, onPickRouteDestination]);
+
+  // Zoom button pulses
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || zoomDelta === 0) return;
+    map.easeTo({ zoom: Math.max(15, Math.min(22, map.getZoom() + (zoomDelta > 0 ? 1.1 : -1.1))), duration: 280 });
+  }, [ready, zoomDelta]);
+
+  // Route polyline source update
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
-    const eye = perspective === "first" && followPlayer;
-    map.getCanvas().setAttribute("aria-label", eye
-      ? "Street view. Drag to look around. Pinch, scroll or plus and minus change the view angle. Arrow keys look. Home faces forward. Enter selects the centre."
-      : "World map. Drag or swipe to explore, pinch or use plus and minus to zoom. Arrow keys pan. Enter selects the centre.");
-    if (!eye) return;
-    firstPersonLook.current = createFirstPersonLook(map.getVerticalFieldOfView());
-    const input = attachFirstPersonInput(map, {
-      initial: firstPersonLook.current,
-      onChange(look, reason) {
-        if (reason !== "sensor" && reason !== "zoom") {
-          if (reason === "turn" && !ignoreDeviceHeading.current && latest.current.deviceHeading != null && Number.isFinite(latest.current.deviceHeading)) {
-            const delta = ((look.yawOffset - firstPersonLook.current.yawOffset + 540) % 360) - 180;
-            look = { ...look, yawOffset: latest.current.deviceHeading - displayedHeading.current + delta };
-            eyeInput.current?.synchronise(look);
-          }
-          ignoreDeviceHeading.current = true; latest.current.onEyeLook?.();
-        }
-        firstPersonLook.current = look; cameraBlend.current = null; map.stop();
-        const point = displayedPlayer.current ?? latest.current.player;
-        if (!valid(point) || !latest.current.followPlayer) return;
-        const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
-        if (Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
-        const camera = sceneCamera.current(map, { perspective: "first", point, heading: displayedHeading.current,
-          follow: true, threeD: latest.current.threeD, groundElevation: ground, look });
-        if (camera) map.jumpTo(camera);
-      },
-      onTap: point => latest.current.onSelect(point),
-    });
-    eyeInput.current = input;
-    return () => { eyeInput.current = null; input.dispose(mapRef.current === map); };
-  }, [ready, perspective, followPlayer, focusPlayerNonce]);
-  useEffect(() => {
-    if (props.deviceHeading == null || !Number.isFinite(props.deviceHeading) || !eyeInput.current) return;
-    ignoreDeviceHeading.current = false;
-    eyeInput.current.orient(props.deviceHeading - displayedHeading.current);
-  }, [props.deviceHeading, props.heading, ready, perspective, focusPlayerNonce]);
-  useEffect(() => {
-    if (followPlayer) cameraInterrupted.current = false;
-  }, [followPlayer, focusPlayerNonce, perspective]);
-  useEffect(() => {
-    const map = mapRef.current, Pin = pinClass.current;
-    if (!ready || !map || !Pin || !playerElement) return;
-    if (!valid(player)) { playerMarker.current?.remove(); playerMarker.current = null; displayedPlayer.current = null; return; }
-    const target = { longitude: player.longitude, latitude: player.latitude };
-    const from = displayedPlayer.current ?? target;
-    const milliseconds = markerTransitionDuration(displayedPlayer.current, target, props.playerTransitionMs ?? 80,
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    if (perspective === "first") { playerMarker.current?.remove(); playerMarker.current = null; }
-    else if (!playerMarker.current) playerMarker.current = new Pin({ element: playerElement, anchor: "bottom", subpixelPositioning: true })
-      .setLngLat([from.longitude, from.latitude]).addTo(map);
-    const refocus = !!followPlayer && (focusRevision.current !== focusPlayerNonce || cameraPerspective.current !== perspective || !wasFollowing.current);
-    cameraPerspective.current = perspective; wasFollowing.current = !!followPlayer;
-    if (followPlayer) focusRevision.current = focusPlayerNonce;
-    const heading = Number.isFinite(props.heading) ? props.heading! : displayedPlayer.current ? displayedHeading.current : map.getBearing();
-    const fromHeading = displayedPlayer.current ? displayedHeading.current : heading;
-    const started = performance.now();
-    if (refocus) {
-      const centre = map.getCenter();
-      cameraBlend.current = { from: { longitude: centre.lng, latitude: centre.lat, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }, started,
-        duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches || mapDistance({ longitude: centre.lng, latitude: centre.lat }, target) > 10000 ? 0 : EXPLORER_CAMERA_TRANSITION_MS };
+    const src = map.getSource(MAP_SOURCE_IDS.route) as GeoJSONSource | undefined;
+    if (src) {
+      src.setData({
+        type: "FeatureCollection",
+        features: route ? [{ type: "Feature", properties: {}, geometry: route }] : [],
+      });
     }
-    let animation = 0;
-    const render = (now: number) => {
-      const progress = milliseconds ? Math.min(1, (now - started) / milliseconds) : 1;
-      const point = interpolateMarker(from, target, progress);
-      displayedPlayer.current = point;
-      playerMarker.current?.setLngLat([point.longitude, point.latitude]);
-      const cameraHeading = interpolateCameraBearing(fromHeading, heading, progress);
-      displayedHeading.current = cameraHeading;
-      if (followPlayer && latest.current.followPlayer && !cameraInterrupted.current) {
-        const ground = map.getTerrain() ? map.queryTerrainElevation([point.longitude, point.latitude]) ?? 0 : 0;
-        if (perspective === "first" && Math.abs(map.getCenterElevation() - ground) > .01) map.setCenterElevation(ground);
-        const camera = sceneCamera.current(map, { perspective, point, heading: cameraHeading,
-          follow: true, threeD, refocus, groundElevation: ground, look: firstPersonLook.current });
-        if (camera) {
-          const targetPose = perspective === "overhead" && threeD
-            ? { ...camera, pitch: 58, bearing: -42, zoom: camera.zoom ?? homeZoom }
-            : camera;
-          const blend = cameraBlend.current;
-          if (blend && blend.duration && now - blend.started < blend.duration) {
-            map.jumpTo(blendExplorerCamera(blend.from, explorerCameraPose(targetPose, { ...point, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() }),
-            (now - blend.started) / blend.duration));
-          } else { map.jumpTo(targetPose); cameraBlend.current = null; }
-        }
-      }
-      if (progress < 1 || (cameraBlend.current && now - cameraBlend.current.started < cameraBlend.current.duration && !cameraInterrupted.current)) animation = requestAnimationFrame(render);
-    };
-    render(started);
-    return () => cancelAnimationFrame(animation);
-  }, [ready, playerElement, playerLongitude, playerLatitude, followPlayer, focusPlayerNonce, props.playerTransitionMs, props.heading, perspective, threeD, geometryEpoch, imagery]);
-
-  useEffect(() => {
-    const source = mapRef.current?.getSource(MAP_SOURCE_IDS.route) as GeoJSONSource | undefined;
-    if (!ready || !source) return;
-    source.setData(route && route.coordinates.length >= 2 ? { type: "Feature", properties: {}, geometry: route } : emptyMapFeatures());
   }, [ready, route]);
-  const locationLongitude = location?.longitude, locationLatitude = location?.latitude;
-  useEffect(() => {
-    const source = mapRef.current?.getSource(MAP_SOURCE_IDS.accuracy) as GeoJSONSource | undefined;
-    if (!ready || !source) return;
-    source.setData(valid(location) && Number.isFinite(accuracy) && accuracy! > 0
-      ? { type: "Feature", properties: {}, geometry: accuracyCircle(location, Math.min(accuracy!, 100000)) } : emptyMapFeatures());
-  }, [ready, locationLongitude, locationLatitude, accuracy]);
 
-  const map = mapRef.current;
-  function pauseCameraTracking() { cameraInterrupted.current = true; latest.current.onCameraInteraction?.(); }
-  return <div className={css.scene} data-game-tree-count={parkTrees.length} data-game-roof-count={roofDetails.length} data-game-facade-count={facadeDetails.length} data-game-street-light-count={streetLights.length} data-world-objects-enabled={threeD && imagery === "game" && !props.lowDetail}>
-    <div ref={host} className={css.viewport} onKeyDown={event => {
-      if (event.key === "Enter" && map && event.target === map.getCanvas()) {
-        event.preventDefault(); const centre = map.getCenter().wrap();
-        if (isInsideMelbournePilot({ longitude: centre.lng, latitude: centre.lat })) latest.current.onSelect({ longitude: centre.lng, latitude: centre.lat });
-      }
-    }}/>
-    {perspective !== "first" && playerElement && playerContent && createPortal(playerContent, playerElement)}
-    {ready && <>
-      <div className={css.tools} role="group" aria-label="Geographic map controls">
-        <button type="button" title="Face north" aria-label="Face north" onClick={() => { if (eyeInput.current) eyeInput.current.faceNorth(displayedHeading.current); else { pauseCameraTracking(); map?.easeTo({ bearing: 0, duration: duration() }); } }}><Compass style={{ transform: `rotate(${-bearing}deg)` }}/></button>
-        <button type="button" title="Zoom in" aria-label="Zoom in on geographic map" disabled={eyeInput.current ? firstPersonLook.current.fieldOfView <= 28.01 : zoom >= explorerCameraLimits(perspective, threeD).maxZoom} onClick={() => { if (eyeInput.current) eyeInput.current.zoom(1.2); else { pauseCameraTracking(); map?.zoomIn({ duration: duration() }); } }}><Plus/></button>
-        <button type="button" title="Zoom out" aria-label="Zoom out of geographic map" disabled={eyeInput.current ? firstPersonLook.current.fieldOfView >= 67.99 : zoom <= 1} onClick={() => { if (eyeInput.current) eyeInput.current.zoom(1 / 1.2); else { pauseCameraTracking(); map?.zoomOut({ duration: duration() }); } }}><Minus/></button>
-      </div>
-      {tileIssue && <p className={css.tileIssue} role="status"><RefreshCw size={13}/>Some map tiles could not load. Keep exploring or try again shortly.</p>}
-      {clearance !== "clear" && <p className={css.clearance} role="status">{clearance === "raised" ? "Camera raised for building clearance." : "Camera moved closer for building clearance."}</p>}
-      {imagery === "satellite" && satelliteKey && !satelliteFailed.current && <a className={css.provider} href="https://www.maptiler.com/" target="_blank" rel="noopener noreferrer"><img src="https://api.maptiler.com/resources/logo.svg" width="88" height="22" alt="MapTiler"/></a>}
-    </>}
-  </div>;
+  // Sync crisp clickable floating beacons & distance cards for Venues, Malls & Loots
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    const playerPt = { longitude: player.longitude, latitude: player.latitude };
+
+    // 1. Food venues
+    const standalone = places.filter(p => p.source !== "demo" && !appearances[p.id]?.mallId);
+    for (const place of standalone) {
+      const dist = Math.round(mapDistance(playerPt, place.coordinates));
+      const el = createMapPlaceMarker(place, dist, 4.8, true);
+      el.setAttribute("aria-pressed", String(selected?.id === place.id));
+      el.addEventListener("click", e => {
+        e.stopPropagation();
+        onSelect({
+          kind: "venue",
+          id: place.id,
+          name: place.name,
+          longitude: place.coordinates.longitude,
+          latitude: place.coordinates.latitude,
+        });
+      });
+      const marker = new Marker({ element: el, anchor: "top" })
+        .setLngLat([place.coordinates.longitude, place.coordinates.latitude])
+        .setOffset([0, 8])
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+
+    // 2. Malls (multi-restaurant buildings)
+    for (const mall of malls) {
+      const dist = Math.round(mapDistance(playerPt, mall.coordinates));
+      const el = createMapPlaceMarker(
+        {
+          id: mall.id,
+          name: mall.name,
+          cuisine: `${mall.shopCount} Food Venues`,
+          type: "market",
+          coordinates: mall.coordinates,
+          building: { id: mall.id, name: mall.name, level: "G", unit: `${mall.shopCount} Venues` },
+          shops: [],
+        } as unknown as Parameters<typeof createMapPlaceMarker>[0],
+        dist,
+        4.9,
+        true
+      );
+      el.setAttribute("aria-pressed", String(selected?.kind === "building" && selected.id === mall.id));
+      el.addEventListener("click", e => {
+        e.stopPropagation();
+        onSelectMall?.(mall);
+      });
+      const marker = new Marker({ element: el, anchor: "top" })
+        .setLngLat([mall.coordinates.longitude, mall.coordinates.latitude])
+        .setOffset([0, 8])
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+
+    // 3. World Loots & Admin Game Rewards
+    for (const loot of loots) {
+      const dist = mapDistance(playerPt, loot.coordinates);
+      const el = createLootDomMarker(loot, dist, selectedLootId === loot.id, () => onSelectLoot?.(loot));
+      const marker = new Marker({ element: el, anchor: "center" })
+        .setLngLat([loot.coordinates.longitude, loot.coordinates.latitude])
+        .addTo(map);
+      markersRef.current.push(marker);
+    }
+  }, [ready, places, malls, loots, appearances, player.longitude, player.latitude, selected, selectedLootId, onSelect, onSelectMall, onSelectLoot]);
+
+  return (
+    <div className={styles.scene}>
+      <div ref={containerRef} className={styles.viewport} aria-label="Food Go 3D Melbourne Pilot World" />
+    </div>
+  );
 }

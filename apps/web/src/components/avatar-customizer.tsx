@@ -35,9 +35,24 @@ export function AvatarCustomizer({ onClose, onAction, motionPaused = false, comp
     return () => clearTimeout(timer);
   }, [action, token]);
   function perform(next: AvatarAction) { setPreviewWalking(false); setAction(next); setToken((value) => value + 1); onAction?.(next); }
-  function apply() {
-    chooseAvatar(draft); setIdleMotion(idle);
-    setNotice(`${selected.label} applied. Your avatar preference stays on this browser.`);
+  async function apply() {
+    chooseAvatar(draft);
+    setIdleMotion(idle);
+    setNotice(`${selected.label} applied.`);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarId: draft, avatarIdleMotion: idle }),
+      });
+      if (response.ok) {
+        setNotice(`${selected.label} saved to your Passport profile.`);
+        window.dispatchEvent(new Event("food-go:progress"));
+      }
+    } catch {
+      // Offline or signed-out keeps browser cosmetic selection smoothly.
+    }
     onClose?.();
   }
   return <section className={`${styles.customizer} ${compact ? styles.compact : ""}`} aria-labelledby={titleId}>

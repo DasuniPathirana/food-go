@@ -136,11 +136,9 @@ export function AuthForm({
       setConfirmation("");
       if (mode === "sign-in") {
         const next = "redirectTo" in data && ["/", "/partner/dashboard"].includes(String(data.redirectTo)) ? String(data.redirectTo) : "/";
-        router.replace(destination || next);
-        router.refresh();
+        window.location.assign(destination || next);
       } else if (mode === "reset-password") {
-        router.replace("/auth/sign-in?notice=password-updated");
-        router.refresh();
+        window.location.assign("/auth/sign-in?notice=password-updated");
       } else
         setMessage(
           "message" in data && typeof data.message === "string"

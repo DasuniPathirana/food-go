@@ -1,0 +1,153 @@
+.picker {
+  display: grid;
+  gap: 10px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f2936;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.chip:hover {
+  border-color: #08786e;
+  background: #effcf9;
+}
+
+.coordsReadout {
+  font-size: 12px;
+  font-weight: 700;
+  color: #355264;
+  background: #f1f7f6;
+  border: 1px solid #c6dbd8;
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.mapStage {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #b6d1cd;
+  background: #e9f5f2;
+  min-height: 260px;
+}
+
+.mapCanvas {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+}
+
+.fallbackSvg {
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+  display: block;
+  cursor: crosshair;
+  background: radial-gradient(circle at 50% 45%, #f4fbf9, #dfece9);
+}
+
+.hintBadge {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 4;
+  background: rgba(255, 255, 255, 0.94);
+  color: #0f2936;
+  border: 1px solid #b8d3cf;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.warningToast {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: #9f2d21;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25);
+}
+
+.manualInputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.manualInputs label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #355264;
+}
+
+.manualInputs input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font: inherit;
+  font-size: 13px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.pinDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #00c49a, #08786e);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 3px rgba(0, 196, 154, 0.35), 0 4px 12px rgba(15, 23, 42, 0.32);
+}
+
+.mallDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: #ffb72b;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+}
+
+.extraDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #6366f1;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+}

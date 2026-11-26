@@ -68,6 +68,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
   background: rgba(9, 36, 31, 0.9);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(45, 212, 191, 0.25);
@@ -103,6 +105,8 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
   background: rgba(9, 36, 31, 0.9);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(45, 212, 191, 0.25);
@@ -186,9 +190,13 @@
 }
 
 /* ---------------- SEARCH BAR ---------------- */
+.mobileSearchBtn {
+  display: none;
+}
+
 .searchSection {
-  margin-top: 10px;
-  width: 100%;
+  margin: 10px auto 0;
+  width: min(520px, 100%);
   pointer-events: auto;
 }
 
@@ -520,4 +528,95 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .hud {
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .brand {
+    font-size: 20px;
+    gap: 5px;
+  }
+  .brandIcon {
+    width: 26px;
+    height: 26px;
+  }
+  .brandText {
+    font-size: 20px;
+  }
+  .topPills {
+    gap: 5px;
+  }
+  .levelPill {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .levelProgress {
+    display: none;
+  }
+  .coinsPill {
+    padding: 4px 8px 4px 5px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .coinIcon {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+  }
+  .bellButton {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .mobileHideProfile {
+    display: none;
+  }
+  .mobileSearchBtn {
+    display: grid;
+  }
+  .searchSectionCollapsedMobile {
+    display: none;
+  }
+  .searchSectionOpenMobile {
+    display: block;
+    margin-top: 8px;
+  }
+  .questCard {
+    width: fit-content;
+    max-width: calc(100% - 62px);
+    padding: 5px 10px;
+    margin-top: 6px;
+  }
+  .rightControls {
+    top: calc(74px + env(safe-area-inset-top, 0px));
+    right: 10px;
+    gap: 7px;
+  }
+  .controlButton {
+    width: 36px;
+    height: 36px;
+  }
+  .bottomArea {
+    bottom: calc(72px + env(safe-area-inset-bottom, 4px));
+    left: 10px;
+  }
+  .locationPill {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  .bottomNav {
+    height: 54px;
+    border-radius: 27px;
+  }
+  .exploreHexagon {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+  }
+  .exploreItem {
+    margin-top: -18px;
+  }
 }

@@ -10,7 +10,7 @@ export const AU_STATES = [
   "VIC",
   "WA",
 ] as const;
-export const VENUE_TYPES = ["restaurant", "cafe", "market"] as const;
+export const VENUE_TYPES = ["restaurant", "cafe", "market", "bakery", "food_truck"] as const;
 
 // Reject control characters while allowing legitimate accents and punctuation.
 // HTML is still untrusted text and must be escaped by every rendering client.

@@ -10,13 +10,13 @@ const destinations = [
   { id: "outback", title: "Outback", icon: Mountain, path: "/outback", hasBadge: false },
 ] as const;
 
-export function FoodNavigation({ pathname, mobile = false, demo = false, owner = false }: {
+export function FoodNavigation({ pathname, mobile = false, owner = false }: {
   pathname: string;
   mobile?: boolean;
   demo?: boolean;
   owner?: boolean;
 }) {
-  const label = demo ? (mobile ? "Demo mobile navigation" : "Demo navigation") : (mobile ? "Mobile navigation" : "Main navigation");
+  const label = mobile ? "Mobile navigation" : "Main navigation";
   const navItems = owner ? [
     { id: "restaurants", title: "Restaurants", path: "/partner/dashboard", icon: Store, hasBadge: false },
     { id: "new-venue", title: "Add venue", path: "/partner/onboarding", icon: BookOpen, hasBadge: false },
@@ -28,10 +28,9 @@ export function FoodNavigation({ pathname, mobile = false, demo = false, owner =
   return (
     <nav className={mobile ? styles.dock : styles.directory} aria-label={label}>
       {navItems.map(({ id, title, path, icon: Icon, hasBadge }) => {
-        const href = demo ? `/demo/${id}` : path;
-        const exact = pathname === href || (id === "explore" && pathname === "/demo");
-        const inSection = id === "explore" && /^\/(demo\/venue\/|explore-preview(?:\/|$)|venues\/)/.test(pathname)
-          || id === "feed" && pathname === "/feed-preview";
+        const href = path;
+        const exact = pathname === href;
+        const inSection = id === "explore" && /^\/venues\//.test(pathname);
         const isActive = exact || inSection;
 
         return (

@@ -21,9 +21,10 @@
 .cover {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(236px, 1fr);
-  border: 1px solid var(--ink);
-  border-radius: 16px;
-  background: #00615d;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #092e27 0%, #0d6155 100%);
+  box-shadow: 0 14px 36px rgba(9, 36, 31, 0.16);
   overflow: hidden;
 }
 
@@ -56,10 +57,10 @@
   flex: 0 0 auto;
   width: clamp(72px, 9vw, 98px);
   aspect-ratio: .89;
-  border: 4px solid #fff9ee;
-  background: #ffe0a6;
-  border-radius: 45% 45% 8px 8px;
-  box-shadow: 0 3px 7px #00363455;
+  border: 3px solid rgba(94, 240, 211, 0.7);
+  background: #dff6ef;
+  border-radius: 45% 45% 12px 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .identityCopy { min-width: 0; }
@@ -88,9 +89,9 @@
   justify-content: center;
   position: relative;
   padding: clamp(18px, 2.8vw, 30px);
-  background: #ffd445;
-  border-left: 2px dashed #816e3d;
-  color: var(--ink);
+  background: linear-gradient(145deg, #073931 0%, #0b4e43 100%);
+  border-left: 2px dashed rgba(94, 240, 211, 0.4);
+  color: #ffffff;
 }
 
 .coverProgress::before,
@@ -99,7 +100,7 @@
   position: absolute;
   width: 15px;
   height: 15px;
-  border: 1px solid var(--ink);
+  border: 1px solid rgba(45, 212, 191, 0.45);
   border-radius: 50%;
   left: -9px;
   background: var(--canvas);
@@ -108,12 +109,12 @@
 .coverProgress::before { top: -9px; }
 .coverProgress::after { bottom: -9px; }
 .progressHeading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 12px; justify-content: space-between; margin-bottom: 9px; }
-.progressHeading > span { font-size: 14px; font-weight: 750; }
-.progressHeading strong { font: 800 clamp(30px, 4vw, 48px)/1 var(--font-display); font-variant-numeric: tabular-nums; }
-.progressHeading small { font-size: .44em; color: #584518; }
-.cover .coverProgress [role="progressbar"] { height: 8px; background: #ad8839; border-radius: 4px; }
-.cover .coverProgress [role="progressbar"] > span { background: var(--ink); border-radius: inherit; }
-.page .coverProgress p { color: #443218; font-size: 14px; font-weight: 600; margin: 8px 0 0; }
+.progressHeading > span { font-size: 14px; font-weight: 750; color: #5ef0d3; }
+.progressHeading strong { font: 800 clamp(30px, 4vw, 48px)/1 var(--font-display); font-variant-numeric: tabular-nums; color: #ffffff; }
+.progressHeading small { font-size: .44em; color: #b7f5e3; }
+.cover .coverProgress [role="progressbar"] { height: 8px; background: rgba(255, 255, 255, 0.16); border-radius: 4px; }
+.cover .coverProgress [role="progressbar"] > span { background: linear-gradient(90deg, #00d2aa, #00f0ff); border-radius: inherit; }
+.page .coverProgress p { color: #d5f3ea; font-size: 14px; font-weight: 600; margin: 8px 0 0; }
 
 .details { margin: 8px 0 18px; border-bottom: 1px solid var(--line); }
 .details > summary {
@@ -245,3 +246,103 @@
 .personalCover[data-tier=mighty] { border: 2px solid #795d9e; box-shadow: inset 0 0 0 5px #ede5f2; }
 .personalCover[data-tier=golden], .personalCover[data-tier=legendary] { border: 2px solid #b07c18; box-shadow: inset 0 0 0 5px #ffe6a4; }
 .personalCover[data-tier=legendary] .personalPortrait { outline: 3px solid #b07c18; outline-offset: 5px; }
+
+.passportTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 16px;
+  padding: 8px;
+  background: #ffffff;
+  border: 1px solid #d4e3e0;
+  border-radius: 16px;
+}
+
+.passportTabBtn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #355264;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.passportTabBtn:hover {
+  background: #effaf7;
+}
+
+.passportTabActive {
+  background: #08786e;
+  color: #ffffff;
+}
+
+.passportPanelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.passportCard {
+  background: #ffffff;
+  border: 1px solid #d4e3e0;
+  border-radius: 18px;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.passportCard h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f2936;
+}
+
+.passportField {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f3c4b;
+}
+
+.passportField input,
+.passportField textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font: inherit;
+  font-size: 14px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.recordRow {
+  border: 1px solid #d4e3e0;
+  background: #f9fdfc;
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.voucherMini {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px dashed #08786e;
+  background: #e9faf5;
+  color: #0b4a43;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  width: fit-content;
+}

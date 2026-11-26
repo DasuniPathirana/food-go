@@ -19,10 +19,15 @@
   border: 1px solid transparent;
   border-radius: 12px;
 }
-.directory a:hover { background: #ffffffad; }
-.directory a[aria-current] { background: #153f35; color: white; box-shadow: 0 4px 0 #0a292336, inset 0 1px 0 #ffffff24; }
+.directory a:hover { background: rgba(0, 196, 154, 0.14); color: #09241f; }
+.directory a[aria-current] {
+  background: rgba(9, 36, 31, 0.94);
+  color: #ffffff;
+  border: 1px solid rgba(45, 212, 191, 0.45);
+  box-shadow: 0 6px 18px rgba(9, 36, 31, 0.22), 0 0 12px rgba(0, 240, 255, 0.16);
+}
 .directory .explore { padding-inline: 18px; }
-.directory a[aria-current] svg { color: var(--sunny); }
+.directory a[aria-current] svg { color: #00f0ff; filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.55)); }
 .directory a:focus-visible, .dock a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) { .directory a, .dock a { transition: background-color 160ms ease-out, color 160ms ease-out; } }
 
