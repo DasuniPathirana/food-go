@@ -20,9 +20,9 @@ export function VenueDetail({ venue, mode }: { venue: CatalogueVenue; mode: Cata
   const isSaved = saved.includes(venue.id);
   return (
     <>
-      <Link href={mode === "demo" ? "/explore-preview" : "/"} className="back-link">
+      <Link href="/" className="back-link">
         <ArrowLeft size={16} />
-        Back to discoveries
+        Back to 3D Explorer
       </Link>
       <section className="venue-detail-hero">
         <Image

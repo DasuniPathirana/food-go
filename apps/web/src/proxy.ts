@@ -41,7 +41,7 @@ export async function proxy(request: NextRequest) {
       "form-action 'self'",
       "frame-ancestors 'none'",
       "frame-src 'none'",
-      "worker-src 'self'",
+      "worker-src 'self' blob:",
       "manifest-src 'self'",
     ].join("; ");
   }

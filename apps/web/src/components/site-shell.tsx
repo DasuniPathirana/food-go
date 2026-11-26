@@ -25,11 +25,10 @@ export function SiteShell({
   const pathname = usePathname();
   const journey = useJourney();
   const ownerView = accountType === "partner" && pathname.startsWith("/partner");
-  const exampleNeighbourhood = pathname === "/explore-preview";
   const isGuest = !signedIn || !journey?.data;
   const level = journey?.data?.progress.level;
   const xp = journey?.data?.progress.xp;
-  const coins = xp ?? 0;
+  const coins = journey?.data?.progress.coins ?? 0;
 
   return (
     <div className="site-shell">
@@ -83,11 +82,11 @@ export function SiteShell({
               <nav aria-label="Your collections and profile"><Link href="/food-dex"><BookOpen size={17}/><span>FoodDex<small>Your food discoveries</small></span></Link>
                 <Link href="/venue-dex"><Store size={17}/><span>VenueDex<small>Places you have collected</small></span></Link>
                 <Link href="/inventory"><Gift size={17}/><span>Inventory<small>Your restaurant encounter items</small></span></Link>
-                <Link href="/outback"><Gift size={17}/><span>Village rewards<small>Your Outback progress</small></span></Link>
+                <Link href="/outback"><Gift size={17}/><span>Outback<small>Coming soon in Stage 2</small></span></Link>
                 <Link href="/profile"><UserRound size={17}/><span>Passport<small>Your profile and personal wall</small></span></Link></nav>
             </details>}
             {signedIn && journey?.data && <Link className="account-entry xp-entry" href="/profile"
-              aria-label={`Passport, ${journey.data.progress.xp} XP, level ${journey.data.progress.level}`}><Zap size={15} aria-hidden="true"/><span>{journey.data.progress.xp} XP</span></Link>}
+              aria-label={`Passport, ${journey.data.progress.xp} XP, ${coins} coins, level ${journey.data.progress.level}`}><Zap size={15} aria-hidden="true"/><span>Lv.{journey.data.progress.level} | {coins} Coins</span></Link>}
             <Link href={accountType === "partner" ? "/partner/dashboard" : "/partner"} className="venue-entry">
               {accountType === "partner" ? "My restaurants" : "For venues"} <ArrowUpRight size={14} />
             </Link>
@@ -104,7 +103,7 @@ export function SiteShell({
       </header>
       <main
         id="main-content"
-        className={`main-content ${pathname === "/" || exampleNeighbourhood ? "discovery-main" : ""}`}
+        className={`main-content ${pathname === "/" ? "discovery-main" : ""}`}
       >
         {children}
       </main>
@@ -115,6 +114,7 @@ export function SiteShell({
         </div>
         <nav aria-label="Information">
           <Link href="/partner">List your venue</Link>
+          <Link href="/admin">Admin portal</Link>
           <Link href="/collect">Collect a visit</Link>
           <Link href="/food-dex">FoodDex</Link>
           <Link href="/venue-dex">VenueDex</Link>
@@ -129,7 +129,7 @@ export function SiteShell({
           </a>
         </nav>
       </footer>
-      <FoodNavigation pathname={pathname} mobile owner={ownerView} />
+      {pathname !== "/" && <FoodNavigation pathname={pathname} mobile owner={ownerView} />}
     </div>
   );
 }

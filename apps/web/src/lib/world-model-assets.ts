@@ -27,7 +27,7 @@ type Manifest = {
 };
 export type WorldModelTarget = {
   id: string; fallback: Group; x: number; z: number;
-  asset?: "parkTree"; width: number; height: number; rotation?: number;
+  asset?: WorldAssetId; width: number; height: number; rotation?: number;
 };
 
 export function parseWorldManifest(value: unknown): Manifest {
@@ -91,8 +91,22 @@ export function disposeWorldResources(root: Object3D) {
   for (const material of materials) material.dispose();
 }
 
-/** Load once per asset per active scene, share mesh resources between clones.
- * Keep the procedural fallback visible until a complete model is ready. */
+const loadedSceneCache = new Map<WorldAssetId, Promise<Object3D>>();
+
+function loadCachedAssetScene(asset: WorldAssetId, fileName: string) {
+  const existing = loadedSceneCache.get(asset);
+  if (existing) return existing;
+  const loader = new GLTFLoader();
+  const req = loader.loadAsync(directory + fileName).then(gltf => gltf.scene).catch(err => {
+    loadedSceneCache.delete(asset);
+    throw err;
+  });
+  loadedSceneCache.set(asset, req);
+  return req;
+}
+
+/** Load once per asset across updates, sharing cached templates synchronously.
+ * Fallbacks only show if a real 3D model fails to download. */
 export async function attachWorldModels(
   scene: Object3D, targets: readonly WorldModelTarget[],
   isActive: () => boolean, onChange: (count: number) => void,
@@ -104,34 +118,28 @@ export async function attachWorldModels(
     const id = target.asset ?? manifest.venueModels[target.id];
     if (!id || !manifest.assets[id]) continue;
     const list = groups.get(id) ?? [];
-    // Detailed storefronts can have hundreds of draw calls. Bound the imported instances.
-    if (id !== "parkTree" && list.length >= 2) continue;
+    if (id !== "parkTree" && id !== "streetLight" && id !== "rewardCrates" && list.length >= 24) continue;
     list.push(target); groups.set(id, list);
   }
-  const loader = new GLTFLoader();
   let count = 0;
   await Promise.all(Array.from(groups, async ([asset, entries]) => {
-    let imported: Object3D | undefined;
-    let attached = false;
     try {
-      imported = (await loader.loadAsync(directory + filenames[asset])).scene;
+      const template = await loadCachedAssetScene(asset, filenames[asset]);
       if (!isActive()) return;
       for (const target of entries) {
-        const model = groundWorldModel(imported.clone(true), target.width, target.height);
+        const model = groundWorldModel(template.clone(true), target.width, target.height);
         if (!model) continue;
         model.position.set(target.x, 0, target.z);
         model.rotation.y = target.rotation ?? 0;
         model.name = "world-model:" + target.id;
         scene.add(model);
         target.fallback.visible = false;
-        attached = true;
         count += 1;
       }
       onChange(count);
     } catch {
-      // A missing or unsupported model is not a fatal map error.
-    } finally {
-      if (imported && !attached) disposeWorldResources(imported);
+      if (!isActive()) return;
+      for (const target of entries) target.fallback.visible = true;
     }
   }));
   if (isActive()) onChange(count);

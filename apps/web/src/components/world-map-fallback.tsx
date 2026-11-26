@@ -77,9 +77,9 @@ export function WorldMapFallback(props: AtlasCanvasProps) {
       active.on("dragstart", () => latest.current.onCameraInteraction?.());
       observer = new ResizeObserver(() => active.invalidateSize({ animate: false }));
       observer.observe(host.current);
-      setReady(true); latest.current.onReady();
+      setReady(true); latest.current.onReady?.();
     }
-    initialise().catch(() => { if (!disposed) { setError("The 2D map could not start. Use place search and directions."); latest.current.onReady(); } });
+    initialise().catch(() => { if (!disposed) { setError("The 2D map could not start. Use place search and directions."); latest.current.onReady?.(); } });
     return () => {
       disposed = true; clearTimeout(tileDeadline.current); observer?.disconnect();
       container?.removeEventListener("pointerdown", interacting, true);

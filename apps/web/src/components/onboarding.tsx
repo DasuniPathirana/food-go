@@ -60,6 +60,7 @@ export function Onboarding({ connected = false }: { connected?: boolean }) {
   const [draft, setDraft] = useState<DraftFields>({ ...emptyDraft });
   const [errors, setErrors] = useState<FieldErrors>({});
   const [completed, setCompleted] = useState<VenueDraft | null>(null);
+  const [savedVenueId, setSavedVenueId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const requestKey = useRef<string | null>(null);
@@ -161,6 +162,7 @@ export function Onboarding({ connected = false }: { connected?: boolean }) {
               setSaveError("We could not confirm the save. Retry to check the same draft.");
               return;
             }
+            setSavedVenueId(saved.data.id);
           } catch {
             setSaveError("We could not confirm the save. Retry with unchanged details to check the same submission, or check your venues before editing. Your details are still here.");
             return;
@@ -294,7 +296,12 @@ export function Onboarding({ connected = false }: { connected?: boolean }) {
               </span>
             </div>
             <div className="form-actions">
-              {connected && <Link href="/partner/dashboard" className="primary-button">View my venues <ArrowRight size={16} /></Link>}
+              {connected && savedVenueId && (
+                <Link href={`/partner/venues/${savedVenueId}`} className="primary-button">
+                  Open 3D studio and workspace <ArrowRight size={16} />
+                </Link>
+              )}
+              {connected && <Link href="/partner/dashboard" className="secondary-button">View my venues <ArrowRight size={16} /></Link>}
               {!connected && <button
                 type="button"
                 className="secondary-button"
@@ -434,8 +441,10 @@ export function Onboarding({ connected = false }: { connected?: boolean }) {
                     required
                   >
                     <option value="">Select a venue type</option>
-                    <option value="cafe">Cafe</option>
                     <option value="restaurant">Restaurant</option>
+                    <option value="cafe">Cafe</option>
+                    <option value="bakery">Bakery</option>
+                    <option value="food_truck">Food truck</option>
                     <option value="market">Food market</option>
                   </select>
                 </Field>
@@ -651,9 +660,13 @@ function ReviewRow({ label, value }: { label: string; value: ReactNode }) {
 function typeLabel(value: DraftFields["venueType"]) {
   return value === "cafe"
     ? "Cafe"
-    : value === "market"
-      ? "Food market"
-      : value === "restaurant"
-        ? "Restaurant"
-        : "Venue";
+    : value === "bakery"
+      ? "Bakery"
+      : value === "food_truck"
+        ? "Food truck"
+        : value === "market"
+          ? "Food market"
+          : value === "restaurant"
+            ? "Restaurant"
+            : "Venue";
 }

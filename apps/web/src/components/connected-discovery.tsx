@@ -54,7 +54,12 @@ export function ConnectedDiscovery({ catalogue }: { catalogue: CatalogueState })
         </label>
         <label><span>Type</span>
           <select aria-label="Venue type" value={type} onChange={(event) => setType(event.target.value)}>
-            <option value="">All places</option><option value="cafe">Cafes</option><option value="restaurant">Restaurants</option><option value="market">Food markets</option>
+            <option value="">All food venues</option>
+            <option value="restaurant">Restaurants</option>
+            <option value="cafe">Cafes</option>
+            <option value="bakery">Bakeries</option>
+            <option value="food_truck">Food trucks</option>
+            <option value="market">Food markets</option>
           </select>
         </label>
         </div>
@@ -68,7 +73,7 @@ export function ConnectedDiscovery({ catalogue }: { catalogue: CatalogueState })
   return <>
     <AdventureMap overlay={overlay} sheet={sheet} resultsLabel={pending ? "Finding places…" : result.status === "unavailable" ? "Places unavailable" : `Published places (${result.venues.length})`} />
     <div className={mapStyles.searchStatus}>
-      <Link href="/demo" className="primary-button">Play the full adventure demo <ArrowRight size={16} /></Link>
+      <Link href="/" className="primary-button">Open 3D Melbourne Explorer <ArrowRight size={16} /></Link>
       <CatalogueStatus catalogue={result} />
     </div>
     {result.hasMore && <p className="inline-notice">Showing the first 50 matching places. Add a suburb, cuisine or state to narrow your search.</p>}

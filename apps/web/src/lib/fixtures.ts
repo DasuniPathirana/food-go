@@ -4,7 +4,7 @@ export type Venue = {
   suburb: string;
   address: string;
   cuisine: string;
-  type: "cafe" | "restaurant" | "market";
+  type: "cafe" | "restaurant" | "market" | "bakery" | "food_truck";
   tags: string[];
   image: string;
   imageAlt: string;
